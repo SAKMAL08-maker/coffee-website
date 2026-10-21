@@ -40,7 +40,7 @@ const server = http.createServer((req, res) => {
                 console.log(`Selected Volume    : ${orderData.selectedVolume}`);
                 console.log(`Mug Fluid Capacity : ${orderData.selectedVolume} / 250ml`);
                 console.log("==================================================\n");
-                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.writeHead(200, { 'Content-Type': 'application/json', 'Connection': 'close' });
                 res.end(JSON.stringify({ 
                     status: "Success", 
                     message: "Order dispatched to the Coffee Lab delivery queue successfully!" 
