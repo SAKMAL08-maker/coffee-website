@@ -59,5 +59,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`Coffee Lab instance initialized! Open up your browser link at http://localhost:${PORT}`);
+    console.log(`Coffee Lab instance initialized! Open up your browser link at https://coffee-lab-4-coffee-lovers.onrender.com/`);
 });
