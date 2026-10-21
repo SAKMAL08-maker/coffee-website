@@ -5,15 +5,584 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coffee Lab</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #faf0e6; padding: 50px; }
-        h1 { color: #4a2c11; }
-        .coffee-cup { width: 150px; height: 180px; border: 5px solid #4a2c11; border-radius: 0 0 50px 50px; margin: 20px auto; background: #fff; }
+        :root {
+            color-scheme: light;
+            font-family: Arial, sans-serif;
+            color: #391e10;
+            background: #c7a07a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        body {
+            min-width: 320px;
+            min-height: 100vh;
+            margin: 0;
+            padding: 32px 20px;
+            display: grid;
+            place-items: center;
+            background: #c7a07a;
+        }
+
+        .app {
+            width: min(100%, 900px);
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0 0 28px;
+            color: #391e10;
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+        }
+
+        .station {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            align-items: center;
+            justify-items: center;
+            gap: 24px;
+        }
+
+        .side-actions {
+            position: absolute;
+            top: 50%;
+            left: calc(50% - 107px);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transform: translate(-100%, -50%);
+        }
+
+        .action-button {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border: 2px solid #391e10;
+            border-radius: 14px;
+            background: #ead8c5;
+            color: #391e10;
+            font-size: 1.65rem;
+            cursor: pointer;
+            transition: background-color 150ms ease, transform 150ms ease;
+        }
+
+        .action-button:not(:disabled):hover {
+            background: #f5e9dc;
+            transform: translateY(-2px);
+        }
+
+        .action-button:focus-visible,
+        .choice-button:focus-visible,
+        select:focus-visible,
+        input:focus-visible {
+            outline: 3px solid #fff;
+            outline-offset: 3px;
+        }
+
+        .action-button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .selection-panel {
+            width: 100%;
+            min-height: 76px;
+            grid-column: 1 / -1;
+            display: grid;
+            align-content: center;
+            justify-items: center;
+            gap: 12px;
+        }
+
+        .selection-panel label {
+            font-weight: 700;
+        }
+
+        select {
+            min-width: 180px;
+            padding: 10px 14px;
+            border: 2px solid #391e10;
+            border-radius: 8px;
+            background: #f5e9dc;
+            color: #391e10;
+            font: inherit;
+        }
+
+        .coffee-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .choice-button {
+            padding: 10px 14px;
+            border: 2px solid #391e10;
+            border-radius: 8px;
+            background: #ead8c5;
+            color: #391e10;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 150ms ease, transform 150ms ease;
+        }
+
+        .choice-button:hover {
+            background: #f5e9dc;
+            transform: translateY(-2px);
+        }
+
+        .choice-button[aria-pressed="true"] {
+            background: #734128;
+            color: #fff;
+        }
+
+        .choice-button[aria-pressed="true"]:hover {
+            background: #8b644b;
+        }
+
+        .cup-display {
+            position: relative;
+            grid-column: 2;
+            grid-row: 2;
+            display: grid;
+            justify-items: center;
+            gap: 12px;
+        }
+
+        .delivery-panel {
+            width: 100%;
+            grid-column: 3;
+            grid-row: 2;
+            min-width: 0;
+            padding: 18px;
+            border: 2px solid #391e10;
+            border-radius: 12px;
+            background: #ead8c5;
+            text-align: left;
+        }
+
+        .delivery-panel h2 {
+            margin: 0 0 14px;
+            font-size: 1.2rem;
+        }
+
+        .delivery-panel label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .delivery-panel input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #391e10;
+            border-radius: 8px;
+            background: #f5e9dc;
+            color: #391e10;
+            font: inherit;
+        }
+
+        .delivery-button:focus-visible {
+            outline: 3px solid #fff;
+            outline-offset: 3px;
+        }
+
+        .delivery-button {
+            width: 100%;
+            margin-top: 12px;
+            padding: 10px 14px;
+            border: 2px solid #391e10;
+            border-radius: 8px;
+            background: #391e10;
+            color: #fff;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 150ms ease, transform 150ms ease;
+        }
+
+        .delivery-button:hover {
+            background: #734128;
+            transform: translateY(-2px);
+        }
+
+        .delivery-message {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            animation: delivery-flash 900ms ease-in-out infinite alternate;
+        }
+
+        @keyframes delivery-flash {
+            from { opacity: 0.55; }
+            to { opacity: 1; }
+        }
+
+        .cup {
+            position: relative;
+            width: 190px;
+            height: 230px;
+            display: flex;
+            align-items: flex-end;
+            overflow: visible;
+        }
+
+        .cup-handle {
+            position: absolute;
+            z-index: 0;
+            top: 52px;
+            right: -38px;
+            width: 56px;
+            height: 88px;
+            border: 10px solid #391e10;
+            border-left-width: 8px;
+            border-radius: 0 28px 28px 0;
+        }
+
+        .cup-body {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border: 8px solid #391e10;
+            border-radius: 14px 14px 44px 44px;
+            background: #f5e9dc;
+        }
+
+        .cup-fill {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            height: 0;
+            border-radius: 38% 38% 0 0 / 10px 10px 0 0;
+            background: #391e10;
+            transition: height 350ms ease, background-color 200ms ease;
+        }
+
+        .cup-capacity {
+            min-height: 1.4em;
+            margin: 0;
+            font-weight: 700;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 24px 16px;
+            }
+
+            .station {
+                gap: 18px;
+                grid-template-columns: minmax(0, 1fr);
+                padding: 0;
+            }
+
+            .selection-panel {
+                grid-column: 1;
+                grid-row: 1;
+            }
+
+            .cup-display {
+                grid-column: 1;
+                grid-row: 2;
+            }
+
+            .delivery-panel {
+                grid-column: 1;
+                grid-row: 3;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .side-actions {
+                left: calc(50% - 94px);
+            }
+
+            .action-button {
+                width: 46px;
+                height: 46px;
+                border-radius: 12px;
+            }
+
+            .cup {
+                width: 164px;
+                height: 204px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Welcome to Coffee Lab ☕</h1>
-    <p>This is where we will build your gamified coffee app!</p>
-    <p>Testing 123</p>
-    <div class="coffee-cup"></div>
+    <main class="app">
+        <h1>Coffee Lab</h1>
+        <section class="station" aria-label="Coffee measurement station">
+            <div class="selection-panel" id="selection-panel">
+                <label id="selection-label" for="measurement">Choose a measurement</label>
+                <select id="measurement" name="measurement">
+                    <option value="">Select milliliters</option>
+                    <option value="15">15ml</option>
+                    <option value="25">25ml</option>
+                    <option value="30">30ml</option>
+                    <option value="50">50ml</option>
+                    <option value="60">60ml</option>
+                    <option value="90">90ml</option>
+                    <option value="120">120ml</option>
+                    <option value="150">150ml</option>
+                    <option value="180">180ml</option>
+                    <option value="240">240ml</option>
+                </select>
+                <div class="coffee-options" id="coffee-options" aria-live="polite"></div>
+            </div>
+            <form class="delivery-panel" id="delivery-panel" hidden>
+                <h2>Delivery address</h2>
+                <label for="delivery-address">Your address</label>
+                <input id="delivery-address" name="address" type="text" autocomplete="street-address" required>
+                <button class="delivery-button" type="submit">Deliver</button>
+            </form>
+            <section class="delivery-panel" id="delivery-confirmation" aria-live="assertive" hidden>
+                <p class="delivery-message">Delivering your Coffee</p>
+                <p id="order-status" role="status"></p>
+                <button class="delivery-button" id="continue-button" type="button">Continue</button>
+                <button class="delivery-button" id="start-over-button" type="button" hidden>Start a new order</button>
+            </section>
+            <div class="cup-display">
+                <nav class="side-actions" aria-label="Coffee controls">
+                    <button class="action-button" id="measurement-action" type="button" aria-label="Choose a measurement" title="Choose a measurement">📏</button>
+                    <button class="action-button" id="coffee-action" type="button" aria-label="Choose a coffee" title="Choose a coffee" disabled>☕</button>
+                    <button class="action-button" id="extras-action" type="button" aria-label="Choose extras" title="Choose extras" disabled>🧂</button>
+                </nav>
+                <div class="cup" role="img" aria-label="Empty 250 milliliter cup">
+                    <span class="cup-handle" aria-hidden="true"></span>
+                    <div class="cup-body" aria-hidden="true">
+                        <div class="cup-fill" id="cup-fill"></div>
+                    </div>
+                </div>
+                <p class="cup-capacity" id="cup-capacity" aria-live="polite">0 / 250ml</p>
+            </div>
+        </section>
+    </main>
+    <script>
+        const measurementSelect = document.getElementById("measurement");
+        const selectionLabel = document.getElementById("selection-label");
+        const coffeeOptions = document.getElementById("coffee-options");
+        const selectionPanel = document.getElementById("selection-panel");
+        const deliveryForm = document.getElementById("delivery-panel");
+        const deliveryAddress = document.getElementById("delivery-address");
+        const deliveryConfirmation = document.getElementById("delivery-confirmation");
+        const orderStatus = document.getElementById("order-status");
+        const continueButton = document.getElementById("continue-button");
+        const startOverButton = document.getElementById("start-over-button");
+        const measurementAction = document.getElementById("measurement-action");
+        const coffeeAction = document.getElementById("coffee-action");
+        const extrasAction = document.getElementById("extras-action");
+        const cup = document.querySelector(".cup");
+        const cupFill = document.getElementById("cup-fill");
+        const cupCapacity = document.getElementById("cup-capacity");
+        const coffeeMeasurements = {
+            Espresso: [25, 30],
+            Doppio: [50, 60],
+            Lungo: [60, 90],
+            Macchiato: [15, 30],
+            Cappuccino: [150, 180],
+            "Flat White": [120, 150],
+            Latte: [180, 240]
+        };
+        const extras = ["Sugar", "Creamer", "Milk"];
+        const coffeeColors = ["#734128", "#8b644b", "#a2826f", "#b9a18e"];
+        let selectedMeasurement = 0;
+        let selectedCoffee = "";
+        const selectedExtras = new Set();
+
+        function updateCup() {
+            const fillPercent = Math.min(selectedMeasurement / 250, 1) * 100;
+            cupFill.style.height = `${fillPercent}%`;
+            const colorIndex = selectedCoffee ? selectedExtras.size : 0;
+            cupFill.style.backgroundColor = selectedCoffee ? coffeeColors[colorIndex] : "#391e10";
+            cupCapacity.textContent = `${selectedMeasurement} / 250ml`;
+            cup.setAttribute(
+                "aria-label",
+                `${selectedCoffee ? `${selectedCoffee}, ` : ""}${selectedMeasurement} of 250 milliliters`
+            );
+        }
+
+        function showMeasurementState() {
+            selectedMeasurement = 0;
+            selectedCoffee = "";
+            selectedExtras.clear();
+            selectionPanel.hidden = false;
+            deliveryForm.hidden = true;
+            deliveryConfirmation.hidden = true;
+            deliveryForm.reset();
+            deliveryAddress.setCustomValidity("");
+            orderStatus.textContent = "";
+            continueButton.textContent = "Continue";
+            continueButton.disabled = false;
+            delete continueButton.dataset.action;
+            startOverButton.hidden = true;
+            measurementSelect.value = "";
+            measurementSelect.hidden = false;
+            selectionLabel.htmlFor = "measurement";
+            selectionLabel.textContent = "Choose a measurement";
+            selectionLabel.hidden = false;
+            coffeeOptions.replaceChildren();
+            coffeeOptions.hidden = true;
+            measurementAction.disabled = false;
+            coffeeAction.disabled = true;
+            extrasAction.disabled = true;
+            updateCup();
+        }
+
+        function showCoffeeState() {
+            if (!selectedMeasurement) return;
+            measurementSelect.hidden = true;
+            selectionLabel.hidden = false;
+            selectionLabel.removeAttribute("for");
+            selectionLabel.textContent = "Choose a coffee";
+            coffeeOptions.hidden = false;
+            coffeeOptions.replaceChildren();
+
+            Object.entries(coffeeMeasurements).forEach(([coffee, measurements]) => {
+                if (!measurements.includes(selectedMeasurement)) return;
+
+                const button = document.createElement("button");
+                button.className = "choice-button";
+                button.type = "button";
+                button.textContent = `${coffee}: ${selectedMeasurement}ml`;
+                button.setAttribute("aria-pressed", String(selectedCoffee === coffee));
+                button.addEventListener("click", () => {
+                    if (selectedCoffee !== coffee) {
+                        selectedExtras.clear();
+                        deliveryAddress.value = "";
+                        deliveryAddress.setCustomValidity("");
+                    }
+                    selectedCoffee = coffee;
+                    extrasAction.disabled = false;
+                    deliveryForm.hidden = false;
+                    updateCup();
+                    showExtrasState();
+                });
+                coffeeOptions.appendChild(button);
+            });
+        }
+
+        function showExtrasState() {
+            if (!selectedCoffee) return;
+            measurementSelect.hidden = true;
+            selectionLabel.hidden = false;
+            selectionLabel.removeAttribute("for");
+            selectionLabel.textContent = "Choose extras";
+            coffeeOptions.hidden = false;
+            coffeeOptions.replaceChildren();
+
+            extras.forEach((extra) => {
+                const button = document.createElement("button");
+                button.className = "choice-button";
+                button.type = "button";
+                button.textContent = extra;
+                button.setAttribute("aria-pressed", String(selectedExtras.has(extra)));
+                button.addEventListener("click", () => {
+                    if (selectedExtras.has(extra)) {
+                        selectedExtras.delete(extra);
+                    } else {
+                        selectedExtras.add(extra);
+                    }
+                    button.setAttribute("aria-pressed", String(selectedExtras.has(extra)));
+                    updateCup();
+                });
+                coffeeOptions.appendChild(button);
+            });
+        }
+
+        measurementSelect.addEventListener("change", () => {
+            selectedMeasurement = Number(measurementSelect.value);
+            selectedCoffee = "";
+            selectedExtras.clear();
+            if (!selectedMeasurement) {
+                showMeasurementState();
+                return;
+            }
+
+            coffeeAction.disabled = false;
+            updateCup();
+            showCoffeeState();
+        });
+
+        measurementAction.addEventListener("click", showMeasurementState);
+        coffeeAction.addEventListener("click", showCoffeeState);
+        extrasAction.addEventListener("click", showExtrasState);
+        deliveryForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            if (!selectedMeasurement || !selectedCoffee) return;
+            if (!deliveryAddress.value.trim()) {
+                deliveryAddress.setCustomValidity("Enter a delivery address.");
+                deliveryAddress.reportValidity();
+                return;
+            }
+
+            deliveryAddress.setCustomValidity("");
+            orderStatus.textContent = "";
+            selectionPanel.hidden = true;
+            deliveryForm.hidden = true;
+            deliveryConfirmation.hidden = false;
+            document.querySelectorAll(".side-actions button").forEach((button) => {
+                button.disabled = true;
+            });
+        });
+        deliveryAddress.addEventListener("input", () => {
+            deliveryAddress.setCustomValidity("");
+        });
+        continueButton.addEventListener("click", async () => {
+            if (continueButton.dataset.action === "reset") {
+                showMeasurementState();
+                return;
+            }
+
+            const selectedVolume = Number(measurementSelect.value);
+            if (!selectedVolume || !selectedCoffee || !deliveryAddress.value.trim()) {
+                orderStatus.textContent = "Choose a volume, coffee, and delivery address before continuing.";
+                return;
+            }
+
+            continueButton.disabled = true;
+            orderStatus.textContent = "Sending your order...";
+            try {
+                const response = await fetch("/api/orders", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        deliveryAddress: deliveryAddress.value,
+                        selectedVolume
+                    })
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.message || `Order request failed (${response.status}).`);
+                }
+
+                orderStatus.textContent = result.message || "Your order was received.";
+                continueButton.textContent = "New order";
+                continueButton.dataset.action = "reset";
+                startOverButton.hidden = true;
+            } catch (error) {
+                orderStatus.textContent = `Could not send your order: ${error.message}`;
+                continueButton.textContent = "Retry";
+                startOverButton.hidden = false;
+            } finally {
+                continueButton.disabled = false;
+            }
+        });
+        startOverButton.addEventListener("click", showMeasurementState);
+    </script>
 </body>
 </html>
