@@ -7,8 +7,8 @@ const {
 } = require("../services/coffeeService");
 
 const SERVICE_FEE_BASIS_POINTS = 800;
-const TAX_BASIS_POINTS = 825;
-const DELIVERY_FEE_CENTS = 249;
+const TAX_BASIS_POINTS = 1200;
+const DELIVERY_FEE_CENTS = 4900;
 const ORDER_STATUSES = ["Received", "Crafting", "Out for Delivery", "Arrived"];
 
 function badRequest(message) {
@@ -20,10 +20,10 @@ function roundBasisPoints(amountCents, basisPoints) {
 }
 
 function calculateDrinkPriceCents(configuration) {
-    const baseCents = 450 + Math.max(0, Math.ceil((configuration.volumeMl - 240) / 120)) * 50;
-    const extraShotCents = Math.max(0, configuration.shots - 2) * 100;
-    const milkModifierCents = configuration.milk === "oat" ? 70 : configuration.milk === "almond" ? 50 : 0;
-    const syrupModifierCents = Object.values(configuration.syrups).reduce((total, pumps) => total + pumps * 50, 0);
+    const baseCents = 25000 + Math.max(0, Math.ceil((configuration.volumeMl - 240) / 120)) * 2800;
+    const extraShotCents = Math.max(0, configuration.shots - 2) * 5500;
+    const milkModifierCents = configuration.milk === "oat" ? 3900 : configuration.milk === "almond" ? 2800 : 0;
+    const syrupModifierCents = Object.values(configuration.syrups).reduce((total, pumps) => total + pumps * 2500, 0);
     return baseCents + extraShotCents + milkModifierCents + syrupModifierCents;
 }
 

@@ -412,12 +412,12 @@
                             <tbody id="ingredient-legend"><tr><td>Choose ingredients to begin</td><td>—</td></tr></tbody>
                         </table>
                         <div class="price-list" aria-label="Live order pricing">
-                            <div class="stats-header"><h2>Live pricing</h2><span class="field-help">USD · estimate</span></div>
-                            <div class="price-row"><span>Drink</span><strong id="drink-price">$4.50</strong></div>
-                            <div class="price-row"><span>Premium modifiers</span><strong id="modifier-price">$0.00</strong></div>
-                            <div class="price-row"><span id="delivery-fee-label">Delivery fee</span><strong id="delivery-fee">$2.49</strong></div>
-                            <div class="price-row"><span>Service fee (8%)</span><strong id="service-fee">$0.00</strong></div>
-                            <div class="price-row"><span>Estimated tax (8.25%)</span><strong id="tax-fee">$0.00</strong></div>
+                            <div class="stats-header"><h2>Live pricing</h2><span class="field-help">PHP · estimate</span></div>
+                            <div class="price-row"><span>Drink</span><strong id="drink-price">₱250.00</strong></div>
+                            <div class="price-row"><span>Premium modifiers</span><strong id="modifier-price">₱0.00</strong></div>
+                            <div class="price-row"><span id="delivery-fee-label">Delivery fee</span><strong id="delivery-fee">₱49.00</strong></div>
+                            <div class="price-row"><span>Service fee (8%)</span><strong id="service-fee">₱0.00</strong></div>
+                            <div class="price-row"><span>Estimated VAT (12%)</span><strong id="tax-fee">₱0.00</strong></div>
                             <div class="tip-picker" role="group" aria-label="Delivery tip">
                                 <span class="field-help">Tip</span>
                                 <button class="tip-button" type="button" data-tip="15" aria-pressed="true">15%</button>
@@ -427,8 +427,8 @@
                                 <label class="sr-only" for="custom-tip-input">Custom tip percentage</label>
                                 <input class="custom-tip" id="custom-tip-input" type="number" min="0" max="100" step="1" value="15" aria-label="Custom tip percentage" hidden>
                             </div>
-                            <div class="price-row"><span>Tip (<span id="tip-percent">15</span>%)</span><strong id="tip-fee">$0.00</strong></div>
-                            <div class="price-total"><span>Estimated total</span><strong id="order-total">$0.00</strong></div>
+                            <div class="price-row"><span>Tip (<span id="tip-percent">15</span>%)</span><strong id="tip-fee">₱0.00</strong></div>
+                            <div class="price-total"><span>Estimated total</span><strong id="order-total">₱0.00</strong></div>
                         </div>
                     </article>
                 </section>
@@ -617,10 +617,10 @@
     <aside class="cart-drawer" id="cart-drawer" aria-labelledby="cart-title" aria-modal="true" aria-hidden="true" role="dialog">
         <div class="drawer-head"><h2 id="cart-title">Your order <span id="drawer-count">(0)</span></h2><button class="button button-small" id="close-cart-button" type="button" aria-label="Close basket">✕</button></div>
         <div class="drawer-items" id="cart-items"></div>
-        <div class="drawer-total"><div class="price-row"><span>Estimated total</span><strong id="cart-total">$0.00</strong></div><button class="button button-primary" id="checkout-button" type="button" disabled>Proceed to checkout</button></div>
+        <div class="drawer-total"><div class="price-row"><span>Estimated total</span><strong id="cart-total">₱0.00</strong></div><button class="button button-primary" id="checkout-button" type="button" disabled>Proceed to checkout</button></div>
     </aside>
 
-    <button class="button button-primary checkout-fab" id="checkout-fab" type="button" hidden>Checkout · <span id="fab-total">$0.00</span></button>
+    <button class="button button-primary checkout-fab" id="checkout-fab" type="button" hidden>Checkout · <span id="fab-total">₱0.00</span></button>
 
     <dialog id="checkout-dialog" aria-labelledby="checkout-title">
         <form class="dialog-content" id="checkout-form">
@@ -710,7 +710,11 @@
             }
 
             function money(amount) {
-                return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+                return new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                    minimumFractionDigits: 2
+                }).format(amount);
             }
 
             function roundMoney(amount) {
@@ -718,20 +722,20 @@
             }
 
             function getDrinkPrice() {
-                let basePrice = 4.5;
-                basePrice += Math.max(0, Math.ceil((state.volumeMl - 240) / 120)) * 0.5;
-                const modifiers = Math.max(0, state.shots - 2) * 1
-                    + (state.milk === "oat" ? 0.7 : state.milk === "almond" ? 0.5 : 0)
-                    + Object.values(state.syrups).reduce((sum, pumps) => sum + pumps * 0.5, 0);
+                let basePrice = 250;
+                basePrice += Math.max(0, Math.ceil((state.volumeMl - 240) / 120)) * 28;
+                const modifiers = Math.max(0, state.shots - 2) * 55
+                    + (state.milk === "oat" ? 39 : state.milk === "almond" ? 28 : 0)
+                    + Object.values(state.syrups).reduce((sum, pumps) => sum + pumps * 25, 0);
                 basePrice = roundMoney(basePrice);
                 const roundedModifiers = roundMoney(modifiers);
                 return { basePrice, modifiers: roundedModifiers, subtotal: roundMoney(basePrice + roundedModifiers) };
             }
 
             function getPricing(subtotal) {
-                const delivery = subtotal > 0 && state.fulfillmentMethod === "delivery" ? 2.49 : 0;
+                const delivery = subtotal > 0 && state.fulfillmentMethod === "delivery" ? 49 : 0;
                 const service = roundMoney(subtotal * 0.08);
-                const tax = roundMoney(subtotal * 0.0825);
+                const tax = roundMoney(subtotal * 0.12);
                 const tipRate = state.tipPercent === "custom" ? state.customTipPercent : state.tipPercent;
                 const tip = roundMoney(subtotal * tipRate / 100);
                 return { delivery, service, tax, tip, total: roundMoney(subtotal + delivery + service + tax + tip), tipRate };
