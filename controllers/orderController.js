@@ -179,24 +179,19 @@ async function trackOrder(request, response, next) {
         const supabase = getAdminClient();
         const { data: order, error } = await supabase
             .from("orders")
-            .select("id, tracking_code, status, fulfillment_method, pricing, created_at, updated_at")
+            .select("tracking_code, status, fulfillment_method, created_at, updated_at")
             .eq("tracking_code", request.params.trackingCode)
             .maybeSingle();
         if (error) throw error;
         if (!order) return response.status(404).json({ error: "Order not found." });
 
-        const { data: items, error: itemError } = await supabase
-            .from("order_items")
-            .select("id, name, classification, price_cents")
-            .eq("order_id", order.id);
-        if (itemError) throw itemError;
         response.json({
             order: {
-                ...order,
                 trackingCode: order.tracking_code,
+                status: order.status,
                 fulfillmentMethod: order.fulfillment_method,
-                itemCount: items.length,
-                items
+                createdAt: order.created_at,
+                updatedAt: order.updated_at
             }
         });
     } catch (error) {

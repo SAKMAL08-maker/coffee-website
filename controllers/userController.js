@@ -15,11 +15,20 @@ function validateBody(body, allowedKeys) {
     }
 }
 
-function getAuthErrorStatus(error) {
-    if (["user_already_exists", "email_exists"].includes(error.code)) return 409;
-    if (["invalid_credentials", "user_not_found", "invalid_grant"].includes(error.code)) return 401;
-    if (["weak_password", "validation_failed", "email_address_invalid"].includes(error.code)) return 400;
-    return error.status || 400;
+function respondWithSafeAuthError(response, error, action) {
+    if (action === "login" && ["invalid_credentials", "user_not_found", "invalid_grant", "email_not_confirmed"].includes(error.code)) {
+        return response.status(401).json({ error: "Email or password is incorrect." });
+    }
+    if (action === "signup" && [
+        "user_already_exists",
+        "email_exists",
+        "weak_password",
+        "validation_failed",
+        "email_address_invalid"
+    ].includes(error.code)) {
+        return response.status(400).json({ error: "Sign-up could not be completed with those details." });
+    }
+    throw error;
 }
 
 async function signUp(request, response, next) {
@@ -41,7 +50,7 @@ async function signUp(request, response, next) {
             password,
             options: { data: { name: name.trim() } }
         });
-        if (error) return response.status(getAuthErrorStatus(error)).json({ error: error.message });
+        if (error) return respondWithSafeAuthError(response, error, "signup");
 
         response.status(201).json({
             accessToken: data.session?.access_token || null,
@@ -63,7 +72,7 @@ async function logIn(request, response, next) {
         }
 
         const { data, error } = await getAuthClient().auth.signInWithPassword({ email, password });
-        if (error) return response.status(getAuthErrorStatus(error)).json({ error: error.message });
+        if (error) return respondWithSafeAuthError(response, error, "login");
         const { data: profile, error: profileError } = await getAdminClient()
             .from("profiles")
             .select("name, role")

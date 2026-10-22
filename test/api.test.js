@@ -10,7 +10,15 @@ test("serves the customizer and validates quote and checkout API requests", asyn
     try {
         const home = await fetch(`${baseUrl}/`);
         assert.equal(home.status, 200);
-        assert.match(await home.text(), /Bean &amp; Bloom/);
+        const html = await home.text();
+        assert.match(html, /Bean &amp; Bloom/);
+        assert.equal(home.headers.get("x-powered-by"), null);
+        assert.equal(home.headers.get("x-content-type-options"), "nosniff");
+        assert.equal(home.headers.get("cache-control"), "no-store");
+        const policy = home.headers.get("content-security-policy");
+        const nonce = policy.match(/script-src[^;]*'nonce-([^']+)'/)[1];
+        assert.ok(html.includes(`<script nonce="${nonce}"`));
+        assert.ok(html.includes(`<style nonce="${nonce}"`));
 
         const quote = await fetch(`${baseUrl}/api/coffees/quote`, {
             method: "POST",
@@ -28,6 +36,20 @@ test("serves the customizer and validates quote and checkout API requests", asyn
             body: JSON.stringify({ configuration: { base: "unknown" } })
         });
         assert.equal(invalidQuote.status, 400);
+
+        const unknownFieldQuote = await fetch(`${baseUrl}/api/coffees/quote`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ configuration: {}, price: 1 })
+        });
+        assert.equal(unknownFieldQuote.status, 400);
+        assert.deepEqual(await unknownFieldQuote.json(), { error: "Request data is invalid." });
+
+        const invalidTrackingCode = await fetch(`${baseUrl}/api/orders/track/not-a-tracking-code`);
+        assert.equal(invalidTrackingCode.status, 400);
+
+        const unexpectedQuery = await fetch(`${baseUrl}/api/orders/track/${"a".repeat(48)}?debug=true`);
+        assert.equal(unexpectedQuery.status, 400);
 
         const invalidCheckout = await fetch(`${baseUrl}/api/orders/checkout`, {
             method: "POST",

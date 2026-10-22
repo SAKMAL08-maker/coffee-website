@@ -25,6 +25,11 @@ You are an expert Senior Full-Stack Developer and Software Architect. Your task 
 - NEVER hardcode secrets, API keys, database connection strings, or sensitive tokens in the frontend or application source files.
 - Restrict all Supabase credentials to environment variables via process.env.
 - Ensure sensitive configuration files like `.env` are automatically ignored via a `.gitignore` directive.
+- SECURE HTTP HEADERS: Implement and configure 'helmet' middleware correctly to protect headers and   eliminate the 'X-Powered-By' fingerprint.
+- INPUT VALIDATION: Provide or update data schemas using a validator library (like Zod or Joi) to strictly enforce input constraints on incoming user request bodies, query params, and route parameters.
+- RATE LIMITING: Set up an appropriate 'express-rate-limit' middleware bundle tailored for my sensitive or high-frequency endpoints (e.g., placing orders or saving game states).
+- SECURE ERROR HANDLING: Ensure there is a centralized global error-catching middleware block that logs technical details safely to the server console but responds to the client with clean, generic, non-leaking JSON payloads.
+- INPUT SANITIZATION & INJECTION DEFENSE: Review how database or file queries are executed to guarantee there are no string-interpolation or injection vulnerabilities.
 
 3. "Game-Like" UX Vision
 - Implement an interactive, step-by-step ("level-based") progression workflow for the ordering interface.
