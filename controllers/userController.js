@@ -1,7 +1,10 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const { normalizeConfiguration } = require("../services/coffeeService");
+const { getAuthClient, getAdminClient } = require("../config/supabase");
+const {
+    normalizeConfiguration,
+    getComposition,
+    classifyDrink,
+    calculateNutrition
+} = require("../services/coffeeService");
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -12,16 +15,11 @@ function validateBody(body, allowedKeys) {
     }
 }
 
-function createToken(user) {
-    return jwt.sign(
-        { sessionVersion: user.sessionVersion },
-        process.env.JWT_SECRET,
-        { subject: user.id, expiresIn: "1h" }
-    );
-}
-
-function publicUser(user) {
-    return { id: user.id, name: user.name, email: user.email, savedBar: user.savedBar };
+function getAuthErrorStatus(error) {
+    if (["user_already_exists", "email_exists"].includes(error.code)) return 409;
+    if (["invalid_credentials", "user_not_found", "invalid_grant"].includes(error.code)) return 401;
+    if (["weak_password", "validation_failed", "email_address_invalid"].includes(error.code)) return 400;
+    return error.status || 400;
 }
 
 async function signUp(request, response, next) {
@@ -38,9 +36,18 @@ async function signUp(request, response, next) {
             return response.status(400).json({ error: "Password must be at least 12 characters and no more than 72 UTF-8 bytes." });
         }
 
-        const passwordHash = await bcrypt.hash(password, 12);
-        const user = await User.create({ name: name.trim(), email: email.trim().toLowerCase(), passwordHash });
-        response.status(201).json({ token: createToken(user), user: publicUser(user) });
+        const { data, error } = await getAuthClient().auth.signUp({
+            email: email.trim().toLowerCase(),
+            password,
+            options: { data: { name: name.trim() } }
+        });
+        if (error) return response.status(getAuthErrorStatus(error)).json({ error: error.message });
+
+        response.status(201).json({
+            accessToken: data.session?.access_token || null,
+            requiresEmailConfirmation: !data.session,
+            user: { id: data.user.id, name: name.trim(), email: data.user.email }
+        });
     } catch (error) {
         next(error);
     }
@@ -51,36 +58,66 @@ async function logIn(request, response, next) {
         validateBody(request.body, ["email", "password"]);
         const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
         const password = request.body.password;
-        if (!emailPattern.test(email) || typeof password !== "string" || Buffer.byteLength(password, "utf8") > 72) {
+        if (!emailPattern.test(email) || typeof password !== "string") {
             return response.status(400).json({ error: "A valid email and password are required." });
         }
 
-        const user = await User.findOne({ email }).select("+passwordHash +sessionVersion");
-        if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-            return response.status(401).json({ error: "Email or password is incorrect." });
-        }
-        response.json({ token: createToken(user), user: publicUser(user) });
+        const { data, error } = await getAuthClient().auth.signInWithPassword({ email, password });
+        if (error) return response.status(getAuthErrorStatus(error)).json({ error: error.message });
+        const { data: profile, error: profileError } = await getAdminClient()
+            .from("profiles")
+            .select("name, role")
+            .eq("id", data.user.id)
+            .maybeSingle();
+        if (profileError) throw profileError;
+
+        response.json({
+            accessToken: data.session.access_token,
+            expiresAt: data.session.expires_at,
+            user: { id: data.user.id, name: profile?.name || "", email: data.user.email }
+        });
     } catch (error) {
         next(error);
     }
 }
 
-async function getCurrentUser(request, response) {
-    response.json({ user: publicUser(request.user) });
+async function getCurrentUser(request, response, next) {
+    try {
+        const { data, error } = await getAdminClient()
+            .from("profiles")
+            .select("id, name, role, created_at")
+            .eq("id", request.user.id)
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(404).json({ error: "User profile not found." });
+        response.json({ user: { ...data, email: request.user.email } });
+    } catch (error) {
+        next(error);
+    }
 }
 
 async function logOut(request, response, next) {
     try {
-        request.user.sessionVersion += 1;
-        await request.user.save();
+        const { error } = await getAdminClient().auth.admin.signOut(request.accessToken, "local");
+        if (error) throw error;
         response.json({ message: "Session ended." });
     } catch (error) {
         next(error);
     }
 }
 
-async function listSavedBar(request, response) {
-    response.json({ savedBar: request.user.savedBar });
+async function listSavedBar(request, response, next) {
+    try {
+        const { data, error } = await getAdminClient()
+            .from("coffees")
+            .select("id, name, configuration, classification, nutrition, created_at")
+            .eq("user_id", request.user.id)
+            .order("created_at", { ascending: false });
+        if (error) throw error;
+        response.json({ savedBar: data });
+    } catch (error) {
+        next(error);
+    }
 }
 
 async function addSavedRecipe(request, response, next) {
@@ -91,9 +128,20 @@ async function addSavedRecipe(request, response, next) {
             return response.status(400).json({ error: "Recipe name is required and must be 48 characters or fewer." });
         }
         const configuration = normalizeConfiguration(request.body.configuration);
-        request.user.savedBar.push({ name, configuration });
-        await request.user.save();
-        response.status(201).json({ recipe: request.user.savedBar.at(-1) });
+        const composition = getComposition(configuration);
+        const { data, error } = await getAdminClient()
+            .from("coffees")
+            .insert({
+                user_id: request.user.id,
+                name,
+                configuration,
+                classification: classifyDrink(configuration, composition),
+                nutrition: calculateNutrition(configuration)
+            })
+            .select("id, name, configuration, classification, nutrition, created_at")
+            .single();
+        if (error) throw error;
+        response.status(201).json({ recipe: data });
     } catch (error) {
         next(error);
     }
@@ -101,10 +149,15 @@ async function addSavedRecipe(request, response, next) {
 
 async function removeSavedRecipe(request, response, next) {
     try {
-        const recipe = request.user.savedBar.id(request.params.recipeId);
-        if (!recipe) return response.status(404).json({ error: "Saved recipe not found." });
-        recipe.deleteOne();
-        await request.user.save();
+        const { data, error } = await getAdminClient()
+            .from("coffees")
+            .delete()
+            .eq("id", request.params.recipeId)
+            .eq("user_id", request.user.id)
+            .select("id")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(404).json({ error: "Saved recipe not found." });
         response.json({ message: "Saved recipe removed." });
     } catch (error) {
         next(error);

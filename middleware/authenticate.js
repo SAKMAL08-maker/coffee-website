@@ -1,42 +1,50 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const { getAuthClient, getAdminClient } = require("../config/supabase");
 
-function getToken(request) {
+function readAccessToken(request) {
     const authorization = request.get("authorization") || "";
     if (!authorization.startsWith("Bearer ")) return null;
-    return authorization.slice(7);
+    return authorization.slice("Bearer ".length).trim() || null;
 }
 
 async function authenticate(request, response, next) {
-    const token = getToken(request);
-    if (!token) return response.status(401).json({ error: "Authentication is required." });
+    const accessToken = readAccessToken(request);
+    if (!accessToken) return response.status(401).json({ error: "Authentication is required." });
 
     try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(payload.sub).select("+sessionVersion");
-        if (!user || user.sessionVersion !== payload.sessionVersion) {
-            return response.status(401).json({ error: "Your session is no longer valid." });
+        const { data, error } = await getAuthClient().auth.getUser(accessToken);
+        if (error || !data.user) {
+            return response.status(401).json({ error: "Your Supabase session is invalid or expired." });
         }
-        request.user = user;
+        request.user = data.user;
+        request.accessToken = accessToken;
         next();
     } catch (error) {
-        if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
-            return response.status(401).json({ error: "Your session is invalid or expired." });
-        }
         next(error);
     }
 }
 
 async function optionalAuthenticate(request, response, next) {
-    if (!getToken(request)) return next();
+    if (!readAccessToken(request)) return next();
     return authenticate(request, response, next);
 }
 
-function requireStaff(request, response, next) {
-    if (!request.user || request.user.role !== "staff") {
-        return response.status(403).json({ error: "Staff access is required." });
+async function requireStaff(request, response, next) {
+    if (!request.user) return response.status(401).json({ error: "Authentication is required." });
+
+    try {
+        const { data, error } = await getAdminClient()
+            .from("profiles")
+            .select("role")
+            .eq("id", request.user.id)
+            .maybeSingle();
+        if (error) throw error;
+        if (!data || data.role !== "staff") {
+            return response.status(403).json({ error: "Staff access is required." });
+        }
+        next();
+    } catch (error) {
+        next(error);
     }
-    next();
 }
 
 module.exports = { authenticate, optionalAuthenticate, requireStaff };

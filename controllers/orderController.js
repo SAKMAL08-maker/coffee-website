@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const Order = require("../models/Order");
+const { getAdminClient } = require("../config/supabase");
 const {
     normalizeConfiguration,
     classifyDrink,
@@ -42,8 +42,7 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = 15) {
         if (!item || typeof item !== "object" || Array.isArray(item)) {
             throw badRequest(`items[${index}] must be an object.`);
         }
-        const allowedKeys = ["name", "configuration"];
-        if (Object.keys(item).some((key) => !allowedKeys.includes(key))) {
+        if (Object.keys(item).some((key) => !["name", "configuration"].includes(key))) {
             throw badRequest(`items[${index}] contains an unsupported field.`);
         }
         const configuration = normalizeConfiguration(item.configuration);
@@ -55,11 +54,11 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = 15) {
             configuration,
             classification: classifyDrink(configuration),
             nutrition: calculateNutrition(configuration),
-            priceCents: calculateDrinkPriceCents(configuration)
+            price_cents: calculateDrinkPriceCents(configuration)
         };
     });
 
-    const subtotalCents = lineItems.reduce((total, item) => total + item.priceCents, 0);
+    const subtotalCents = lineItems.reduce((total, item) => total + item.price_cents, 0);
     const deliveryFeeCents = fulfillmentMethod === "delivery" ? DELIVERY_FEE_CENTS : 0;
     const serviceFeeCents = roundBasisPoints(subtotalCents, SERVICE_FEE_BASIS_POINTS);
     const taxCents = roundBasisPoints(subtotalCents, TAX_BASIS_POINTS);
@@ -68,13 +67,13 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = 15) {
     return {
         lineItems,
         pricing: {
-            subtotalCents,
-            deliveryFeeCents,
-            serviceFeeCents,
-            taxCents,
-            tipPercent,
-            tipCents,
-            totalCents: subtotalCents + deliveryFeeCents + serviceFeeCents + taxCents + tipCents
+            subtotal_cents: subtotalCents,
+            delivery_fee_cents: deliveryFeeCents,
+            service_fee_cents: serviceFeeCents,
+            tax_cents: taxCents,
+            tip_percent: tipPercent,
+            tip_cents: tipCents,
+            total_cents: subtotalCents + deliveryFeeCents + serviceFeeCents + taxCents + tipCents
         }
     };
 }
@@ -94,11 +93,12 @@ function validateCoordinates(coordinates) {
 
 async function checkout(request, response, next) {
     try {
+        const allowedKeys = [
+            "items", "fulfillmentMethod", "deliveryAddress", "deliveryCoordinates",
+            "tipPercent", "customer", "notes"
+        ];
         if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)
-            || Object.keys(request.body).some((key) => ![
-                "items", "fulfillmentMethod", "deliveryAddress", "deliveryCoordinates",
-                "tipPercent", "customer", "notes"
-            ].includes(key))) {
+            || Object.keys(request.body).some((key) => !allowedKeys.includes(key))) {
             throw badRequest("Checkout request contains an unsupported field.");
         }
         const {
@@ -117,46 +117,56 @@ async function checkout(request, response, next) {
             || typeof customer.phone !== "string" || !customer.phone.trim() || customer.phone.trim().length > 32) {
             throw badRequest("Customer name and phone are required.");
         }
-        if (customer.email !== undefined && (typeof customer.email !== "string" || customer.email.length > 254)) {
+        if (customer.email !== undefined && (typeof customer.email !== "string" || customer.email.length > 254
+            || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email))) {
             throw badRequest("customer.email must be a valid email address.");
         }
-        if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) {
-            throw badRequest("customer.email must be a valid email address.");
-        }
-        if (fulfillmentMethod === "delivery" && (typeof deliveryAddress !== "string" || !deliveryAddress.trim() || deliveryAddress.trim().length > 300)) {
+        if (fulfillmentMethod === "delivery" && (typeof deliveryAddress !== "string"
+            || !deliveryAddress.trim() || deliveryAddress.trim().length > 300)) {
             throw badRequest("A delivery address of 300 characters or fewer is required for delivery.");
+        }
+        if (fulfillmentMethod === "pickup" && deliveryAddress !== undefined) {
+            throw badRequest("Pickup orders must not include a delivery address.");
         }
         if (notes !== undefined && (typeof notes !== "string" || notes.length > 500)) {
             throw badRequest("notes must be 500 characters or fewer.");
         }
 
         const coordinates = validateCoordinates(deliveryCoordinates);
+        if (fulfillmentMethod !== "delivery" && coordinates) {
+            throw badRequest("Delivery coordinates can only be provided for delivery orders.");
+        }
         const { lineItems, pricing } = calculateOrderPricing(items, fulfillmentMethod, tipPercent);
-        const order = await Order.create({
-            trackingCode: crypto.randomBytes(16).toString("hex"),
-            userId: request.user?.id,
-            customer: {
-                name: customer.name.trim(),
-                phone: customer.phone.trim(),
-                ...(customer.email ? { email: customer.email.trim().toLowerCase() } : {})
+        const trackingCode = crypto.randomBytes(24).toString("hex");
+        const supabase = getAdminClient();
+        const { data: orderId, error } = await supabase.rpc("create_coffee_order", {
+            order_data: {
+                tracking_code: trackingCode,
+                user_id: request.user?.id || null,
+                customer: {
+                    name: customer.name.trim(),
+                    phone: customer.phone.trim(),
+                    ...(customer.email ? { email: customer.email.trim().toLowerCase() } : {})
+                },
+                fulfillment_method: fulfillmentMethod,
+                ...(fulfillmentMethod === "delivery" ? { delivery_address: deliveryAddress.trim() } : {}),
+                ...(coordinates ? { delivery_coordinates: coordinates } : {}),
+                ...(notes ? { notes: notes.trim() } : {}),
+                pricing
             },
-            items: lineItems,
-            fulfillmentMethod,
-            ...(fulfillmentMethod === "delivery" ? { deliveryAddress: deliveryAddress.trim() } : {}),
-            ...(coordinates ? { deliveryCoordinates: coordinates } : {}),
-            ...(notes ? { notes: notes.trim() } : {}),
-            pricing
+            item_data: lineItems
         });
+        if (error) throw error;
 
         response.status(201).json({
             order: {
-                id: order.id,
-                trackingCode: order.trackingCode,
-                status: order.status,
-                fulfillmentMethod: order.fulfillmentMethod,
-                itemCount: order.items.length,
-                pricing: order.pricing,
-                createdAt: order.createdAt
+                id: orderId,
+                trackingCode,
+                status: "Received",
+                fulfillmentMethod,
+                itemCount: lineItems.length,
+                pricing,
+                createdAt: new Date().toISOString()
             }
         });
     } catch (error) {
@@ -166,10 +176,29 @@ async function checkout(request, response, next) {
 
 async function trackOrder(request, response, next) {
     try {
-        const order = await Order.findOne({ trackingCode: request.params.trackingCode })
-            .select("trackingCode status fulfillmentMethod items.name createdAt updatedAt");
+        const supabase = getAdminClient();
+        const { data: order, error } = await supabase
+            .from("orders")
+            .select("id, tracking_code, status, fulfillment_method, pricing, created_at, updated_at")
+            .eq("tracking_code", request.params.trackingCode)
+            .maybeSingle();
+        if (error) throw error;
         if (!order) return response.status(404).json({ error: "Order not found." });
-        response.json({ order });
+
+        const { data: items, error: itemError } = await supabase
+            .from("order_items")
+            .select("id, name, classification, price_cents")
+            .eq("order_id", order.id);
+        if (itemError) throw itemError;
+        response.json({
+            order: {
+                ...order,
+                trackingCode: order.tracking_code,
+                fulfillmentMethod: order.fulfillment_method,
+                itemCount: items.length,
+                items
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -177,20 +206,34 @@ async function trackOrder(request, response, next) {
 
 async function advanceOrderStatus(request, response, next) {
     try {
-        const status = request.body?.status;
-        const nextStatus = ORDER_STATUSES[ORDER_STATUSES.indexOf(status)];
-        if (!nextStatus) return response.status(400).json({ error: "Unsupported order status." });
-
-        const order = await Order.findById(request.params.orderId);
-        if (!order) return response.status(404).json({ error: "Order not found." });
-        const currentIndex = ORDER_STATUSES.indexOf(order.status);
-        if (ORDER_STATUSES.indexOf(nextStatus) !== currentIndex + 1) {
+        if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)
+            || Object.keys(request.body).some((key) => key !== "status")) {
+            throw badRequest("Request must contain only the next status.");
+        }
+        const { status } = request.body;
+        const statusIndex = ORDER_STATUSES.indexOf(status);
+        if (statusIndex < 0) throw badRequest("Unsupported order status.");
+        const supabase = getAdminClient();
+        const { data: currentOrder, error: readError } = await supabase
+            .from("orders")
+            .select("id, status, tracking_code")
+            .eq("id", request.params.orderId)
+            .maybeSingle();
+        if (readError) throw readError;
+        if (!currentOrder) return response.status(404).json({ error: "Order not found." });
+        if (statusIndex !== ORDER_STATUSES.indexOf(currentOrder.status) + 1) {
             return response.status(409).json({ error: "Order status can only advance one stage at a time." });
         }
-
-        order.status = nextStatus;
-        await order.save();
-        response.json({ order: { id: order.id, trackingCode: order.trackingCode, status: order.status } });
+        const { data, error } = await supabase
+            .from("orders")
+            .update({ status, updated_at: new Date().toISOString() })
+            .eq("id", currentOrder.id)
+            .eq("status", currentOrder.status)
+            .select("id, tracking_code, status")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(409).json({ error: "Order status changed; reload and try again." });
+        response.json({ order: { id: data.id, trackingCode: data.tracking_code, status: data.status } });
     } catch (error) {
         next(error);
     }
@@ -198,11 +241,20 @@ async function advanceOrderStatus(request, response, next) {
 
 async function listMyOrders(request, response, next) {
     try {
-        const orders = await Order.find({ userId: request.user.id })
-            .select("trackingCode status fulfillmentMethod items.name pricing createdAt updatedAt")
-            .sort({ createdAt: -1 })
+        const { data, error } = await getAdminClient()
+            .from("orders")
+            .select("id, tracking_code, status, fulfillment_method, pricing, created_at, updated_at")
+            .eq("user_id", request.user.id)
+            .order("created_at", { ascending: false })
             .limit(50);
-        response.json({ orders });
+        if (error) throw error;
+        response.json({
+            orders: data.map((order) => ({
+                ...order,
+                trackingCode: order.tracking_code,
+                fulfillmentMethod: order.fulfillment_method
+            }))
+        });
     } catch (error) {
         next(error);
     }

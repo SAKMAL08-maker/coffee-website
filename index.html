@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f7f3ed">
     <title>Bean &amp; Bloom — Coffee Customizer</title>
+    <script>
+        (() => {
+            try {
+                const savedTheme = localStorage.getItem("bean-bloom-theme");
+                const theme = savedTheme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+                document.documentElement.dataset.theme = theme;
+            } catch {
+                document.documentElement.dataset.theme = "light";
+            }
+        })();
+    </script>
     <style>
         :root {
             color-scheme: light;
@@ -22,10 +33,24 @@
             --green: #596b4c;
             --shadow: 0 18px 50px rgb(65 49 34 / 8%);
         }
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            color: #f1ece4;
+            background: #171512;
+            --ink: #f1ece4;
+            --muted: #b4aa9e;
+            --line: #403a33;
+            --paper: #24211d;
+            --cream: #171512;
+            --coffee: #c89b76;
+            --accent: #e09a6c;
+            --green: #a2bb8d;
+            --shadow: 0 18px 50px rgb(0 0 0 / 24%);
+        }
 
         * { box-sizing: border-box; }
         [hidden] { display: none !important; }
-        body { min-width: 320px; margin: 0; }
+        body { min-width: 320px; margin: 0; background: var(--cream); color: var(--ink); }
         button, input, select { font: inherit; }
         button { color: inherit; }
         button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
@@ -215,6 +240,52 @@
         .tracking-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
+        :root[data-theme="dark"] .button:hover { background: #38322b; }
+        :root[data-theme="dark"] .button-primary { border-color: #8c6549; background: #79563f; color: #fffaf3; }
+        :root[data-theme="dark"] .button-primary:hover { background: #906b50; }
+        :root[data-theme="dark"] .brand-mark,
+        :root[data-theme="dark"] .metric,
+        :root[data-theme="dark"] .checkout-summary { background: #302a24; }
+        :root[data-theme="dark"] .fulfillment-bar { background: rgb(36 33 29 / 96%); }
+        :root[data-theme="dark"] .fulfillment-options { background: #302a24; }
+        :root[data-theme="dark"] .fulfillment-option[aria-pressed="true"] { background: #79563f; color: #fffaf3; }
+        :root[data-theme="dark"] .address-input,
+        :root[data-theme="dark"] .classic-select,
+        :root[data-theme="dark"] .segment,
+        :root[data-theme="dark"] .chip,
+        :root[data-theme="dark"] .option-card,
+        :root[data-theme="dark"] .step-button,
+        :root[data-theme="dark"] .tip-button,
+        :root[data-theme="dark"] .custom-tip,
+        :root[data-theme="dark"] .dialog-content input {
+            border-color: var(--line);
+            background: #302c27;
+            color: var(--ink);
+        }
+        :root[data-theme="dark"] .segment[aria-pressed="true"],
+        :root[data-theme="dark"] .chip[aria-pressed="true"],
+        :root[data-theme="dark"] .option-card[aria-pressed="true"] {
+            border-color: #b58b69;
+            background: #43362b;
+            color: #f1d7bd;
+            box-shadow: inset 0 0 0 1px #b58b69;
+        }
+        :root[data-theme="dark"] .tip-button[aria-pressed="true"] { background: #303b2c; color: #c8dfb2; }
+        :root[data-theme="dark"] .field-help,
+        :root[data-theme="dark"] .price-row { color: var(--muted); }
+        :root[data-theme="dark"] .stepper-row,
+        :root[data-theme="dark"] .legend td { border-color: #39342e; }
+        :root[data-theme="dark"] .toggle-row,
+        :root[data-theme="dark"] .driver-card { border-color: var(--line); background: #2a2621; }
+        :root[data-theme="dark"] .classification { background: #43362b; color: #f1d7bd; }
+        :root[data-theme="dark"] .cart-drawer { border-color: var(--line); }
+        :root[data-theme="dark"] .step-icon { border-color: var(--line); background: #302c27; }
+        :root[data-theme="dark"] .tracking-step.complete .step-icon,
+        :root[data-theme="dark"] .tracking-step.current .step-icon { background: #596b4c; }
+        :root[data-theme="dark"] .tracking-step.current .step-icon { box-shadow: 0 0 0 5px #313b2a; }
+        :root[data-theme="dark"] .tracking-step.complete:not(:last-child)::after { background: #849a70; }
+        :root[data-theme="dark"] .delivery-button { color: var(--ink); }
+
         @media (max-width: 920px) {
             .shell { padding-right: 22px; padding-left: 22px; }
             .fulfillment-bar { margin-right: -22px; margin-left: -22px; padding-right: 22px; padding-left: 22px; }
@@ -276,6 +347,7 @@
             <a class="brand" href="#" aria-label="Bean and Bloom home"><span class="brand-mark" aria-hidden="true">☕</span><span>bean &amp; bloom</span></a>
             <div class="top-actions">
                 <div class="unit-control"><span id="unit-label">Metric</span><button class="switch" id="unit-toggle" type="button" role="switch" aria-checked="true" aria-label="Switch units"></button></div>
+                <button class="button button-small" id="theme-toggle" type="button" aria-pressed="false" aria-label="Enable dark mode"><span id="theme-icon" aria-hidden="true">☾</span><span id="theme-label">Dark</span></button>
                 <button class="button button-quiet" id="surprise-button" type="button">✦ Surprise me</button>
             </div>
         </header>
@@ -523,7 +595,7 @@
             </section>
             <section class="tracking-card" aria-label="Tracking controls">
                 <div class="tracking-actions">
-                    <button class="button button-primary" id="advance-order-button" type="button">Update demo status</button>
+                    <button class="button button-primary" id="refresh-order-button" type="button">Refresh order status</button>
                     <button class="button" id="back-to-customizer-button" type="button">Back to coffee lab</button>
                 </div>
             </section>
@@ -613,6 +685,7 @@
                 sweeteners: [],
                 toppings: { cinnamon: false, whippedCream: false, cocoa: false },
                 metric: true,
+                darkMode: document.documentElement.dataset.theme === "dark",
                 cartItems: [],
                 deliveryAddress: "",
                 fulfillmentMethod: "delivery",
@@ -622,6 +695,7 @@
             };
             let editingCartItemId = null;
             let drawerReturnFocus = null;
+            let trackingPollTimer = null;
             const $ = (selector) => document.querySelector(selector);
             const $$ = (selector) => [...document.querySelectorAll(selector)];
             const elements = {
@@ -794,6 +868,11 @@
                 $("#ice-field").hidden = state.temperature === "hot";
                 $("#unit-toggle").setAttribute("aria-checked", String(state.metric));
                 $("#unit-label").textContent = state.metric ? "Metric" : "Imperial";
+                $("#theme-toggle").setAttribute("aria-pressed", String(state.darkMode));
+                $("#theme-toggle").setAttribute("aria-label", state.darkMode ? "Enable light mode" : "Enable dark mode");
+                $("#theme-icon").textContent = state.darkMode ? "☀" : "☾";
+                $("#theme-label").textContent = state.darkMode ? "Light" : "Dark";
+                document.querySelector('meta[name="theme-color"]').content = state.darkMode ? "#171512" : "#f7f3ed";
                 $("#delivery-option").setAttribute("aria-pressed", String(state.fulfillmentMethod === "delivery"));
                 $("#pickup-option").setAttribute("aria-pressed", String(state.fulfillmentMethod === "pickup"));
                 $("#delivery-address-wrap").hidden = state.fulfillmentMethod !== "delivery";
@@ -978,8 +1057,8 @@
                     : ["Your order is confirmed and in the queue.", "Your barista is crafting your coffee.", "Your delivery partner is heading your way.", "Your coffee has arrived. Enjoy!"];
                 $("#tracking-status-message").textContent = messages[order.stage];
                 $("#driver-section").hidden = order.fulfillmentMethod === "pickup";
-                $("#advance-order-button").hidden = order.stage >= 3;
-                $("#advance-order-button").textContent = order.stage === 2 ? "Mark as arrived (demo)" : "Update demo status";
+                $("#refresh-order-button").hidden = order.stage >= 3;
+                $("#tracking-order-number").setAttribute("title", `Tracking code: ${order.trackingCode}`);
             }
 
             function showTracking() {
@@ -987,6 +1066,28 @@
                 $("#tracking-page").hidden = false;
                 renderTracking();
                 $("#tracking-title").focus();
+                window.clearInterval(trackingPollTimer);
+                if (state.orderStatus && state.orderStatus.stage < 3) {
+                    refreshTrackingStatus();
+                    trackingPollTimer = window.setInterval(refreshTrackingStatus, 20000);
+                }
+            }
+
+            async function refreshTrackingStatus() {
+                if (!state.orderStatus?.trackingCode) return;
+                try {
+                    const response = await fetch(`/api/orders/track/${encodeURIComponent(state.orderStatus.trackingCode)}`);
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || `Tracking request failed (${response.status}).`);
+                    const statusStages = ["Received", "Crafting", "Out for Delivery", "Arrived"];
+                    const stage = statusStages.indexOf(result.order.status);
+                    if (stage < 0) throw new Error("The server returned an unknown order status.");
+                    state.orderStatus.stage = stage;
+                    renderTracking();
+                    if (stage >= 3) window.clearInterval(trackingPollTimer);
+                } catch (error) {
+                    $("#tracking-status-message").textContent = `Could not refresh order status: ${error.message}`;
+                }
             }
 
             function applyRecipe(recipe) {
@@ -1220,6 +1321,16 @@
                 render();
             }));
             $("#unit-toggle").addEventListener("click", () => { state.metric = !state.metric; render(); });
+            $("#theme-toggle").addEventListener("click", () => {
+                state.darkMode = !state.darkMode;
+                document.documentElement.dataset.theme = state.darkMode ? "dark" : "light";
+                try {
+                    localStorage.setItem("bean-bloom-theme", state.darkMode ? "dark" : "light");
+                } catch (error) {
+                    setNotice(`Could not save your theme preference: ${error.message}`);
+                }
+                render();
+            });
             $("#delivery-option").addEventListener("click", () => {
                 state.fulfillmentMethod = "delivery";
                 render();
@@ -1262,7 +1373,7 @@
             $("#checkout-button").addEventListener("click", openCheckout);
             $("#checkout-fab").addEventListener("click", openCheckout);
             $("#cancel-checkout").addEventListener("click", () => $("#checkout-dialog").close());
-            $("#checkout-form").addEventListener("submit", (event) => {
+            $("#checkout-form").addEventListener("submit", async (event) => {
                 event.preventDefault();
                 if (!state.cartItems.length) return;
                 if (state.fulfillmentMethod === "delivery") {
@@ -1275,34 +1386,57 @@
                     }
                     address.setCustomValidity("");
                 }
-                const subtotal = getCartSubtotal();
-                const pricing = getPricing(subtotal);
-                state.orderStatus = {
-                    number: `BB-${String(Date.now()).slice(-6)}`,
-                    stage: 0,
-                    fulfillmentMethod: state.fulfillmentMethod,
-                    deliveryAddress: state.deliveryAddress,
-                    itemCount: state.cartItems.length,
-                    items: JSON.parse(JSON.stringify(state.cartItems)),
-                    total: pricing.total,
-                    customerName: $("#customer-name").value.trim(),
-                    customerPhone: $("#customer-phone").value.trim()
-                };
-                state.cartItems = [];
-                editingCartItemId = null;
-                $("#checkout-dialog").close();
-                render();
-                showTracking();
+                const submitButton = $("#checkout-form button[type='submit']");
+                submitButton.disabled = true;
+                submitButton.textContent = "Placing order…";
+                try {
+                    const response = await fetch("/api/orders/checkout", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            items: state.cartItems.map((item) => ({
+                                name: item.name,
+                                configuration: item.state
+                            })),
+                            fulfillmentMethod: state.fulfillmentMethod,
+                            ...(state.fulfillmentMethod === "delivery" ? { deliveryAddress: state.deliveryAddress } : {}),
+                            tipPercent: state.tipPercent === "custom" ? state.customTipPercent : state.tipPercent,
+                            customer: {
+                                name: $("#customer-name").value.trim(),
+                                phone: $("#customer-phone").value.trim()
+                            }
+                        })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.error || `Order request failed (${response.status}).`);
+                    if (!result.order?.trackingCode) throw new Error("The server did not return an order tracking code.");
+                    state.orderStatus = {
+                        number: `BB-${result.order.trackingCode.slice(-6).toUpperCase()}`,
+                        trackingCode: result.order.trackingCode,
+                        id: result.order.id,
+                        stage: 0,
+                        fulfillmentMethod: result.order.fulfillmentMethod,
+                        deliveryAddress: state.deliveryAddress,
+                        itemCount: result.order.itemCount
+                    };
+                    state.cartItems = [];
+                    editingCartItemId = null;
+                    $("#checkout-dialog").close();
+                    render();
+                    showTracking();
+                } catch (error) {
+                    setNotice(`Could not place your order: ${error.message}`);
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = "Place order";
+                }
             });
-            $("#advance-order-button").addEventListener("click", () => {
-                if (!state.orderStatus || state.orderStatus.stage >= 3) return;
-                state.orderStatus.stage += 1;
-                renderTracking();
-            });
+            $("#refresh-order-button").addEventListener("click", refreshTrackingStatus);
             $("#driver-contact").addEventListener("click", () => {
                 $("#tracking-status-message").textContent = "Driver contact is not connected in this demo.";
             });
             $("#back-to-customizer-button").addEventListener("click", () => {
+                window.clearInterval(trackingPollTimer);
                 $("#tracking-page").hidden = true;
                 $("#customizer-page").hidden = false;
                 $("#page-title").focus();

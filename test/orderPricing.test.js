@@ -22,15 +22,15 @@ const standardEspresso = {
 test("calculates delivery checkout totals in integer cents", () => {
     const result = calculateOrderPricing([standardEspresso], "delivery", 15);
     assert.deepEqual(result.pricing, {
-        subtotalCents: 450,
-        deliveryFeeCents: 249,
-        serviceFeeCents: 36,
-        taxCents: 37,
-        tipPercent: 15,
-        tipCents: 68,
-        totalCents: 840
+        subtotal_cents: 450,
+        delivery_fee_cents: 249,
+        service_fee_cents: 36,
+        tax_cents: 37,
+        tip_percent: 15,
+        tip_cents: 68,
+        total_cents: 840
     });
-    assert.equal(result.lineItems[0].priceCents, 450);
+    assert.equal(result.lineItems[0].price_cents, 450);
     assert.equal(result.lineItems[0].classification, "Latte");
     assert.equal(typeof result.lineItems[0].nutrition.caffeineMg, "number");
 });
@@ -46,10 +46,10 @@ test("adds premium modifiers and omits delivery fee for pickup", () => {
         }
     };
     const result = calculateOrderPricing([premiumDrink], "pickup", 0);
-    assert.equal(result.lineItems[0].priceCents, 720);
-    assert.equal(result.pricing.deliveryFeeCents, 0);
-    assert.equal(result.pricing.tipCents, 0);
-    assert.equal(result.pricing.totalCents, 837);
+    assert.equal(result.lineItems[0].price_cents, 720);
+    assert.equal(result.pricing.delivery_fee_cents, 0);
+    assert.equal(result.pricing.tip_cents, 0);
+    assert.equal(result.pricing.total_cents, 837);
 });
 
 test("rejects unsupported client-supplied price fields", () => {
