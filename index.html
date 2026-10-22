@@ -3,586 +3,874 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coffee Lab</title>
+    <meta name="theme-color" content="#f7f3ed">
+    <title>Bean &amp; Bloom — Coffee Customizer</title>
     <style>
         :root {
             color-scheme: light;
-            font-family: Arial, sans-serif;
-            color: #391e10;
-            background: #c7a07a;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #28241f;
+            background: #f7f3ed;
+            font-synthesis: none;
+            --ink: #28241f;
+            --muted: #777168;
+            --line: #e8e1d7;
+            --paper: #fffefa;
+            --cream: #f7f3ed;
+            --coffee: #553724;
+            --accent: #bf7047;
+            --green: #596b4c;
+            --shadow: 0 18px 50px rgb(65 49 34 / 8%);
         }
 
-        * {
-            box-sizing: border-box;
-        }
-
-        [hidden] {
-            display: none !important;
-        }
-
-        body {
-            min-width: 320px;
-            min-height: 100vh;
-            margin: 0;
-            padding: 32px 20px;
-            display: grid;
-            place-items: center;
-            background: #c7a07a;
-        }
-
-        .app {
-            width: min(100%, 900px);
-            text-align: center;
-        }
-
-        h1 {
-            margin: 0 0 28px;
-            color: #391e10;
-            font-size: clamp(1.6rem, 4vw, 2.2rem);
-        }
-
-        .station {
-            position: relative;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            align-items: center;
-            justify-items: center;
-            gap: 24px;
-        }
-
-        .side-actions {
-            position: absolute;
-            top: 50%;
-            left: calc(50% - 107px);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            transform: translate(-100%, -50%);
-        }
-
-        .action-button {
-            width: 54px;
-            height: 54px;
-            display: grid;
-            place-items: center;
-            border: 2px solid #391e10;
-            border-radius: 14px;
-            background: #ead8c5;
-            color: #391e10;
-            font-size: 1.65rem;
-            cursor: pointer;
-            transition: background-color 150ms ease, transform 150ms ease;
-        }
-
-        .action-button:not(:disabled):hover {
-            background: #f5e9dc;
-            transform: translateY(-2px);
-        }
-
-        .action-button:focus-visible,
-        .choice-button:focus-visible,
-        select:focus-visible,
-        input:focus-visible {
-            outline: 3px solid #fff;
+        * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
+        body { min-width: 320px; margin: 0; }
+        button, input, select { font: inherit; }
+        button { color: inherit; }
+        button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+            outline: 3px solid #c57d52;
             outline-offset: 3px;
         }
 
-        .action-button:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
+        .shell { width: min(1400px, 100%); margin: 0 auto; padding: 0 34px 34px; }
+        .topbar {
+            min-height: 82px; display: flex; align-items: center; justify-content: space-between;
+            gap: 20px; border-bottom: 1px solid var(--line);
         }
-
-        .selection-panel {
-            width: 100%;
-            min-height: 76px;
-            grid-column: 1 / -1;
-            display: grid;
-            align-content: center;
-            justify-items: center;
-            gap: 12px;
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.04em; }
+        .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 12px; background: #efe4d5; }
+        .brand span:last-child { font-size: 1.12rem; }
+        .top-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+        .unit-control { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; color: var(--muted); font-size: .84rem; }
+        .switch { position: relative; width: 42px; height: 24px; border: 0; border-radius: 20px; background: #d8d0c6; cursor: pointer; }
+        .switch::after { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; content: ""; transition: transform .18s ease; }
+        .switch[aria-checked="true"] { background: var(--green); }
+        .switch[aria-checked="true"]::after { transform: translateX(18px); }
+        .button {
+            min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 9px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper);
+            font-size: .88rem; font-weight: 700; cursor: pointer; transition: transform .16s ease, background .16s ease;
         }
-
-        .selection-panel label {
-            font-weight: 700;
+        .button:hover { transform: translateY(-1px); background: #f4eee5; }
+        .button-primary { border-color: var(--coffee); background: var(--coffee); color: white; }
+        .button-primary:hover { background: #704b32; }
+        .button-quiet { border-color: transparent; background: transparent; }
+        .button-small { min-height: 34px; padding: 6px 10px; }
+        .intro { padding: 32px 0 24px; }
+        .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: .73rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+        h1 { margin: 0; font-size: clamp(1.8rem, 3.5vw, 2.7rem); letter-spacing: -.055em; }
+        .intro-copy { margin: 8px 0 0; color: var(--muted); font-size: .98rem; }
+        .layout { display: grid; grid-template-columns: minmax(0, 1.04fr) minmax(430px, .96fr); gap: 24px; align-items: start; }
+        .visual-column { position: sticky; top: 18px; display: grid; gap: 16px; }
+        .canvas-card, .stats-card, .controls-card { border: 1px solid var(--line); border-radius: 20px; background: var(--paper); box-shadow: var(--shadow); }
+        .canvas-card { min-height: 540px; display: grid; align-content: start; justify-items: center; padding: 28px 24px 22px; overflow: hidden; }
+        .drink-heading { display: flex; width: 100%; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .drink-heading h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.025em; }
+        .drink-heading p { margin: 5px 0 0; color: var(--muted); font-size: .84rem; }
+        .classification { max-width: 48%; padding: 7px 10px; border-radius: 20px; background: #f2e8dc; color: var(--coffee); font-size: .76rem; font-weight: 800; text-align: center; }
+        .cup-stage { position: relative; width: 100%; height: 350px; display: grid; place-items: center; margin-top: 10px; }
+        .cup-shadow { position: absolute; bottom: 22px; width: 190px; height: 22px; border-radius: 50%; background: rgb(62 44 28 / 12%); filter: blur(8px); }
+        .cup { position: relative; width: 172px; height: 258px; filter: drop-shadow(0 13px 8px rgb(62 44 28 / 12%)); }
+        .cup-handle { position: absolute; top: 57px; right: -43px; width: 64px; height: 104px; border: 12px solid rgb(242 238 229 / 92%); border-left-width: 8px; border-radius: 0 38px 38px 0; box-shadow: 2px 1px 0 #c8beb1; }
+        .cup-glass { position: absolute; inset: 0; z-index: 1; overflow: hidden; border: 7px solid #d4c9b9; border-top-width: 9px; border-radius: 15px 15px 36px 36px; background: linear-gradient(105deg, rgb(255 255 255 / 54%), rgb(255 255 255 / 5%) 28%, rgb(255 255 255 / 35%) 68%, rgb(255 255 255 / 8%)); clip-path: polygon(0 0, 100% 0, 91% 100%, 9% 100%); }
+        .liquid { position: absolute; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column-reverse; overflow: hidden; height: 0; transition: height .42s cubic-bezier(.2,.7,.2,1); }
+        .layer { width: 100%; height: 0; flex: 0 0 auto; transition: height .42s ease, flex-basis .42s ease; }
+        .layer-espresso { background: #3b2314; }
+        .layer-milk { background: #fdfbf7; }
+        .layer-foam { position: relative; background-color: #fff; background-image: radial-gradient(circle at 12px 9px, rgb(198 186 169 / 35%) 1px, transparent 2px), radial-gradient(circle at 5px 18px, rgb(198 186 169 / 26%) 1px, transparent 2px); background-size: 22px 22px, 16px 16px; }
+        .layer-syrup { background: #c68a4c; }
+        .layer-matcha { background: #819263; }
+        .layer-drip { background: #70472e; }
+        .layer-ice { position: absolute; inset: 5px 8px auto; display: flex; justify-content: center; gap: 5px; }
+        .ice-cube { width: 30px; height: 30px; border: 1px solid rgb(255 255 255 / 80%); border-radius: 7px; background: rgb(220 241 246 / 64%); box-shadow: inset 0 0 8px rgb(255 255 255 / 90%); transform: rotate(-8deg); }
+        .cup-gloss { position: absolute; z-index: 2; top: 18px; bottom: 17px; left: 20px; width: 15px; border-radius: 50%; background: linear-gradient(90deg, rgb(255 255 255 / 54%), rgb(255 255 255 / 3%)); pointer-events: none; }
+        .cup-capacity { position: absolute; bottom: -6px; z-index: 3; color: #6f6254; font-size: .78rem; font-weight: 700; }
+        .cup-caption { margin: 0; color: var(--muted); font-size: .82rem; }
+        .stats-card { padding: 19px 20px; }
+        .stats-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+        .stats-header h2 { margin: 0; font-size: 1rem; }
+        .live-label { color: var(--green); font-size: .74rem; font-weight: 800; }
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .metric { min-width: 0; padding: 12px; border-radius: 12px; background: #f8f4ee; }
+        .metric-label { display: block; color: var(--muted); font-size: .73rem; }
+        .metric-value { display: block; margin-top: 5px; font-size: 1.17rem; font-weight: 800; letter-spacing: -.04em; }
+        .legend { width: 100%; margin-top: 18px; border-collapse: collapse; font-size: .82rem; text-align: left; }
+        .legend th { padding: 0 0 8px; color: var(--muted); font-size: .72rem; font-weight: 700; }
+        .legend td { padding: 8px 0; border-top: 1px solid #f0ece6; }
+        .legend td:last-child, .legend th:last-child { text-align: right; font-weight: 700; }
+        .legend-color { display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: var(--swatch); }
+        .controls-card { overflow: hidden; }
+        .controls-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+        .controls-top h2 { margin: 0; font-size: 1.03rem; }
+        .classic-select { max-width: 185px; min-height: 38px; padding: 7px 30px 7px 10px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--ink); font-size: .8rem; }
+        .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 10px 16px 0; }
+        .tab { padding: 11px 4px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: .8rem; font-weight: 750; cursor: pointer; }
+        .tab[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--coffee); }
+        .tab-panel { padding: 20px; }
+        .field { margin-bottom: 22px; }
+        .field:last-child { margin-bottom: 0; }
+        .field-label { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 10px; font-size: .85rem; font-weight: 800; }
+        .field-help { color: var(--muted); font-size: .75rem; font-weight: 500; }
+        .segmented, .chip-list, .card-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .segment, .chip, .option-card {
+            min-height: 38px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 9px;
+            background: white; color: #514b43; font-size: .8rem; font-weight: 700; cursor: pointer;
         }
-
-        select {
-            min-width: 180px;
-            padding: 10px 14px;
-            border: 2px solid #391e10;
-            border-radius: 8px;
-            background: #f5e9dc;
-            color: #391e10;
-            font: inherit;
+        .segment[aria-pressed="true"], .chip[aria-pressed="true"], .option-card[aria-pressed="true"] {
+            border-color: var(--coffee); background: #f2e9df; color: var(--coffee);
+            box-shadow: inset 0 0 0 1px var(--coffee);
         }
+        .volume-control { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; gap: 10px; }
+        .step-button { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 10px; background: white; font-size: 1.1rem; font-weight: 700; cursor: pointer; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); }
+        .range-readout { min-width: 58px; color: var(--coffee); font-size: .83rem; font-weight: 800; text-align: right; }
+        .range-sub { display: flex; justify-content: space-between; margin-top: 5px; color: var(--muted); font-size: .72rem; }
+        .foam-range { height: 10px; border-radius: 9px; background: radial-gradient(circle, #fff 0 2px, transparent 3px) 0 0 / 12px 12px, linear-gradient(90deg, #dfd6ca, #fff 70%); }
+        .option-card { min-width: calc(50% - 4px); flex: 1; text-align: left; }
+        .option-card span { display: block; }
+        .option-card small { display: block; margin-top: 3px; color: var(--muted); font-size: .7rem; font-weight: 500; }
+        .stepper-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #f0ece6; }
+        .stepper-row:first-of-type { border-top: 0; }
+        .stepper-name { font-size: .84rem; font-weight: 750; }
+        .stepper-controls { display: flex; align-items: center; gap: 10px; }
+        .stepper-controls .step-button { width: 32px; height: 32px; }
+        .stepper-value { min-width: 67px; color: var(--muted); font-size: .77rem; text-align: center; }
+        .toggle-list { display: grid; gap: 8px; }
+        .toggle-row { display: flex; min-height: 46px; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; font-size: .83rem; font-weight: 700; }
+        .toggle-row .switch { flex: 0 0 auto; }
+        .actions-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 18px; }
+        .footer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .notice { min-height: 1.2em; margin: 10px 0 0; color: var(--green); font-size: .8rem; }
+        dialog { width: min(420px, calc(100% - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--ink); box-shadow: 0 24px 90px rgb(33 26 18 / 30%); }
+        dialog::backdrop { background: rgb(40 36 31 / 42%); backdrop-filter: blur(3px); }
+        .dialog-content { padding: 24px; }
+        .dialog-content h2 { margin: 0 0 8px; font-size: 1.25rem; }
+        .dialog-content p { margin: 0 0 18px; color: var(--muted); font-size: .88rem; }
+        .dialog-content label { display: block; margin-bottom: 6px; font-size: .82rem; font-weight: 800; }
+        .dialog-content input { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px; }
+        .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+        .saved-recipes { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+        .saved-recipes h3 { margin: 0 0 8px; font-size: .85rem; }
+        .saved-recipe-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; font-size: .8rem; }
+        .recipe-link { border: 0; background: none; color: var(--coffee); font-weight: 700; cursor: pointer; text-align: left; }
+        .delete-recipe { border: 0; background: none; color: #8b5141; cursor: pointer; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-        .coffee-options {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 8px;
+        @media (max-width: 920px) {
+            .shell { padding-right: 22px; padding-left: 22px; }
+            .layout { grid-template-columns: minmax(0, 1fr) minmax(370px, .95fr); gap: 16px; }
+            .canvas-card { min-height: 500px; }
+            .cup-stage { height: 320px; }
         }
-
-        .choice-button {
-            padding: 10px 14px;
-            border: 2px solid #391e10;
-            border-radius: 8px;
-            background: #ead8c5;
-            color: #391e10;
-            font: inherit;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background-color 150ms ease, transform 150ms ease;
+        @media (max-width: 760px) {
+            .shell { padding: 0 16px 24px; }
+            .topbar { min-height: 70px; }
+            .intro { padding: 24px 0 18px; }
+            .layout { grid-template-columns: minmax(0, 1fr); }
+            .visual-column { position: static; grid-row: 1; }
+            .controls-card { grid-row: 2; }
+            .canvas-card { min-height: 450px; }
+            .cup-stage { height: 300px; }
         }
-
-        .choice-button:hover {
-            background: #f5e9dc;
-            transform: translateY(-2px);
+        @media (max-width: 520px) {
+            .topbar { align-items: flex-start; padding: 16px 0; }
+            .top-actions { gap: 5px; }
+            .top-actions .button { min-height: 34px; padding: 6px 9px; font-size: .75rem; }
+            .unit-control { padding: 5px 2px; font-size: .72rem; }
+            .intro-copy { font-size: .88rem; }
+            .canvas-card { min-height: 420px; padding: 20px 16px; }
+            .cup-stage { height: 278px; }
+            .cup { transform: scale(.88); }
+            .metrics { gap: 6px; }
+            .metric { padding: 10px 8px; }
+            .metric-value { font-size: 1rem; }
+            .metric-label { font-size: .67rem; }
+            .controls-top { padding: 15px; }
+            .classic-select { max-width: 150px; font-size: .74rem; }
+            .tabs { padding-right: 8px; padding-left: 8px; }
+            .tab-panel { padding: 17px 15px; }
+            .tab { font-size: .7rem; }
+            .actions-footer { align-items: flex-start; flex-direction: column; }
+            .footer-actions { width: 100%; }
+            .footer-actions .button { flex: 1; }
         }
-
-        .choice-button[aria-pressed="true"] {
-            background: #734128;
-            color: #fff;
-        }
-
-        .choice-button[aria-pressed="true"]:hover {
-            background: #8b644b;
-        }
-
-        .cup-display {
-            position: relative;
-            grid-column: 2;
-            grid-row: 2;
-            display: grid;
-            justify-items: center;
-            gap: 12px;
-        }
-
-        .delivery-panel {
-            width: 100%;
-            grid-column: 3;
-            grid-row: 2;
-            min-width: 0;
-            padding: 18px;
-            border: 2px solid #391e10;
-            border-radius: 12px;
-            background: #ead8c5;
-            text-align: left;
-        }
-
-        .delivery-panel h2 {
-            margin: 0 0 14px;
-            font-size: 1.2rem;
-        }
-
-        .delivery-panel label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 700;
-        }
-
-        .delivery-panel input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #391e10;
-            border-radius: 8px;
-            background: #f5e9dc;
-            color: #391e10;
-            font: inherit;
-        }
-
-        .delivery-button:focus-visible {
-            outline: 3px solid #fff;
-            outline-offset: 3px;
-        }
-
-        .delivery-button {
-            width: 100%;
-            margin-top: 12px;
-            padding: 10px 14px;
-            border: 2px solid #391e10;
-            border-radius: 8px;
-            background: #391e10;
-            color: #fff;
-            font: inherit;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background-color 150ms ease, transform 150ms ease;
-        }
-
-        .delivery-button:hover {
-            background: #734128;
-            transform: translateY(-2px);
-        }
-
-        .delivery-message {
-            margin: 0;
-            font-size: 1.15rem;
-            font-weight: 700;
-            animation: delivery-flash 900ms ease-in-out infinite alternate;
-        }
-
-        @keyframes delivery-flash {
-            from { opacity: 0.55; }
-            to { opacity: 1; }
-        }
-
-        .cup {
-            position: relative;
-            width: 190px;
-            height: 230px;
-            display: flex;
-            align-items: flex-end;
-            overflow: visible;
-        }
-
-        .cup-handle {
-            position: absolute;
-            z-index: 0;
-            top: 52px;
-            right: -38px;
-            width: 56px;
-            height: 88px;
-            border: 10px solid #391e10;
-            border-left-width: 8px;
-            border-radius: 0 28px 28px 0;
-        }
-
-        .cup-body {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            border: 8px solid #391e10;
-            border-radius: 14px 14px 44px 44px;
-            background: #f5e9dc;
-        }
-
-        .cup-fill {
-            position: absolute;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            height: 0;
-            border-radius: 38% 38% 0 0 / 10px 10px 0 0;
-            background: #391e10;
-            transition: height 350ms ease, background-color 200ms ease;
-        }
-
-        .cup-capacity {
-            min-height: 1.4em;
-            margin: 0;
-            font-weight: 700;
-        }
-
-        @media (max-width: 700px) {
-            body {
-                padding: 24px 16px;
-            }
-
-            .station {
-                gap: 18px;
-                grid-template-columns: minmax(0, 1fr);
-                padding: 0;
-            }
-
-            .selection-panel {
-                grid-column: 1;
-                grid-row: 1;
-            }
-
-            .cup-display {
-                grid-column: 1;
-                grid-row: 2;
-            }
-
-            .delivery-panel {
-                grid-column: 1;
-                grid-row: 3;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .side-actions {
-                left: calc(50% - 94px);
-            }
-
-            .action-button {
-                width: 46px;
-                height: 46px;
-                border-radius: 12px;
-            }
-
-            .cup {
-                width: 164px;
-                height: 204px;
-            }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
         }
     </style>
 </head>
 <body>
-    <main class="app">
-        <h1>Coffee Lab</h1>
-        <section class="station" aria-label="Coffee measurement station">
-            <div class="selection-panel" id="selection-panel">
-                <label id="selection-label" for="measurement">Choose a measurement</label>
-                <select id="measurement" name="measurement">
-                    <option value="">Select milliliters</option>
-                    <option value="15">15ml</option>
-                    <option value="25">25ml</option>
-                    <option value="30">30ml</option>
-                    <option value="50">50ml</option>
-                    <option value="60">60ml</option>
-                    <option value="90">90ml</option>
-                    <option value="120">120ml</option>
-                    <option value="150">150ml</option>
-                    <option value="180">180ml</option>
-                    <option value="240">240ml</option>
-                </select>
-                <div class="coffee-options" id="coffee-options" aria-live="polite"></div>
+    <div class="shell">
+        <header class="topbar">
+            <a class="brand" href="#" aria-label="Bean and Bloom home"><span class="brand-mark" aria-hidden="true">☕</span><span>bean &amp; bloom</span></a>
+            <div class="top-actions">
+                <div class="unit-control"><span id="unit-label">Metric</span><button class="switch" id="unit-toggle" type="button" role="switch" aria-checked="true" aria-label="Switch units"></button></div>
+                <button class="button button-quiet" id="surprise-button" type="button">✦ Surprise me</button>
             </div>
-            <form class="delivery-panel" id="delivery-panel" hidden>
-                <h2>Delivery address</h2>
-                <label for="delivery-address">Your address</label>
-                <input id="delivery-address" name="address" type="text" autocomplete="street-address" required>
-                <button class="delivery-button" type="submit">Deliver</button>
-            </form>
-            <section class="delivery-panel" id="delivery-confirmation" aria-live="assertive" hidden>
-                <p class="delivery-message">Delivering your Coffee</p>
-                <p id="order-status" role="status"></p>
-                <button class="delivery-button" id="continue-button" type="button">Continue</button>
-                <button class="delivery-button" id="start-over-button" type="button" hidden>Start a new order</button>
+        </header>
+
+        <main>
+            <section class="intro" aria-labelledby="page-title">
+                <p class="eyebrow">Your cup, your craft</p>
+                <h1 id="page-title">Make it yours.</h1>
+                <p class="intro-copy">Build a little coffee moment, exactly how you like it.</p>
             </section>
-            <div class="cup-display">
-                <nav class="side-actions" aria-label="Coffee controls">
-                    <button class="action-button" id="measurement-action" type="button" aria-label="Choose a measurement" title="Choose a measurement">📏</button>
-                    <button class="action-button" id="coffee-action" type="button" aria-label="Choose a coffee" title="Choose a coffee" disabled>☕</button>
-                    <button class="action-button" id="extras-action" type="button" aria-label="Choose extras" title="Choose extras" disabled>🧂</button>
-                </nav>
-                <div class="cup" role="img" aria-label="Empty 250 milliliter cup">
-                    <span class="cup-handle" aria-hidden="true"></span>
-                    <div class="cup-body" aria-hidden="true">
-                        <div class="cup-fill" id="cup-fill"></div>
+
+            <div class="layout">
+                <section class="visual-column" aria-label="Live drink preview and nutrition">
+                    <article class="canvas-card">
+                        <div class="drink-heading">
+                            <div><h2>Your creation</h2><p id="drink-summary">A fresh cup is waiting</p></div>
+                            <span class="classification" id="drink-classification" aria-live="polite">Custom Concoction</span>
+                        </div>
+                        <div class="cup-stage">
+                            <div class="cup-shadow" aria-hidden="true"></div>
+                            <div class="cup" role="img" id="cup" aria-label="Empty coffee cup">
+                                <span class="cup-handle" aria-hidden="true"></span>
+                                <div class="cup-glass" aria-hidden="true">
+                                    <div class="liquid" id="liquid">
+                                        <div class="layer layer-espresso" id="espresso-layer"></div>
+                                        <div class="layer layer-drip" id="drip-layer"></div>
+                                        <div class="layer layer-matcha" id="matcha-layer"></div>
+                                        <div class="layer layer-milk" id="milk-layer"></div>
+                                        <div class="layer layer-syrup" id="syrup-layer"></div>
+                                        <div class="layer layer-foam" id="foam-layer"></div>
+                                        <div class="layer-ice" id="ice-layer" hidden><i class="ice-cube"></i><i class="ice-cube"></i><i class="ice-cube"></i></div>
+                                    </div>
+                                    <span class="cup-gloss"></span>
+                                </div>
+                                <span class="cup-capacity" id="cup-capacity">0 ml</span>
+                            </div>
+                        </div>
+                        <p class="cup-caption" id="temperature-caption">A cozy cup, made your way</p>
+                    </article>
+
+                    <article class="stats-card" aria-labelledby="stats-title">
+                        <div class="stats-header"><h2 id="stats-title">Your drink at a glance</h2><span class="live-label">● LIVE</span></div>
+                        <div class="metrics" aria-live="polite">
+                            <div class="metric"><span class="metric-label">Caffeine</span><strong class="metric-value" id="caffeine-value">0 mg</strong></div>
+                            <div class="metric"><span class="metric-label">Calories</span><strong class="metric-value" id="calories-value">0 kcal</strong></div>
+                            <div class="metric"><span class="metric-label">Sugar</span><strong class="metric-value" id="sugar-value">0 g</strong></div>
+                        </div>
+                        <table class="legend">
+                            <thead><tr><th scope="col">Ingredient</th><th scope="col">Amount</th></tr></thead>
+                            <tbody id="ingredient-legend"><tr><td>Choose ingredients to begin</td><td>—</td></tr></tbody>
+                        </table>
+                    </article>
+                </section>
+
+                <section class="controls-card" aria-labelledby="customize-title">
+                    <div class="controls-top">
+                        <h2 id="customize-title">Customize your cup</h2>
+                        <label class="sr-only" for="classics-select">Café classics</label>
+                        <select class="classic-select" id="classics-select">
+                            <option value="">Café classics</option>
+                            <option value="latte">Classic Latte</option>
+                            <option value="cappuccino">Cappuccino</option>
+                            <option value="cortado">Cortado</option>
+                            <option value="americano">Americano</option>
+                            <option value="flatWhite">Flat White</option>
+                            <option value="macchiato">Macchiato</option>
+                        </select>
                     </div>
-                </div>
-                <p class="cup-capacity" id="cup-capacity" aria-live="polite">0 / 250ml</p>
+                    <div class="tabs" role="tablist" aria-label="Drink customization">
+                        <button class="tab" id="tab-foundation" role="tab" aria-selected="true" aria-controls="panel-foundation" tabindex="0" type="button">01 · Foundation</button>
+                        <button class="tab" id="tab-milk" role="tab" aria-selected="false" aria-controls="panel-milk" tabindex="-1" type="button">02 · Milk &amp; ice</button>
+                        <button class="tab" id="tab-flavors" role="tab" aria-selected="false" aria-controls="panel-flavors" tabindex="-1" type="button">03 · Extras</button>
+                    </div>
+
+                    <div class="tab-panel" id="panel-foundation" role="tabpanel" aria-labelledby="tab-foundation">
+                        <div class="field">
+                            <p class="field-label">Choose your base</p>
+                            <div class="segmented" data-choice-group="base">
+                                <button class="segment" type="button" data-value="espresso" aria-pressed="true">Espresso</button>
+                                <button class="segment" type="button" data-value="drip" aria-pressed="false">Filter / drip</button>
+                                <button class="segment" type="button" data-value="coldBrew" aria-pressed="false">Cold brew</button>
+                                <button class="segment" type="button" data-value="matcha" aria-pressed="false">Matcha</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <p class="field-label">Caffeine mode</p>
+                            <div class="segmented" data-choice-group="caffeineMode">
+                                <button class="segment" type="button" data-value="regular" aria-pressed="true">Regular</button>
+                                <button class="segment" type="button" data-value="decaf" aria-pressed="false">Decaf</button>
+                                <button class="segment" type="button" data-value="half" aria-pressed="false">Half-caf</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="volume-range"><span>Drink size</span><span class="range-readout" id="volume-readout">240 ml</span></label>
+                            <div class="volume-control">
+                                <button class="step-button" type="button" data-adjust="volume" data-delta="-30" aria-label="Decrease drink size">−</button>
+                                <input id="volume-range" type="range" min="60" max="480" step="30" value="240">
+                                <button class="step-button" type="button" data-adjust="volume" data-delta="30" aria-label="Increase drink size">+</button>
+                            </div>
+                            <div class="range-sub"><span>60 ml</span><span>480 ml</span></div>
+                        </div>
+                        <div class="field" id="extraction-field">
+                            <p class="field-label">Espresso extraction</p>
+                            <div class="segmented" data-choice-group="extraction">
+                                <button class="segment" type="button" data-value="ristretto" aria-pressed="false">Ristretto</button>
+                                <button class="segment" type="button" data-value="standard" aria-pressed="true">Standard shot</button>
+                                <button class="segment" type="button" data-value="lungo" aria-pressed="false">Lungo</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="shot-range"><span>Espresso shots</span><span class="range-readout" id="shot-readout">2 shots</span></label>
+                            <input id="shot-range" type="range" min="1" max="4" step="1" value="2">
+                            <div class="range-sub"><span>1 shot</span><span>4 shots</span></div>
+                        </div>
+                    </div>
+
+                    <div class="tab-panel" id="panel-milk" role="tabpanel" aria-labelledby="tab-milk" hidden>
+                        <div class="field">
+                            <p class="field-label">Temperature</p>
+                            <div class="segmented" data-choice-group="temperature">
+                                <button class="segment" type="button" data-value="hot" aria-pressed="true">☀ Hot</button>
+                                <button class="segment" type="button" data-value="iced" aria-pressed="false">✧ Iced</button>
+                                <button class="segment" type="button" data-value="blended" aria-pressed="false">❄ Blended</button>
+                            </div>
+                        </div>
+                        <div class="field" id="ice-field" hidden>
+                            <p class="field-label">Ice style</p>
+                            <div class="segmented" data-choice-group="iceStyle">
+                                <button class="segment" type="button" data-value="cube" aria-pressed="true">🧊 Cube ice</button>
+                                <button class="segment" type="button" data-value="coffee" aria-pressed="false">☕ Coffee ice</button>
+                                <button class="segment" type="button" data-value="crushed" aria-pressed="false">❄ Crushed</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <p class="field-label">Milk source <span class="field-help">Choose one</span></p>
+                            <div class="card-grid" data-choice-group="milk">
+                                <button class="option-card" type="button" data-value="whole" aria-pressed="true"><span>🐄 Whole milk</span><small>Rich &amp; creamy</small></button>
+                                <button class="option-card" type="button" data-value="skim" aria-pressed="false"><span>🥛 Skim milk</span><small>Light &amp; smooth</small></button>
+                                <button class="option-card" type="button" data-value="oat" aria-pressed="false"><span>🌾 Oat milk</span><small>Toasty &amp; mellow</small></button>
+                                <button class="option-card" type="button" data-value="almond" aria-pressed="false"><span>🌰 Almond milk</span><small>Nutty &amp; delicate</small></button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="foam-range"><span>Foam aeration</span><span class="range-readout" id="foam-readout">25%</span></label>
+                            <input class="foam-range" id="foam-range" type="range" min="0" max="100" step="5" value="25">
+                            <div class="range-sub"><span>Flat</span><span>Extra airy</span></div>
+                        </div>
+                    </div>
+
+                    <div class="tab-panel" id="panel-flavors" role="tabpanel" aria-labelledby="tab-flavors" hidden>
+                        <div class="field">
+                            <p class="field-label">Syrups &amp; sauces <span class="field-help">Pumps</span></p>
+                            <div class="stepper-row"><span class="stepper-name">🍦 Vanilla syrup</span><div class="stepper-controls"><button class="step-button" type="button" data-counter="vanilla" data-delta="-1" aria-label="Less vanilla">−</button><span class="stepper-value" id="vanilla-count">0 pumps</span><button class="step-button" type="button" data-counter="vanilla" data-delta="1" aria-label="More vanilla">+</button></div></div>
+                            <div class="stepper-row"><span class="stepper-name">🍮 Caramel sauce</span><div class="stepper-controls"><button class="step-button" type="button" data-counter="caramel" data-delta="-1" aria-label="Less caramel">−</button><span class="stepper-value" id="caramel-count">0 pumps</span><button class="step-button" type="button" data-counter="caramel" data-delta="1" aria-label="More caramel">+</button></div></div>
+                            <div class="stepper-row"><span class="stepper-name">🍫 Dark chocolate mocha</span><div class="stepper-controls"><button class="step-button" type="button" data-counter="chocolate" data-delta="-1" aria-label="Less chocolate">−</button><span class="stepper-value" id="chocolate-count">0 pumps</span><button class="step-button" type="button" data-counter="chocolate" data-delta="1" aria-label="More chocolate">+</button></div></div>
+                        </div>
+                        <div class="field">
+                            <p class="field-label">Sweeteners <span class="field-help">Choose any</span></p>
+                            <div class="chip-list" data-multi-group="sweeteners">
+                                <button class="chip" type="button" data-value="whiteSugar" aria-pressed="false">White sugar</button>
+                                <button class="chip" type="button" data-value="rawSugar" aria-pressed="false">Raw sugar</button>
+                                <button class="chip" type="button" data-value="honey" aria-pressed="false">Honey</button>
+                                <button class="chip" type="button" data-value="stevia" aria-pressed="false">Stevia</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <p class="field-label">Toppings</p>
+                            <div class="toggle-list">
+                                <div class="toggle-row"><span>Cinnamon dusting</span><button class="switch topping-switch" type="button" role="switch" aria-checked="false" data-topping="cinnamon" aria-label="Cinnamon dusting"></button></div>
+                                <div class="toggle-row"><span>Whipped cream swirl</span><button class="switch topping-switch" type="button" role="switch" aria-checked="false" data-topping="whippedCream" aria-label="Whipped cream swirl"></button></div>
+                                <div class="toggle-row"><span>Cocoa powder dusting</span><button class="switch topping-switch" type="button" role="switch" aria-checked="false" data-topping="cocoa" aria-label="Cocoa powder dusting"></button></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
-        </section>
-    </main>
+
+            <footer class="actions-footer">
+                <p class="field-help">Good things are worth keeping.</p>
+                <div class="footer-actions">
+                    <button class="button" id="save-button" type="button">♡ Save to my bar</button>
+                    <button class="button" id="share-button" type="button">↗ Share recipe</button>
+                    <button class="button button-primary" id="export-button" type="button">↓ Export recipe card</button>
+                </div>
+            </footer>
+            <p class="notice" id="app-notice" role="status" aria-live="polite"></p>
+        </main>
+    </div>
+
+    <dialog id="save-dialog" aria-labelledby="save-title">
+        <form class="dialog-content" id="save-form">
+            <h2 id="save-title">Save to your bar</h2>
+            <p>Keep this recipe close for next time. Your saved drinks stay in this browser.</p>
+            <label for="recipe-name">Name your drink</label>
+            <input id="recipe-name" name="recipeName" maxlength="48" required placeholder="e.g. Sunday oat latte">
+            <div class="saved-recipes" id="saved-recipes"></div>
+            <div class="dialog-actions"><button class="button" id="cancel-save" type="button">Cancel</button><button class="button button-primary" type="submit">Save recipe</button></div>
+        </form>
+    </dialog>
+
     <script>
-        const measurementSelect = document.getElementById("measurement");
-        const selectionLabel = document.getElementById("selection-label");
-        const coffeeOptions = document.getElementById("coffee-options");
-        const selectionPanel = document.getElementById("selection-panel");
-        const deliveryForm = document.getElementById("delivery-panel");
-        const deliveryAddress = document.getElementById("delivery-address");
-        const deliveryConfirmation = document.getElementById("delivery-confirmation");
-        const orderStatus = document.getElementById("order-status");
-        const continueButton = document.getElementById("continue-button");
-        const startOverButton = document.getElementById("start-over-button");
-        const measurementAction = document.getElementById("measurement-action");
-        const coffeeAction = document.getElementById("coffee-action");
-        const extrasAction = document.getElementById("extras-action");
-        const cup = document.querySelector(".cup");
-        const cupFill = document.getElementById("cup-fill");
-        const cupCapacity = document.getElementById("cup-capacity");
-        const coffeeMeasurements = {
-            Espresso: [25, 30],
-            Doppio: [50, 60],
-            Lungo: [60, 90],
-            Macchiato: [15, 30],
-            Cappuccino: [150, 180],
-            "Flat White": [120, 150],
-            Latte: [180, 240]
-        };
-        const extras = ["Sugar", "Creamer", "Milk"];
-        const coffeeColors = ["#734128", "#8b644b", "#a2826f", "#b9a18e"];
-        let selectedMeasurement = 0;
-        let selectedCoffee = "";
-        const selectedExtras = new Set();
+        (() => {
+            const STORAGE_KEY = "bean-bloom-saved-recipes";
+            const BASES = {
+                espresso: { label: "Espresso", caffeine: 64, calories: 3, sugar: 0 },
+                drip: { label: "Filter coffee", caffeine: 80, calories: 2, sugar: 0 },
+                coldBrew: { label: "Cold brew", caffeine: 100, calories: 5, sugar: 0 },
+                matcha: { label: "Matcha", caffeine: 70, calories: 6, sugar: 0 }
+            };
+            const MILKS = {
+                whole: { label: "Whole milk", calories: 0.62, sugar: 0.05 },
+                skim: { label: "Skim milk", calories: 0.35, sugar: 0.05 },
+                oat: { label: "Oat milk", calories: 0.5, sugar: 0.04 },
+                almond: { label: "Almond milk", calories: 0.18, sugar: 0.01 }
+            };
+            const SYRUPS = {
+                vanilla: { label: "Vanilla syrup", calories: 20, sugar: 5, ml: 7 },
+                caramel: { label: "Caramel sauce", calories: 25, sugar: 6, ml: 7 },
+                chocolate: { label: "Dark chocolate mocha", calories: 28, sugar: 5, ml: 8 }
+            };
+            const SWEETENERS = {
+                whiteSugar: { label: "White sugar", calories: 16, sugar: 4 },
+                rawSugar: { label: "Raw sugar", calories: 16, sugar: 4 },
+                honey: { label: "Honey", calories: 21, sugar: 5.7 },
+                stevia: { label: "Stevia", calories: 0, sugar: 0 }
+            };
+            const CLASSICS = {
+                latte: { name: "Classic Latte", base: "espresso", caffeineMode: "regular", volumeMl: 300, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 20, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
+                cappuccino: { name: "Cappuccino", base: "espresso", caffeineMode: "regular", volumeMl: 180, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 75, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
+                cortado: { name: "Cortado", base: "espresso", caffeineMode: "regular", volumeMl: 120, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 10, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
+                americano: { name: "Americano", base: "drip", caffeineMode: "regular", volumeMl: 240, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 0, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
+                flatWhite: { name: "Flat White", base: "espresso", caffeineMode: "regular", volumeMl: 180, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 15, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
+                macchiato: { name: "Macchiato", base: "espresso", caffeineMode: "regular", volumeMl: 90, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 85, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } }
+            };
+            const state = {
+                base: "espresso",
+                caffeineMode: "regular",
+                volumeMl: 240,
+                shots: 2,
+                extraction: "standard",
+                temperature: "hot",
+                iceStyle: "cube",
+                milk: "whole",
+                foam: 25,
+                syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+                sweeteners: [],
+                toppings: { cinnamon: false, whippedCream: false, cocoa: false },
+                metric: true
+            };
+            const $ = (selector) => document.querySelector(selector);
+            const $$ = (selector) => [...document.querySelectorAll(selector)];
+            const elements = {
+                volume: $("#volume-range"), shots: $("#shot-range"), foam: $("#foam-range"),
+                liquid: $("#liquid"), classification: $("#drink-classification"), legend: $("#ingredient-legend"),
+                notice: $("#app-notice"), saveDialog: $("#save-dialog"), recipeName: $("#recipe-name")
+            };
 
-        function updateCup() {
-            const fillPercent = Math.min(selectedMeasurement / 250, 1) * 100;
-            cupFill.style.height = `${fillPercent}%`;
-            const colorIndex = selectedCoffee ? selectedExtras.size : 0;
-            cupFill.style.backgroundColor = selectedCoffee ? coffeeColors[colorIndex] : "#391e10";
-            cupCapacity.textContent = `${selectedMeasurement} / 250ml`;
-            cup.setAttribute(
-                "aria-label",
-                `${selectedCoffee ? `${selectedCoffee}, ` : ""}${selectedMeasurement} of 250 milliliters`
-            );
-        }
+            function round(value, places = 0) {
+                const factor = 10 ** places;
+                return Math.round(value * factor) / factor;
+            }
 
-        function showMeasurementState() {
-            selectedMeasurement = 0;
-            selectedCoffee = "";
-            selectedExtras.clear();
-            selectionPanel.hidden = false;
-            deliveryForm.hidden = true;
-            deliveryConfirmation.hidden = true;
-            deliveryForm.reset();
-            deliveryAddress.setCustomValidity("");
-            orderStatus.textContent = "";
-            continueButton.textContent = "Continue";
-            continueButton.disabled = false;
-            delete continueButton.dataset.action;
-            startOverButton.hidden = true;
-            measurementSelect.value = "";
-            measurementSelect.hidden = false;
-            selectionLabel.htmlFor = "measurement";
-            selectionLabel.textContent = "Choose a measurement";
-            selectionLabel.hidden = false;
-            coffeeOptions.replaceChildren();
-            coffeeOptions.hidden = true;
-            measurementAction.disabled = false;
-            coffeeAction.disabled = true;
-            extrasAction.disabled = true;
-            updateCup();
-        }
+            function displayVolume(ml) {
+                return state.metric ? `${Math.round(ml)} ml` : `${round(ml / 29.5735, 1)} oz`;
+            }
 
-        function showCoffeeState() {
-            if (!selectedMeasurement) return;
-            measurementSelect.hidden = true;
-            selectionLabel.hidden = false;
-            selectionLabel.removeAttribute("for");
-            selectionLabel.textContent = "Choose a coffee";
-            coffeeOptions.hidden = false;
-            coffeeOptions.replaceChildren();
+            function getComposition() {
+                const shotMl = { ristretto: 22, standard: 30, lungo: 40 }[state.extraction] || 30;
+                const baseMl = state.base === "espresso" ? state.shots * shotMl : 0;
+                const syrupMl = Object.entries(state.syrups).reduce((sum, [key, count]) => sum + count * SYRUPS[key].ml, 0);
+                const milkTotal = state.base === "espresso"
+                    ? Math.max(0, state.volumeMl - baseMl - syrupMl)
+                    : state.base === "matcha" ? Math.max(0, state.volumeMl - syrupMl) * 0.3 : 0;
+                const foamMl = milkTotal * (state.foam / 100) * 0.6;
+                const milkMl = milkTotal - foamMl;
+                const otherBaseMl = state.base === "espresso" ? 0 : Math.max(0, state.volumeMl - syrupMl - milkTotal);
+                return { baseMl, milkMl, foamMl, syrupMl, otherBaseMl };
+            }
 
-            Object.entries(coffeeMeasurements).forEach(([coffee, measurements]) => {
-                if (!measurements.includes(selectedMeasurement)) return;
+            function getDrinkName(composition) {
+                const hasExtras = Object.values(state.syrups).some(Boolean) || state.sweeteners.length || Object.values(state.toppings).some(Boolean);
+                if (state.base === "drip" && state.temperature === "hot" && !hasExtras) return "Americano";
+                if (state.base !== "espresso") return "Custom Concoction";
+                if (state.temperature !== "hot" || hasExtras) return "Custom Concoction";
+                const { baseMl, milkMl, foamMl } = composition;
+                if (baseMl <= 0) return "Custom Concoction";
+                const ratio = (milkMl + foamMl) / baseMl;
+                const foamRatio = foamMl / (milkMl + foamMl || 1);
+                if (ratio < 0.65 && foamRatio > 0.45) return "Macchiato";
+                if (ratio >= 0.8 && ratio <= 1.2 && foamRatio < 0.3) return "Cortado";
+                if (ratio >= 1.4 && ratio <= 2.6 && foamRatio >= 0.38) return "Cappuccino";
+                if (ratio >= 1.4 && ratio <= 2.6 && foamRatio < 0.38) return "Flat White";
+                if (ratio > 2.6 && foamRatio < 0.48) return "Latte";
+                if (ratio < 0.2) return "Espresso";
+                return "Custom Concoction";
+            }
 
-                const button = document.createElement("button");
-                button.className = "choice-button";
-                button.type = "button";
-                button.textContent = `${coffee}: ${selectedMeasurement}ml`;
-                button.setAttribute("aria-pressed", String(selectedCoffee === coffee));
-                button.addEventListener("click", () => {
-                    if (selectedCoffee !== coffee) {
-                        selectedExtras.clear();
-                        deliveryAddress.value = "";
-                        deliveryAddress.setCustomValidity("");
-                    }
-                    selectedCoffee = coffee;
-                    extrasAction.disabled = false;
-                    deliveryForm.hidden = false;
-                    updateCup();
-                    showExtrasState();
+            function getMetrics(composition) {
+                const base = BASES[state.base];
+                const caffeineFactor = state.caffeineMode === "decaf" ? 0.05 : state.caffeineMode === "half" ? 0.5 : 1;
+                const caffeine = state.base === "espresso" ? base.caffeine * state.shots : base.caffeine * state.volumeMl / 240;
+                const milk = MILKS[state.milk];
+                let calories = base.calories + composition.milkMl * milk.calories / 100;
+                let sugar = composition.milkMl * milk.sugar / 100;
+                Object.entries(state.syrups).forEach(([key, count]) => {
+                    calories += SYRUPS[key].calories * count;
+                    sugar += SYRUPS[key].sugar * count;
                 });
-                coffeeOptions.appendChild(button);
-            });
-        }
-
-        function showExtrasState() {
-            if (!selectedCoffee) return;
-            measurementSelect.hidden = true;
-            selectionLabel.hidden = false;
-            selectionLabel.removeAttribute("for");
-            selectionLabel.textContent = "Choose extras";
-            coffeeOptions.hidden = false;
-            coffeeOptions.replaceChildren();
-
-            extras.forEach((extra) => {
-                const button = document.createElement("button");
-                button.className = "choice-button";
-                button.type = "button";
-                button.textContent = extra;
-                button.setAttribute("aria-pressed", String(selectedExtras.has(extra)));
-                button.addEventListener("click", () => {
-                    if (selectedExtras.has(extra)) {
-                        selectedExtras.delete(extra);
-                    } else {
-                        selectedExtras.add(extra);
-                    }
-                    button.setAttribute("aria-pressed", String(selectedExtras.has(extra)));
-                    updateCup();
+                state.sweeteners.forEach((key) => {
+                    calories += SWEETENERS[key].calories;
+                    sugar += SWEETENERS[key].sugar;
                 });
-                coffeeOptions.appendChild(button);
-            });
-        }
-
-        measurementSelect.addEventListener("change", () => {
-            selectedMeasurement = Number(measurementSelect.value);
-            selectedCoffee = "";
-            selectedExtras.clear();
-            if (!selectedMeasurement) {
-                showMeasurementState();
-                return;
+                if (state.toppings.whippedCream) { calories += 50; sugar += 3; }
+                return { caffeine: Math.round(caffeine * caffeineFactor), calories: Math.round(calories), sugar: round(sugar, 1) };
             }
 
-            coffeeAction.disabled = false;
-            updateCup();
-            showCoffeeState();
-        });
-
-        measurementAction.addEventListener("click", showMeasurementState);
-        coffeeAction.addEventListener("click", showCoffeeState);
-        extrasAction.addEventListener("click", showExtrasState);
-        deliveryForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            if (!selectedMeasurement || !selectedCoffee) return;
-            if (!deliveryAddress.value.trim()) {
-                deliveryAddress.setCustomValidity("Enter a delivery address.");
-                deliveryAddress.reportValidity();
-                return;
-            }
-
-            deliveryAddress.setCustomValidity("");
-            orderStatus.textContent = "";
-            selectionPanel.hidden = true;
-            deliveryForm.hidden = true;
-            deliveryConfirmation.hidden = false;
-            document.querySelectorAll(".side-actions button").forEach((button) => {
-                button.disabled = true;
-            });
-        });
-        deliveryAddress.addEventListener("input", () => {
-            deliveryAddress.setCustomValidity("");
-        });
-        continueButton.addEventListener("click", async () => {
-            if (continueButton.dataset.action === "reset") {
-                showMeasurementState();
-                return;
-            }
-
-            const selectedVolume = Number(measurementSelect.value);
-            if (!selectedVolume || !selectedCoffee || !deliveryAddress.value.trim()) {
-                orderStatus.textContent = "Choose a volume, coffee, and delivery address before continuing.";
-                return;
-            }
-
-            continueButton.disabled = true;
-            orderStatus.textContent = "Sending your order...";
-            try {
-                const response = await fetch("/api/orders", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        deliveryAddress: deliveryAddress.value,
-                        selectedVolume
-                    })
+            function renderLayers(composition) {
+                const liquidHeight = Math.min(100, state.volumeMl / 480 * 100);
+                elements.liquid.style.height = `${liquidHeight}%`;
+                const total = Math.max(state.volumeMl, 1);
+                const layers = [
+                    ["#espresso-layer", composition.baseMl],
+                    ["#drip-layer", state.base === "drip" ? composition.otherBaseMl : 0],
+                    ["#matcha-layer", state.base === "matcha" ? composition.otherBaseMl : 0],
+                    ["#milk-layer", composition.milkMl],
+                    ["#syrup-layer", composition.syrupMl],
+                    ["#foam-layer", composition.foamMl]
+                ];
+                layers.forEach(([selector, volume]) => {
+                    const layer = $(selector);
+                    layer.style.height = `${volume / total * 100}%`;
                 });
-                const result = await response.json();
-                if (!response.ok) {
-                    throw new Error(result.message || `Order request failed (${response.status}).`);
+                $("#ice-layer").hidden = state.temperature === "hot";
+                $("#cup-capacity").textContent = displayVolume(state.volumeMl);
+                $("#cup").setAttribute("aria-label", `${getDrinkName(composition)}, ${displayVolume(state.volumeMl)} drink`);
+                $("#temperature-caption").textContent = state.temperature === "hot"
+                    ? `Served warm · approximately ${state.metric ? "65°C" : "149°F"}`
+                    : state.temperature === "iced" ? `Served chilled · ${state.iceStyle.replace(/^./, (letter) => letter.toUpperCase())} ice` : "Blended smooth with ice";
+                $("#drink-summary").textContent = `${BASES[state.base].label} · ${displayVolume(state.volumeMl)} · ${state.temperature}`;
+            }
+
+            function renderLegend(composition) {
+                const rows = [];
+                const add = (label, amount, color) => { if (amount > 0.4) rows.push(`<tr><td><span class="legend-color" style="--swatch:${color}"></span>${label}</td><td>${displayVolume(amount)}</td></tr>`); };
+                if (state.base === "espresso") add(`${state.extraction} espresso`, composition.baseMl, "#3b2314");
+                else add(BASES[state.base].label, composition.otherBaseMl, state.base === "matcha" ? "#819263" : "#70472e");
+                add(`${MILKS[state.milk].label} · steamed`, composition.milkMl, "#f1e6d5");
+                add("Milk foam", composition.foamMl, "#fff");
+                Object.entries(state.syrups).forEach(([key, count]) => {
+                    if (count) add(`${SYRUPS[key].label} · ${count} pump${count === 1 ? "" : "s"}`, count * SYRUPS[key].ml, key === "chocolate" ? "#2b1a10" : "#c68a4c");
+                });
+                state.sweeteners.forEach((key) => rows.push(`<tr><td><span class="legend-color" style="--swatch:#d9b872"></span>${SWEETENERS[key].label}</td><td>1 serving</td></tr>`));
+                if (state.toppings.whippedCream) rows.push(`<tr><td><span class="legend-color" style="--swatch:#fff"></span>Whipped cream</td><td>1 swirl</td></tr>`);
+                elements.legend.innerHTML = rows.length ? rows.join("") : "<tr><td>Choose ingredients to begin</td><td>—</td></tr>";
+            }
+
+            function render() {
+                const composition = getComposition();
+                const metrics = getMetrics(composition);
+                renderLayers(composition);
+                renderLegend(composition);
+                elements.classification.textContent = getDrinkName(composition);
+                $("#caffeine-value").textContent = `${metrics.caffeine} mg`;
+                $("#calories-value").textContent = `${metrics.calories} kcal`;
+                $("#sugar-value").textContent = `${metrics.sugar} g`;
+                $("#volume-readout").textContent = displayVolume(state.volumeMl);
+                $("#shot-readout").textContent = `${state.shots} shot${state.shots === 1 ? "" : "s"}`;
+                $("#foam-readout").textContent = `${state.foam}%`;
+                Object.entries(state.syrups).forEach(([key, count]) => {
+                    $(`#${key}-count`).textContent = `${count} pump${count === 1 ? "" : "s"}`;
+                });
+                $$(".segment, .option-card").forEach((button) => {
+                    const group = button.closest("[data-choice-group]");
+                    if (group) button.setAttribute("aria-pressed", String(state[group.dataset.choiceGroup] === button.dataset.value));
+                });
+                $$(".chip").forEach((button) => button.setAttribute("aria-pressed", String(state.sweeteners.includes(button.dataset.value))));
+                $$(".topping-switch").forEach((button) => button.setAttribute("aria-checked", String(state.toppings[button.dataset.topping])));
+                $("#extraction-field").hidden = state.base !== "espresso";
+                $("#ice-field").hidden = state.temperature === "hot";
+                $("#unit-toggle").setAttribute("aria-checked", String(state.metric));
+                $("#unit-label").textContent = state.metric ? "Metric" : "Imperial";
+                elements.volume.value = state.volumeMl;
+                elements.shots.value = state.shots;
+                elements.foam.value = state.foam;
+            }
+
+            function setNotice(message) {
+                elements.notice.textContent = message;
+                window.clearTimeout(setNotice.timer);
+                setNotice.timer = window.setTimeout(() => { elements.notice.textContent = ""; }, 4500);
+            }
+
+            function applyRecipe(recipe) {
+                Object.assign(state, JSON.parse(JSON.stringify(recipe)));
+                state.metric = state.metric === undefined ? true : state.metric;
+                $("#classics-select").value = "";
+                render();
+            }
+
+            function setTab(tabId, focus = false) {
+                $$(".tab").forEach((tab) => {
+                    const selected = tab.id === tabId;
+                    tab.setAttribute("aria-selected", String(selected));
+                    tab.tabIndex = selected ? 0 : -1;
+                    $(`#${tab.getAttribute("aria-controls")}`).hidden = !selected;
+                });
+                if (focus) $(`#${tabId}`).focus();
+            }
+
+            function getSavedRecipes() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+                    if (!Array.isArray(saved)) throw new Error("Saved recipes must be a list.");
+                    return saved;
+                } catch (error) {
+                    setNotice(`Could not load saved recipes: ${error.message}`);
+                    return [];
                 }
-
-                orderStatus.textContent = result.message || "Your order was received.";
-                continueButton.textContent = "New order";
-                continueButton.dataset.action = "reset";
-                startOverButton.hidden = true;
-            } catch (error) {
-                orderStatus.textContent = `Could not send your order: ${error.message}`;
-                continueButton.textContent = "Retry";
-                startOverButton.hidden = false;
-            } finally {
-                continueButton.disabled = false;
             }
-        });
-        startOverButton.addEventListener("click", showMeasurementState);
+
+            function renderSavedRecipes() {
+                const container = $("#saved-recipes");
+                const recipes = getSavedRecipes();
+                container.replaceChildren();
+                const heading = document.createElement("h3");
+                heading.textContent = recipes.length ? "Saved recipes" : "Nothing saved yet";
+                container.appendChild(heading);
+                recipes.forEach((recipe, index) => {
+                    const row = document.createElement("div");
+                    row.className = "saved-recipe-row";
+                    const load = document.createElement("button");
+                    load.className = "recipe-link";
+                    load.type = "button";
+                    load.textContent = recipe.name;
+                    load.addEventListener("click", () => {
+                        applyRecipe(recipe.state);
+                        elements.saveDialog.close();
+                        setNotice(`${recipe.name} loaded.`);
+                    });
+                    const remove = document.createElement("button");
+                    remove.className = "delete-recipe";
+                    remove.type = "button";
+                    remove.textContent = "Remove";
+                    remove.setAttribute("aria-label", `Remove ${recipe.name}`);
+                    remove.addEventListener("click", () => {
+                        recipes.splice(index, 1);
+                        try {
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+                            renderSavedRecipes();
+                        } catch (error) {
+                            setNotice(`Could not update saved recipes: ${error.message}`);
+                        }
+                    });
+                    row.append(load, remove);
+                    container.appendChild(row);
+                });
+            }
+
+            function getRecipeState() {
+                const { metric, ...recipeState } = state;
+                return JSON.parse(JSON.stringify(recipeState));
+            }
+
+            function encodeRecipe() {
+                const bytes = new TextEncoder().encode(JSON.stringify(getRecipeState()));
+                let binary = "";
+                bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+                return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+            }
+
+            function decodeRecipe(value) {
+                try {
+                    const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+                    const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+                    const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+                    const parsed = JSON.parse(new TextDecoder().decode(bytes));
+                        const allowedKeys = ["base", "caffeineMode", "volumeMl", "shots", "extraction", "temperature", "iceStyle", "milk", "foam", "syrups", "sweeteners", "toppings"];
+                        const valid = parsed && BASES[parsed.base] && ["regular", "decaf", "half"].includes(parsed.caffeineMode)
+                            && Object.keys(parsed).every((key) => allowedKeys.includes(key))
+                            && ["whole", "skim", "oat", "almond"].includes(parsed.milk)
+                        && ["ristretto", "standard", "lungo"].includes(parsed.extraction)
+                        && ["hot", "iced", "blended"].includes(parsed.temperature)
+                        && ["cube", "coffee", "crushed"].includes(parsed.iceStyle)
+                        && Number.isInteger(parsed.volumeMl) && parsed.volumeMl >= 60 && parsed.volumeMl <= 480
+                        && Number.isInteger(parsed.shots) && parsed.shots >= 1 && parsed.shots <= 4
+                        && Number.isInteger(parsed.foam) && parsed.foam >= 0 && parsed.foam <= 100
+                        && parsed.syrups && ["vanilla", "caramel", "chocolate"].every((key) => Number.isInteger(parsed.syrups[key]) && parsed.syrups[key] >= 0 && parsed.syrups[key] <= 6)
+                        && parsed.toppings && ["cinnamon", "whippedCream", "cocoa"].every((key) => typeof parsed.toppings[key] === "boolean")
+                        && Array.isArray(parsed.sweeteners) && parsed.sweeteners.every((key) => Object.hasOwn(SWEETENERS, key));
+                    if (!valid) throw new Error("The recipe link contains unsupported drink settings.");
+                    applyRecipe(parsed);
+                } catch (error) {
+                    setNotice(`Could not open shared recipe: ${error.message}`);
+                }
+            }
+
+            function exportRecipeCard() {
+                const canvas = document.createElement("canvas");
+                canvas.width = 1200;
+                canvas.height = 1500;
+                const context = canvas.getContext("2d");
+                if (!context) {
+                    setNotice("Your browser could not create the recipe card.");
+                    return;
+                }
+                const composition = getComposition();
+                const metrics = getMetrics(composition);
+                context.fillStyle = "#f7f3ed";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.fillStyle = "#553724";
+                context.font = "700 32px Arial";
+                context.fillText("BEAN & BLOOM  ·  YOUR RECIPE", 82, 100);
+                context.fillStyle = "#28241f";
+                context.font = "700 64px Arial";
+                context.fillText(getDrinkName(composition), 82, 195);
+                context.fillStyle = "#777168";
+                context.font = "28px Arial";
+                context.fillText(`${BASES[state.base].label}  ·  ${displayVolume(state.volumeMl)}  ·  ${state.temperature}`, 82, 252);
+                const x = 420, y = 330, width = 360, height = 510;
+                context.fillStyle = "#d4c9b9";
+                context.fillRect(x - 10, y - 10, width + 20, height + 20);
+                const total = Math.max(state.volumeMl, 1);
+                const segments = [
+                    ["#3b2314", composition.baseMl],
+                    [state.base === "matcha" ? "#819263" : "#70472e", state.base === "espresso" ? 0 : composition.otherBaseMl],
+                    ["#fdfbf7", composition.milkMl],
+                    ["#c68a4c", composition.syrupMl],
+                    ["#ffffff", composition.foamMl]
+                ];
+                let bottom = y + height;
+                segments.forEach(([color, amount]) => {
+                    if (!amount) return;
+                    const partHeight = height * amount / total;
+                    bottom -= partHeight;
+                    context.fillStyle = color;
+                    context.fillRect(x, bottom, width, partHeight + 1);
+                });
+                context.fillStyle = "#553724";
+                context.font = "700 30px Arial";
+                context.fillText(`${metrics.caffeine} mg caffeine`, 110, 960);
+                context.fillText(`${metrics.calories} kcal`, 450, 960);
+                context.fillText(`${metrics.sugar} g sugar`, 790, 960);
+                context.fillStyle = "#777168";
+                context.font = "26px Arial";
+                const ingredients = [
+                    `${state.shots} shot${state.shots === 1 ? "" : "s"} ${state.base === "espresso" ? "espresso" : BASES[state.base].label.toLowerCase()}`,
+                    `${MILKS[state.milk].label} · ${displayVolume(composition.milkMl)}`,
+                    `${state.foam}% milk foam`
+                ];
+                if (Object.values(state.syrups).some(Boolean)) ingredients.push(...Object.entries(state.syrups).filter(([, count]) => count).map(([key, count]) => `${count} pump${count === 1 ? "" : "s"} ${SYRUPS[key].label.toLowerCase()}`));
+                ingredients.forEach((ingredient, index) => context.fillText(`•  ${ingredient}`, 120, 1080 + index * 48));
+                context.fillStyle = "#553724";
+                context.font = "24px Arial";
+                context.fillText("Made with a little extra care.", 82, 1410);
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        setNotice("Could not export the recipe card image.");
+                        return;
+                    }
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = "bean-and-bloom-recipe.png";
+                    link.click();
+                    link.remove();
+                    window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+                    setNotice("Your recipe card is ready to download.");
+                }, "image/png");
+            }
+
+            $$(".tab").forEach((tab, index, tabs) => {
+                tab.addEventListener("click", () => setTab(tab.id));
+                tab.addEventListener("keydown", (event) => {
+                    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                    event.preventDefault();
+                    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1
+                        : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+                    setTab(tabs[next].id, true);
+                });
+            });
+            $$("[data-choice-group]").forEach((group) => {
+                group.addEventListener("click", (event) => {
+                    const button = event.target.closest("button[data-value]");
+                    if (!button) return;
+                    state[group.dataset.choiceGroup] = button.dataset.value;
+                    render();
+                });
+            });
+            $$("[data-multi-group='sweeteners'] .chip").forEach((button) => button.addEventListener("click", () => {
+                const value = button.dataset.value;
+                state.sweeteners = state.sweeteners.includes(value) ? state.sweeteners.filter((item) => item !== value) : [...state.sweeteners, value];
+                render();
+            }));
+            $$(".topping-switch").forEach((button) => button.addEventListener("click", () => {
+                state.toppings[button.dataset.topping] = !state.toppings[button.dataset.topping];
+                render();
+            }));
+            elements.volume.addEventListener("input", () => { state.volumeMl = Number(elements.volume.value); render(); });
+            elements.shots.addEventListener("input", () => { state.shots = Number(elements.shots.value); render(); });
+            elements.foam.addEventListener("input", () => { state.foam = Number(elements.foam.value); render(); });
+            $$("[data-adjust='volume']").forEach((button) => button.addEventListener("click", () => {
+                state.volumeMl = Math.max(60, Math.min(480, state.volumeMl + Number(button.dataset.delta)));
+                render();
+            }));
+            $$("[data-counter]").forEach((button) => button.addEventListener("click", () => {
+                const key = button.dataset.counter;
+                state.syrups[key] = Math.max(0, Math.min(6, state.syrups[key] + Number(button.dataset.delta)));
+                render();
+            }));
+            $("#unit-toggle").addEventListener("click", () => { state.metric = !state.metric; render(); });
+            $("#classics-select").addEventListener("change", (event) => {
+                const recipe = CLASSICS[event.target.value];
+                if (recipe) applyRecipe(recipe);
+            });
+            $("#surprise-button").addEventListener("click", () => {
+                const pick = (values) => values[Math.floor(Math.random() * values.length)];
+                Object.assign(state, {
+                    base: pick(Object.keys(BASES)), caffeineMode: pick(["regular", "decaf", "half"]),
+                    volumeMl: pick([150, 180, 210, 240, 300, 360, 420]), shots: pick([1, 2, 2, 3, 4]),
+                    extraction: pick(["ristretto", "standard", "lungo"]), temperature: pick(["hot", "iced", "blended"]),
+                    iceStyle: pick(["cube", "coffee", "crushed"]), milk: pick(Object.keys(MILKS)),
+                    foam: pick([0, 15, 30, 50, 70, 90]),
+                    syrups: { vanilla: Math.floor(Math.random() * 3), caramel: Math.floor(Math.random() * 3), chocolate: Math.floor(Math.random() * 3) },
+                    sweeteners: Math.random() > .6 ? [pick(Object.keys(SWEETENERS))] : [],
+                    toppings: { cinnamon: Math.random() > .75, whippedCream: Math.random() > .8, cocoa: Math.random() > .8 }
+                });
+                render();
+                setNotice("A new little coffee idea, just for you.");
+            });
+            $("#save-button").addEventListener("click", () => {
+                renderSavedRecipes();
+                elements.recipeName.value = "";
+                elements.saveDialog.showModal();
+                elements.recipeName.focus();
+            });
+            $("#cancel-save").addEventListener("click", () => elements.saveDialog.close());
+            $("#save-form").addEventListener("submit", (event) => {
+                event.preventDefault();
+                const name = elements.recipeName.value.trim();
+                if (!name) { elements.recipeName.reportValidity(); return; }
+                try {
+                    const recipes = getSavedRecipes();
+                    recipes.unshift({ name, state: getRecipeState() });
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes.slice(0, 30)));
+                    elements.saveDialog.close();
+                    setNotice(`${name} saved to your bar.`);
+                } catch (error) {
+                    setNotice(`Could not save this recipe: ${error.message}`);
+                }
+            });
+            $("#share-button").addEventListener("click", async () => {
+                const url = new URL(window.location.href);
+                url.searchParams.set("recipe", encodeRecipe());
+                try {
+                    await navigator.clipboard.writeText(url.toString());
+                    setNotice("Recipe link copied. Anyone with the link can see its settings.");
+                } catch (error) {
+                    setNotice(`Could not copy the recipe link: ${error.message}`);
+                }
+            });
+            $("#export-button").addEventListener("click", exportRecipeCard);
+
+            const sharedRecipe = new URLSearchParams(window.location.search).get("recipe");
+            if (sharedRecipe) decodeRecipe(sharedRecipe);
+            render();
+        })();
     </script>
 </body>
 </html>
