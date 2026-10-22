@@ -43,7 +43,7 @@ const server = http.createServer((req, res) => {
                             deliveryAddress: orderData.deliveryAddress, 
                             selectedVolume: parseInt(orderData.selectedVolume) 
                         }
-                    ]);
+                    ], { Returning: 'minimal' });
 
                 if (error) {
                     throw error;
@@ -58,7 +58,7 @@ const server = http.createServer((req, res) => {
                 }));
 
             } catch (error) {
-                console.error("Database Error:", error.message);
+                console.error("🔴 REAL BACKEND CRASH ERROR:", error); 
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ status: "Error", message: "Failed to parse data payload or upload data parameters." }));
             }
