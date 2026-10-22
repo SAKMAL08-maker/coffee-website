@@ -1,74 +1,70 @@
-require('dotenv').config(); 
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
+require("dotenv").config();
 
-const PORT = process.env.PORT || 3000;
+const path = require("path");
+const express = require("express");
+const connectDatabase = require("./config/database");
+const userRoutes = require("./routes/userRoutes");
+const coffeeRoutes = require("./routes/coffeeRoutes");
+const orderRoutes = require("./routes/orderRoutes");
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const app = express();
+const port = Number(process.env.PORT) || 3000;
 
-const server = http.createServer((req, res) => {
-    if (req.url === '/' || req.url === '/index.html') {
-        fs.readFile(path.join(__dirname, 'index.html'), (err, content) => {
-            if (err) {
-                res.writeHead(500, { 'Content-Type': 'text/plain' });
-                res.end('Internal Server Error: Missing index.html layout file.');
-            } else {
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.end(content);
-            }
-        });
-    } 
-    else if (req.url === '/api/orders' && req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => { body += chunk.toString(); });
+app.disable("x-powered-by");
+app.use(express.json({ limit: "1mb" }));
 
-        req.on('end', async () => {
-            try {
-                const orderData = JSON.parse(body);
-                if (!orderData.deliveryAddress || orderData.deliveryAddress.trim() === '' || parseInt(orderData.selectedVolume) > 250) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    return res.end(JSON.stringify({ 
-                        status: "Rejected", 
-                        message: "Validation Error: Invalid delivery coordinates or volumetric fluid overflow!" 
-                    }));
-                }
-                const { data, error } = await supabase
-                    .from('orders')
-                    .insert([
-                        { 
-                            deliveryAddress: orderData.deliveryAddress, 
-                            selectedVolume: parseInt(orderData.selectedVolume) 
-                        }
-                    ], { Returning: 'minimal' });
+app.get(["/", "/index.html"], (request, response) => {
+    response.sendFile(path.join(__dirname, "index.html"));
+});
 
-                if (error) {
-                    throw error;
-                }
+app.use("/api/users", userRoutes);
+app.use("/api/coffees", coffeeRoutes);
+app.use("/api/orders", orderRoutes);
 
-                console.log(`\n📦 Success! New Order saved into Supabase for: ${orderData.deliveryAddress}`);
+app.use((request, response) => {
+    response.status(404).json({ error: "Not found." });
+});
 
-                res.writeHead(200, { 'Content-Type': 'application/json', 'Connection': 'close' });
-                res.end(JSON.stringify({ 
-                    status: "Success", 
-                    message: "Order dispatched to the Coffee Lab delivery queue and saved to Supabase!" 
-                }));
-
-            } catch (error) {
-                console.error("🔴 REAL BACKEND CRASH ERROR:", error); 
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ status: "Error", message: "Failed to parse data payload or upload data parameters." }));
-            }
-        });
-    } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Error 404: Resource asset endpoint signature not found.');
+app.use((error, request, response, next) => {
+    if (response.headersSent) return next(error);
+    if (error.type === "entity.parse.failed") {
+        return response.status(400).json({ error: "Request body must contain valid JSON." });
     }
+    if (error.type === "entity.too.large") {
+        return response.status(413).json({ error: "Request body is too large." });
+    }
+    if (error.name === "ValidationError") {
+        return response.status(400).json({ error: error.message });
+    }
+    if (error.code === 11000) {
+        return response.status(409).json({ error: "An account with that email already exists." });
+    }
+    if (error.name === "CastError") {
+        return response.status(400).json({ error: "A request contains an invalid identifier or value." });
+    }
+    if (error.statusCode && error.statusCode < 500) {
+        return response.status(error.statusCode).json({ error: error.message });
+    }
+
+    console.error("Request failed:", error);
+    response.status(500).json({ error: "An unexpected server error occurred." });
 });
 
-server.listen(PORT, () => {
-    console.log(`Coffee Lab server running locally on http://localhost:${PORT}`);
-});
+async function startServer() {
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+        throw new Error("JWT_SECRET must be configured with at least 32 characters.");
+    }
+    await connectDatabase();
+    return app.listen(port, () => {
+        console.log(`Coffee Lab API listening on http://localhost:${port}`);
+    });
+}
+
+if (require.main === module) {
+    startServer().catch((error) => {
+        console.error("Could not start Coffee Lab:", error.message);
+        process.exitCode = 1;
+    });
+}
+
+module.exports = { app, startServer };

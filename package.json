@@ -4,13 +4,17 @@
   "description": "Coffee Lab - Interactive Custom Coffee Ordering Webapp",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@supabase/supabase-js": "^2.118.0",
-    "dotenv": "^18.0.8"
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^18.0.8",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.19.1"
   }
 }

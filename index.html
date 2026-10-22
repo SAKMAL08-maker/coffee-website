@@ -155,10 +155,69 @@
         .saved-recipe-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; font-size: .8rem; }
         .recipe-link { border: 0; background: none; color: var(--coffee); font-weight: 700; cursor: pointer; text-align: left; }
         .delete-recipe { border: 0; background: none; color: #8b5141; cursor: pointer; }
+        .fulfillment-bar { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: auto minmax(220px, 1fr) auto; align-items: center; gap: 18px; margin: 0 -34px 12px; padding: 12px 34px; border-bottom: 1px solid var(--line); background: rgb(255 254 250 / 96%); backdrop-filter: blur(12px); }
+        .fulfillment-options { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: #f8f4ee; }
+        .fulfillment-option { padding: 9px 13px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-size: .82rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
+        .fulfillment-option[aria-pressed="true"] { background: var(--coffee); color: white; box-shadow: 0 2px 6px rgb(50 35 22 / 18%); }
+        .address-wrap { display: flex; min-width: 0; align-items: center; gap: 8px; }
+        .address-input { width: 100%; min-height: 42px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--ink); }
+        .address-wrap[hidden] { display: none; }
+        .eta { min-width: 162px; color: var(--coffee); font-size: .82rem; font-weight: 800; text-align: right; }
+        .price-list { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+        .price-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; color: #625b52; font-size: .8rem; }
+        .price-row strong { color: var(--ink); font-weight: 750; }
+        .tip-picker { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 9px 0; }
+        .tip-button { min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 18px; background: white; font-size: .75rem; font-weight: 750; cursor: pointer; }
+        .tip-button[aria-pressed="true"] { border-color: var(--green); background: #eff2eb; color: var(--green); }
+        .custom-tip { width: 72px; height: 32px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 8px; }
+        .price-total { display: flex; align-items: baseline; justify-content: space-between; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+        .price-total span { font-size: .87rem; font-weight: 800; }
+        .price-total strong { color: var(--coffee); font-size: 1.45rem; letter-spacing: -.04em; }
+        .cart-trigger { position: relative; }
+        .cart-count { display: inline-grid; min-width: 20px; height: 20px; place-items: center; padding: 0 5px; border-radius: 12px; background: var(--accent); color: white; font-size: .7rem; }
+        .checkout-fab { position: fixed; right: 28px; bottom: 22px; z-index: 20; box-shadow: 0 8px 28px rgb(45 31 19 / 25%); }
+        .drawer-backdrop { position: fixed; inset: 0; z-index: 29; background: rgb(32 27 22 / 42%); opacity: 0; transition: opacity .24s ease; }
+        .cart-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 30; width: min(440px, 100%); display: flex; flex-direction: column; padding: 22px; border: 0; border-left: 1px solid var(--line); background: var(--paper); box-shadow: -12px 0 50px rgb(33 26 18 / 16%); transform: translateX(102%); transition: transform .28s ease; }
+        .cart-drawer[open] { transform: translateX(0); pointer-events: auto; }
+        .cart-drawer:not([open]) { pointer-events: none; }
+        .cart-drawer::backdrop { display: none; }
+        .drawer-backdrop.visible { opacity: 1; }
+        .drawer-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+        .drawer-head h2 { margin: 0; font-size: 1.2rem; }
+        .drawer-items { flex: 1; overflow-y: auto; }
+        .cart-item { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; padding: 15px 0; border-bottom: 1px solid var(--line); }
+        .cart-item h3 { margin: 0; font-size: .9rem; }
+        .cart-item p { margin: 5px 0 0; color: var(--muted); font-size: .76rem; }
+        .cart-item-price { font-weight: 800; }
+        .cart-item-actions { display: flex; gap: 10px; grid-column: 1 / -1; }
+        .drawer-total { padding-top: 15px; border-top: 1px solid var(--line); }
+        .drawer-total .button { width: 100%; margin-top: 12px; }
+        .checkout-summary { padding: 14px; border-radius: 12px; background: #f8f4ee; }
+        .tracking-page { max-width: 950px; margin: 24px auto 60px; padding: 0 20px; }
+        .tracking-heading { margin-bottom: 26px; }
+        .tracking-heading h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); }
+        .tracking-heading p { color: var(--muted); }
+        .tracking-card { margin-bottom: 18px; padding: 24px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: var(--shadow); }
+        .tracking-steps { display: grid; grid-template-columns: repeat(4, 1fr); margin: 26px 0 18px; }
+        .tracking-step { position: relative; display: grid; justify-items: center; gap: 9px; color: #a59d92; text-align: center; }
+        .tracking-step:not(:last-child)::after { position: absolute; top: 17px; left: calc(50% + 22px); width: calc(100% - 44px); height: 2px; background: var(--line); content: ""; }
+        .tracking-step.complete:not(:last-child)::after { background: var(--green); }
+        .step-icon { z-index: 1; display: grid; width: 36px; height: 36px; place-items: center; border: 2px solid var(--line); border-radius: 50%; background: white; font-size: .9rem; }
+        .tracking-step.complete, .tracking-step.current { color: var(--coffee); }
+        .tracking-step.complete .step-icon, .tracking-step.current .step-icon { border-color: var(--green); background: var(--green); color: white; }
+        .tracking-step.current .step-icon { box-shadow: 0 0 0 5px #e9eee3; }
+        .step-label { max-width: 130px; font-size: .75rem; font-weight: 800; }
+        .driver-card { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #fbf8f3; }
+        .driver-avatar { display: grid; width: 52px; height: 52px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #e8d8c6; font-size: 1.6rem; }
+        .driver-info { flex: 1; }
+        .driver-info strong, .driver-info span { display: block; }
+        .driver-info span { margin-top: 4px; color: var(--muted); font-size: .78rem; }
+        .tracking-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
         @media (max-width: 920px) {
             .shell { padding-right: 22px; padding-left: 22px; }
+            .fulfillment-bar { margin-right: -22px; margin-left: -22px; padding-right: 22px; padding-left: 22px; }
             .layout { grid-template-columns: minmax(0, 1fr) minmax(370px, .95fr); gap: 16px; }
             .canvas-card { min-height: 500px; }
             .cup-stage { height: 320px; }
@@ -166,6 +225,12 @@
         @media (max-width: 760px) {
             .shell { padding: 0 16px 24px; }
             .topbar { min-height: 70px; }
+            .fulfillment-bar { grid-template-columns: 1fr auto; gap: 8px; margin: 0 -16px 12px; padding: 10px 16px; }
+            .fulfillment-options { grid-column: 1 / -1; justify-self: start; }
+            .address-wrap { grid-column: 1; }
+            .eta { min-width: 0; font-size: .74rem; }
+            .address-wrap .address-input { min-height: 38px; font-size: .8rem; }
+            .address-wrap .button { min-height: 38px; padding: 7px 10px; }
             .intro { padding: 24px 0 18px; }
             .layout { grid-template-columns: minmax(0, 1fr); }
             .visual-column { position: static; grid-row: 1; }
@@ -194,6 +259,11 @@
             .actions-footer { align-items: flex-start; flex-direction: column; }
             .footer-actions { width: 100%; }
             .footer-actions .button { flex: 1; }
+            .checkout-fab { right: 16px; bottom: 14px; }
+            .tracking-card { padding: 17px; }
+            .step-label { max-width: 80px; font-size: .66rem; }
+            .tracking-step:not(:last-child)::after { left: calc(50% + 18px); width: calc(100% - 36px); }
+            .tracking-actions { flex-direction: column; }
         }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -210,10 +280,22 @@
             </div>
         </header>
 
-        <main>
+        <main id="customizer-page">
+            <section class="fulfillment-bar" aria-label="Delivery preferences">
+                <div class="fulfillment-options" role="group" aria-label="Fulfillment method">
+                    <button class="fulfillment-option" id="delivery-option" type="button" aria-pressed="true">🛵 Delivery</button>
+                    <button class="fulfillment-option" id="pickup-option" type="button" aria-pressed="false">🛍️ Pickup</button>
+                </div>
+                <div class="address-wrap" id="delivery-address-wrap">
+                    <label class="sr-only" for="delivery-address">Delivery address</label>
+                    <input class="address-input" id="delivery-address" autocomplete="street-address" placeholder="Enter delivery address">
+                    <button class="button button-small" id="locate-button" type="button" aria-label="Use my location" title="Use my location">📍</button>
+                </div>
+                <div class="eta" id="eta-text" aria-live="polite">Arriving in 15–25 mins</div>
+            </section>
             <section class="intro" aria-labelledby="page-title">
                 <p class="eyebrow">Your cup, your craft</p>
-                <h1 id="page-title">Make it yours.</h1>
+                <h1 id="page-title" tabindex="-1">Make it yours.</h1>
                 <p class="intro-copy">Build a little coffee moment, exactly how you like it.</p>
             </section>
 
@@ -257,6 +339,25 @@
                             <thead><tr><th scope="col">Ingredient</th><th scope="col">Amount</th></tr></thead>
                             <tbody id="ingredient-legend"><tr><td>Choose ingredients to begin</td><td>—</td></tr></tbody>
                         </table>
+                        <div class="price-list" aria-label="Live order pricing">
+                            <div class="stats-header"><h2>Live pricing</h2><span class="field-help">USD · estimate</span></div>
+                            <div class="price-row"><span>Drink</span><strong id="drink-price">$4.50</strong></div>
+                            <div class="price-row"><span>Premium modifiers</span><strong id="modifier-price">$0.00</strong></div>
+                            <div class="price-row"><span id="delivery-fee-label">Delivery fee</span><strong id="delivery-fee">$2.49</strong></div>
+                            <div class="price-row"><span>Service fee (8%)</span><strong id="service-fee">$0.00</strong></div>
+                            <div class="price-row"><span>Estimated tax (8.25%)</span><strong id="tax-fee">$0.00</strong></div>
+                            <div class="tip-picker" role="group" aria-label="Delivery tip">
+                                <span class="field-help">Tip</span>
+                                <button class="tip-button" type="button" data-tip="15" aria-pressed="true">15%</button>
+                                <button class="tip-button" type="button" data-tip="18" aria-pressed="false">18%</button>
+                                <button class="tip-button" type="button" data-tip="20" aria-pressed="false">20%</button>
+                                <button class="tip-button" type="button" data-tip="custom" aria-pressed="false">Custom</button>
+                                <label class="sr-only" for="custom-tip-input">Custom tip percentage</label>
+                                <input class="custom-tip" id="custom-tip-input" type="number" min="0" max="100" step="1" value="15" aria-label="Custom tip percentage" hidden>
+                            </div>
+                            <div class="price-row"><span>Tip (<span id="tip-percent">15</span>%)</span><strong id="tip-fee">$0.00</strong></div>
+                            <div class="price-total"><span>Estimated total</span><strong id="order-total">$0.00</strong></div>
+                        </div>
                     </article>
                 </section>
 
@@ -386,12 +487,46 @@
             <footer class="actions-footer">
                 <p class="field-help">Good things are worth keeping.</p>
                 <div class="footer-actions">
+                    <button class="button button-primary" id="add-to-cart-button" type="button">＋ Add to order basket</button>
+                    <button class="button cart-trigger" id="open-cart-button" type="button">🧺 Basket <span class="cart-count" id="cart-count">0</span></button>
                     <button class="button" id="save-button" type="button">♡ Save to my bar</button>
                     <button class="button" id="share-button" type="button">↗ Share recipe</button>
                     <button class="button button-primary" id="export-button" type="button">↓ Export recipe card</button>
                 </div>
             </footer>
             <p class="notice" id="app-notice" role="status" aria-live="polite"></p>
+        </main>
+
+        <main class="tracking-page" id="tracking-page" hidden aria-labelledby="tracking-title">
+            <div class="tracking-heading">
+                <p class="eyebrow">Your coffee is on its way</p>
+                <h1 id="tracking-title" tabindex="-1">Order <span id="tracking-order-number"></span></h1>
+                <p id="tracking-eta">We’re getting your order ready.</p>
+            </div>
+            <section class="tracking-card" aria-label="Order progress">
+                <h2>Order progress</h2>
+                <div class="tracking-steps" id="tracking-steps">
+                    <div class="tracking-step" data-stage="0"><span class="step-icon">✓</span><span class="step-label">Received</span></div>
+                    <div class="tracking-step" data-stage="1"><span class="step-icon">☕</span><span class="step-label">Barista crafting</span></div>
+                    <div class="tracking-step" data-stage="2"><span class="step-icon">🛵</span><span class="step-label">Out for delivery</span></div>
+                    <div class="tracking-step" data-stage="3"><span class="step-icon">🎉</span><span class="step-label">Arrived</span></div>
+                </div>
+                <p class="notice" id="tracking-status-message" role="status" aria-live="polite"></p>
+            </section>
+            <section class="tracking-card" id="driver-section" aria-labelledby="driver-title">
+                <h2 id="driver-title">Your delivery partner</h2>
+                <div class="driver-card">
+                    <div class="driver-avatar" aria-hidden="true">👨🏽‍🦱</div>
+                    <div class="driver-info"><strong>Alex Morgan</strong><span id="driver-vehicle">Electric scooter · Bean &amp; Bloom</span></div>
+                    <button class="button button-small" id="driver-contact" type="button">☎ Contact</button>
+                </div>
+            </section>
+            <section class="tracking-card" aria-label="Tracking controls">
+                <div class="tracking-actions">
+                    <button class="button button-primary" id="advance-order-button" type="button">Update demo status</button>
+                    <button class="button" id="back-to-customizer-button" type="button">Back to coffee lab</button>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -403,6 +538,30 @@
             <input id="recipe-name" name="recipeName" maxlength="48" required placeholder="e.g. Sunday oat latte">
             <div class="saved-recipes" id="saved-recipes"></div>
             <div class="dialog-actions"><button class="button" id="cancel-save" type="button">Cancel</button><button class="button button-primary" type="submit">Save recipe</button></div>
+        </form>
+    </dialog>
+
+    <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+    <aside class="cart-drawer" id="cart-drawer" aria-labelledby="cart-title" aria-modal="true" aria-hidden="true" role="dialog">
+        <div class="drawer-head"><h2 id="cart-title">Your order <span id="drawer-count">(0)</span></h2><button class="button button-small" id="close-cart-button" type="button" aria-label="Close basket">✕</button></div>
+        <div class="drawer-items" id="cart-items"></div>
+        <div class="drawer-total"><div class="price-row"><span>Estimated total</span><strong id="cart-total">$0.00</strong></div><button class="button button-primary" id="checkout-button" type="button" disabled>Proceed to checkout</button></div>
+    </aside>
+
+    <button class="button button-primary checkout-fab" id="checkout-fab" type="button" hidden>Checkout · <span id="fab-total">$0.00</span></button>
+
+    <dialog id="checkout-dialog" aria-labelledby="checkout-title">
+        <form class="dialog-content" id="checkout-form">
+            <h2 id="checkout-title">Complete your order</h2>
+            <p>Review the details and place your coffee order.</p>
+            <p class="field-help">Prototype checkout only: no payment is processed and no delivery service is contacted.</p>
+            <div class="checkout-summary" id="checkout-summary"></div>
+            <label for="customer-name">Name</label>
+            <input id="customer-name" name="customerName" autocomplete="name" maxlength="80" required>
+            <label for="customer-phone">Phone</label>
+            <input id="customer-phone" name="customerPhone" type="tel" autocomplete="tel" maxlength="32" required>
+            <div id="checkout-address-field"><label for="checkout-address">Delivery address</label><input id="checkout-address" name="checkoutAddress" autocomplete="street-address" required></div>
+            <div class="dialog-actions"><button class="button" id="cancel-checkout" type="button">Keep shopping</button><button class="button button-primary" type="submit">Place order</button></div>
         </form>
     </dialog>
 
@@ -453,8 +612,16 @@
                 syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
                 sweeteners: [],
                 toppings: { cinnamon: false, whippedCream: false, cocoa: false },
-                metric: true
+                metric: true,
+                cartItems: [],
+                deliveryAddress: "",
+                fulfillmentMethod: "delivery",
+                tipPercent: 15,
+                customTipPercent: 15,
+                orderStatus: null
             };
+            let editingCartItemId = null;
+            let drawerReturnFocus = null;
             const $ = (selector) => document.querySelector(selector);
             const $$ = (selector) => [...document.querySelectorAll(selector)];
             const elements = {
@@ -466,6 +633,44 @@
             function round(value, places = 0) {
                 const factor = 10 ** places;
                 return Math.round(value * factor) / factor;
+            }
+
+            function money(amount) {
+                return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+            }
+
+            function roundMoney(amount) {
+                return Math.round((amount + Number.EPSILON) * 100) / 100;
+            }
+
+            function getDrinkPrice() {
+                let basePrice = 4.5;
+                basePrice += Math.max(0, Math.ceil((state.volumeMl - 240) / 120)) * 0.5;
+                const modifiers = Math.max(0, state.shots - 2) * 1
+                    + (state.milk === "oat" ? 0.7 : state.milk === "almond" ? 0.5 : 0)
+                    + Object.values(state.syrups).reduce((sum, pumps) => sum + pumps * 0.5, 0);
+                basePrice = roundMoney(basePrice);
+                const roundedModifiers = roundMoney(modifiers);
+                return { basePrice, modifiers: roundedModifiers, subtotal: roundMoney(basePrice + roundedModifiers) };
+            }
+
+            function getPricing(subtotal) {
+                const delivery = subtotal > 0 && state.fulfillmentMethod === "delivery" ? 2.49 : 0;
+                const service = roundMoney(subtotal * 0.08);
+                const tax = roundMoney(subtotal * 0.0825);
+                const tipRate = state.tipPercent === "custom" ? state.customTipPercent : state.tipPercent;
+                const tip = roundMoney(subtotal * tipRate / 100);
+                return { delivery, service, tax, tip, total: roundMoney(subtotal + delivery + service + tax + tip), tipRate };
+            }
+
+            function getCartSubtotal() {
+                return state.cartItems.reduce((sum, item) => sum + item.price, 0);
+            }
+
+            function getEstimatedEta(itemCount = Math.max(1, state.cartItems.length)) {
+                if (state.fulfillmentMethod === "pickup") return `Ready for pickup in ${7 + Math.max(0, itemCount - 2) * 2} mins`;
+                const extra = Math.max(0, itemCount - 2) * 5;
+                return `Arriving in ${15 + extra}–${25 + extra} mins`;
             }
 
             function displayVolume(ml) {
@@ -565,6 +770,8 @@
             function render() {
                 const composition = getComposition();
                 const metrics = getMetrics(composition);
+                const drinkPrice = getDrinkPrice();
+                const pricing = getPricing(drinkPrice.subtotal);
                 renderLayers(composition);
                 renderLegend(composition);
                 elements.classification.textContent = getDrinkName(composition);
@@ -587,6 +794,25 @@
                 $("#ice-field").hidden = state.temperature === "hot";
                 $("#unit-toggle").setAttribute("aria-checked", String(state.metric));
                 $("#unit-label").textContent = state.metric ? "Metric" : "Imperial";
+                $("#delivery-option").setAttribute("aria-pressed", String(state.fulfillmentMethod === "delivery"));
+                $("#pickup-option").setAttribute("aria-pressed", String(state.fulfillmentMethod === "pickup"));
+                $("#delivery-address-wrap").hidden = state.fulfillmentMethod !== "delivery";
+                $("#delivery-address").value = state.deliveryAddress;
+                $("#eta-text").textContent = getEstimatedEta();
+                $("#drink-price").textContent = money(drinkPrice.basePrice);
+                $("#modifier-price").textContent = money(drinkPrice.modifiers);
+                $("#delivery-fee-label").textContent = state.fulfillmentMethod === "delivery" ? "Delivery fee" : "Pickup";
+                $("#delivery-fee").textContent = money(pricing.delivery);
+                $("#service-fee").textContent = money(pricing.service);
+                $("#tax-fee").textContent = money(pricing.tax);
+                $("#tip-percent").textContent = round(pricing.tipRate, 0);
+                $("#tip-fee").textContent = money(pricing.tip);
+                $("#order-total").textContent = money(pricing.total);
+                $("#custom-tip-input").hidden = state.tipPercent !== "custom";
+                $("#custom-tip-input").value = state.customTipPercent;
+                $$(".tip-button").forEach((button) => button.setAttribute("aria-pressed", String(String(state.tipPercent) === button.dataset.tip)));
+                $("#add-to-cart-button").textContent = editingCartItemId ? "↻ Update order item" : "＋ Add to order basket";
+                renderCart();
                 elements.volume.value = state.volumeMl;
                 elements.shots.value = state.shots;
                 elements.foam.value = state.foam;
@@ -596,6 +822,171 @@
                 elements.notice.textContent = message;
                 window.clearTimeout(setNotice.timer);
                 setNotice.timer = window.setTimeout(() => { elements.notice.textContent = ""; }, 4500);
+            }
+
+            function renderCart() {
+                const container = $("#cart-items");
+                container.replaceChildren();
+                const count = state.cartItems.length;
+                $("#cart-count").textContent = count;
+                $("#drawer-count").textContent = `(${count})`;
+                $("#checkout-fab").hidden = count === 0;
+                $("#checkout-button").disabled = count === 0;
+                const subtotal = getCartSubtotal();
+                const pricing = getPricing(subtotal);
+                $("#cart-total").textContent = money(pricing.total);
+                $("#fab-total").textContent = money(pricing.total);
+
+                if (!count) {
+                    const empty = document.createElement("p");
+                    empty.className = "field-help";
+                    empty.textContent = "Your basket is empty. Add a custom drink to get started.";
+                    container.appendChild(empty);
+                    return;
+                }
+
+                state.cartItems.forEach((item) => {
+                    const row = document.createElement("article");
+                    row.className = "cart-item";
+                    const details = document.createElement("div");
+                    const title = document.createElement("h3");
+                    title.textContent = item.name;
+                    const description = document.createElement("p");
+                    description.textContent = `${BASES[item.state.base].label} · ${displayVolume(item.state.volumeMl)} · ${MILKS[item.state.milk].label}`;
+                    details.append(title, description);
+                    const price = document.createElement("strong");
+                    price.className = "cart-item-price";
+                    price.textContent = money(item.price);
+                    const actions = document.createElement("div");
+                    actions.className = "cart-item-actions";
+                    const edit = document.createElement("button");
+                    edit.className = "recipe-link";
+                    edit.type = "button";
+                    edit.textContent = "Edit";
+                    edit.addEventListener("click", () => {
+                        editingCartItemId = item.id;
+                        applyRecipe(item.state);
+                        closeCart(false);
+                        setTab("tab-foundation", true);
+                        setNotice("Edit this drink and update it in your basket when ready.");
+                    });
+                    const remove = document.createElement("button");
+                    remove.className = "delete-recipe";
+                    remove.type = "button";
+                    remove.textContent = "Remove";
+                    remove.addEventListener("click", () => {
+                        state.cartItems = state.cartItems.filter((cartItem) => cartItem.id !== item.id);
+                        if (editingCartItemId === item.id) editingCartItemId = null;
+                        render();
+                        setNotice(`${item.name} removed from your basket.`);
+                    });
+                    actions.append(edit, remove);
+                    row.append(details, price, actions);
+                    container.appendChild(row);
+                });
+            }
+
+            function addCurrentDrinkToCart() {
+                const composition = getComposition();
+                const pricing = getDrinkPrice();
+                const name = getDrinkName(composition) === "Custom Concoction"
+                    ? `Custom ${BASES[state.base].label} drink`
+                    : getDrinkName(composition);
+                const metrics = getMetrics(composition);
+                const existingIndex = state.cartItems.findIndex((item) => item.id === editingCartItemId);
+                const item = {
+                    id: editingCartItemId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
+                    name,
+                    state: getRecipeState(),
+                    metrics,
+                    price: pricing.subtotal
+                };
+                if (existingIndex >= 0) state.cartItems[existingIndex] = item;
+                else state.cartItems.push(item);
+                editingCartItemId = null;
+                resetEditor();
+                setNotice(existingIndex >= 0 ? `${name} updated in your basket.` : `${name} added to your basket.`);
+            }
+
+            function resetEditor() {
+                Object.assign(state, {
+                    base: "espresso", caffeineMode: "regular", volumeMl: 240, shots: 2,
+                    extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole",
+                    foam: 25, syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+                    sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false }
+                });
+                editingCartItemId = null;
+                $("#classics-select").value = "";
+                render();
+                setTab("tab-foundation");
+            }
+
+            function openCart() {
+                drawerReturnFocus = document.activeElement;
+                const drawer = $("#cart-drawer");
+                drawer.setAttribute("open", "");
+                drawer.setAttribute("aria-hidden", "false");
+                $("#drawer-backdrop").hidden = false;
+                requestAnimationFrame(() => $("#drawer-backdrop").classList.add("visible"));
+                $("#close-cart-button").focus();
+            }
+
+            function closeCart(restoreFocus = true) {
+                const drawer = $("#cart-drawer");
+                drawer.removeAttribute("open");
+                drawer.setAttribute("aria-hidden", "true");
+                $("#drawer-backdrop").classList.remove("visible");
+                window.setTimeout(() => { $("#drawer-backdrop").hidden = true; }, 280);
+                if (restoreFocus && drawerReturnFocus && typeof drawerReturnFocus.focus === "function") drawerReturnFocus.focus();
+            }
+
+            function updateCheckoutSummary() {
+                const subtotal = getCartSubtotal();
+                const pricing = getPricing(subtotal);
+                const summary = $("#checkout-summary");
+                summary.textContent = `${state.cartItems.length} drink${state.cartItems.length === 1 ? "" : "s"} · ${money(subtotal)} drinks subtotal · estimated total ${money(pricing.total)} · ${getEstimatedEta(state.cartItems.length)}`;
+                const delivery = state.fulfillmentMethod === "delivery";
+                $("#checkout-address-field").hidden = !delivery;
+                $("#checkout-address").required = delivery;
+                $("#checkout-address").value = state.deliveryAddress;
+            }
+
+            function openCheckout() {
+                if (!state.cartItems.length) return;
+                updateCheckoutSummary();
+                closeCart();
+                $("#checkout-dialog").showModal();
+            }
+
+            function renderTracking() {
+                const order = state.orderStatus;
+                if (!order) return;
+                $("#tracking-order-number").textContent = order.number;
+                $("#tracking-eta").textContent = order.fulfillmentMethod === "pickup"
+                    ? "Ready for pickup in about 7 minutes."
+                    : `Estimated arrival: ${getEstimatedEta(order.itemCount)}.`;
+                const labels = order.fulfillmentMethod === "pickup"
+                    ? ["Received", "Barista crafting", "Ready for pickup", "Picked up"]
+                    : ["Received", "Barista crafting", "Out for delivery", "Arrived"];
+                $$(".tracking-step").forEach((step, index) => {
+                    step.classList.toggle("complete", index < order.stage);
+                    step.classList.toggle("current", index === order.stage);
+                    step.querySelector(".step-label").textContent = labels[index];
+                });
+                const messages = order.fulfillmentMethod === "pickup"
+                    ? ["Your order is in the queue.", "Your barista is crafting your coffee.", "Your order is ready at the pickup counter.", "Enjoy your coffee! Your pickup is complete."]
+                    : ["Your order is confirmed and in the queue.", "Your barista is crafting your coffee.", "Your delivery partner is heading your way.", "Your coffee has arrived. Enjoy!"];
+                $("#tracking-status-message").textContent = messages[order.stage];
+                $("#driver-section").hidden = order.fulfillmentMethod === "pickup";
+                $("#advance-order-button").hidden = order.stage >= 3;
+                $("#advance-order-button").textContent = order.stage === 2 ? "Mark as arrived (demo)" : "Update demo status";
+            }
+
+            function showTracking() {
+                $("#customizer-page").hidden = true;
+                $("#tracking-page").hidden = false;
+                renderTracking();
+                $("#tracking-title").focus();
             }
 
             function applyRecipe(recipe) {
@@ -665,8 +1056,20 @@
             }
 
             function getRecipeState() {
-                const { metric, ...recipeState } = state;
-                return JSON.parse(JSON.stringify(recipeState));
+                return JSON.parse(JSON.stringify({
+                    base: state.base,
+                    caffeineMode: state.caffeineMode,
+                    volumeMl: state.volumeMl,
+                    shots: state.shots,
+                    extraction: state.extraction,
+                    temperature: state.temperature,
+                    iceStyle: state.iceStyle,
+                    milk: state.milk,
+                    foam: state.foam,
+                    syrups: state.syrups,
+                    sweeteners: state.sweeteners,
+                    toppings: state.toppings
+                }));
             }
 
             function encodeRecipe() {
@@ -682,18 +1085,20 @@
                     const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
                     const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
                     const parsed = JSON.parse(new TextDecoder().decode(bytes));
-                        const allowedKeys = ["base", "caffeineMode", "volumeMl", "shots", "extraction", "temperature", "iceStyle", "milk", "foam", "syrups", "sweeteners", "toppings"];
-                        const valid = parsed && BASES[parsed.base] && ["regular", "decaf", "half"].includes(parsed.caffeineMode)
-                            && Object.keys(parsed).every((key) => allowedKeys.includes(key))
-                            && ["whole", "skim", "oat", "almond"].includes(parsed.milk)
+                    const allowedKeys = ["base", "caffeineMode", "volumeMl", "shots", "extraction", "temperature", "iceStyle", "milk", "foam", "syrups", "sweeteners", "toppings"];
+                    const valid = parsed && BASES[parsed.base] && ["regular", "decaf", "half"].includes(parsed.caffeineMode)
+                        && Object.keys(parsed).every((key) => allowedKeys.includes(key))
+                        && ["whole", "skim", "oat", "almond"].includes(parsed.milk)
                         && ["ristretto", "standard", "lungo"].includes(parsed.extraction)
                         && ["hot", "iced", "blended"].includes(parsed.temperature)
                         && ["cube", "coffee", "crushed"].includes(parsed.iceStyle)
                         && Number.isInteger(parsed.volumeMl) && parsed.volumeMl >= 60 && parsed.volumeMl <= 480
                         && Number.isInteger(parsed.shots) && parsed.shots >= 1 && parsed.shots <= 4
                         && Number.isInteger(parsed.foam) && parsed.foam >= 0 && parsed.foam <= 100
-                        && parsed.syrups && ["vanilla", "caramel", "chocolate"].every((key) => Number.isInteger(parsed.syrups[key]) && parsed.syrups[key] >= 0 && parsed.syrups[key] <= 6)
-                        && parsed.toppings && ["cinnamon", "whippedCream", "cocoa"].every((key) => typeof parsed.toppings[key] === "boolean")
+                        && parsed.syrups && Object.keys(parsed.syrups).every((key) => ["vanilla", "caramel", "chocolate"].includes(key))
+                        && ["vanilla", "caramel", "chocolate"].every((key) => Number.isInteger(parsed.syrups[key]) && parsed.syrups[key] >= 0 && parsed.syrups[key] <= 6)
+                        && parsed.toppings && Object.keys(parsed.toppings).every((key) => ["cinnamon", "whippedCream", "cocoa"].includes(key))
+                        && ["cinnamon", "whippedCream", "cocoa"].every((key) => typeof parsed.toppings[key] === "boolean")
                         && Array.isArray(parsed.sweeteners) && parsed.sweeteners.every((key) => Object.hasOwn(SWEETENERS, key));
                     if (!valid) throw new Error("The recipe link contains unsupported drink settings.");
                     applyRecipe(parsed);
@@ -815,6 +1220,113 @@
                 render();
             }));
             $("#unit-toggle").addEventListener("click", () => { state.metric = !state.metric; render(); });
+            $("#delivery-option").addEventListener("click", () => {
+                state.fulfillmentMethod = "delivery";
+                render();
+            });
+            $("#pickup-option").addEventListener("click", () => {
+                state.fulfillmentMethod = "pickup";
+                render();
+            });
+            $("#delivery-address").addEventListener("input", (event) => {
+                state.deliveryAddress = event.target.value;
+            });
+            $("#locate-button").addEventListener("click", () => {
+                if (!navigator.geolocation) {
+                    setNotice("Location access is not available in this browser.");
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const { latitude, longitude } = position.coords;
+                    state.deliveryAddress = `Pinned location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+                    $("#delivery-address").value = state.deliveryAddress;
+                    setNotice("Location pinned. Add a street address or delivery instructions if needed.");
+                }, (error) => {
+                    setNotice(`Could not get your location: ${error.message}`);
+                }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+            });
+            $$(".tip-button").forEach((button) => button.addEventListener("click", () => {
+                state.tipPercent = button.dataset.tip === "custom" ? "custom" : Number(button.dataset.tip);
+                render();
+                if (state.tipPercent === "custom") $("#custom-tip-input").focus();
+            }));
+            $("#custom-tip-input").addEventListener("input", (event) => {
+                const amount = Number(event.target.value);
+                state.customTipPercent = Number.isFinite(amount) ? Math.max(0, Math.min(100, amount)) : 0;
+                render();
+            });
+            $("#add-to-cart-button").addEventListener("click", addCurrentDrinkToCart);
+            $("#open-cart-button").addEventListener("click", openCart);
+            $("#close-cart-button").addEventListener("click", closeCart);
+            $("#drawer-backdrop").addEventListener("click", closeCart);
+            $("#checkout-button").addEventListener("click", openCheckout);
+            $("#checkout-fab").addEventListener("click", openCheckout);
+            $("#cancel-checkout").addEventListener("click", () => $("#checkout-dialog").close());
+            $("#checkout-form").addEventListener("submit", (event) => {
+                event.preventDefault();
+                if (!state.cartItems.length) return;
+                if (state.fulfillmentMethod === "delivery") {
+                    const address = $("#checkout-address");
+                    state.deliveryAddress = address.value.trim();
+                    if (!state.deliveryAddress) {
+                        address.setCustomValidity("Enter a delivery address.");
+                        address.reportValidity();
+                        return;
+                    }
+                    address.setCustomValidity("");
+                }
+                const subtotal = getCartSubtotal();
+                const pricing = getPricing(subtotal);
+                state.orderStatus = {
+                    number: `BB-${String(Date.now()).slice(-6)}`,
+                    stage: 0,
+                    fulfillmentMethod: state.fulfillmentMethod,
+                    deliveryAddress: state.deliveryAddress,
+                    itemCount: state.cartItems.length,
+                    items: JSON.parse(JSON.stringify(state.cartItems)),
+                    total: pricing.total,
+                    customerName: $("#customer-name").value.trim(),
+                    customerPhone: $("#customer-phone").value.trim()
+                };
+                state.cartItems = [];
+                editingCartItemId = null;
+                $("#checkout-dialog").close();
+                render();
+                showTracking();
+            });
+            $("#advance-order-button").addEventListener("click", () => {
+                if (!state.orderStatus || state.orderStatus.stage >= 3) return;
+                state.orderStatus.stage += 1;
+                renderTracking();
+            });
+            $("#driver-contact").addEventListener("click", () => {
+                $("#tracking-status-message").textContent = "Driver contact is not connected in this demo.";
+            });
+            $("#back-to-customizer-button").addEventListener("click", () => {
+                $("#tracking-page").hidden = true;
+                $("#customizer-page").hidden = false;
+                $("#page-title").focus();
+            });
+            document.addEventListener("keydown", (event) => {
+                const drawer = $("#cart-drawer");
+                if (!drawer.hasAttribute("open")) return;
+                if (event.key === "Escape") {
+                    event.preventDefault();
+                    closeCart();
+                    return;
+                }
+                if (event.key !== "Tab") return;
+                const focusable = [...drawer.querySelectorAll("button:not(:disabled)")];
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            });
             $("#classics-select").addEventListener("change", (event) => {
                 const recipe = CLASSICS[event.target.value];
                 if (recipe) applyRecipe(recipe);
