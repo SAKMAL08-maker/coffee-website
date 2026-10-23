@@ -1,6 +1,5 @@
 require("dotenv").config();
 
-const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
@@ -31,16 +30,12 @@ const contentSecurityDirectives = {
     frameAncestors: ["'none'"],
     imgSrc: ["'self'", "data:", "blob:"],
     objectSrc: ["'none'"],
-    scriptSrc: ["'self'", (request, response) => `'nonce-${response.locals.cspNonce}'`],
-    styleSrc: ["'self'", (request, response) => `'nonce-${response.locals.cspNonce}'`],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'"],
     styleSrcAttr: ["'unsafe-inline'"]
 };
 if (process.env.NODE_ENV === "production") contentSecurityDirectives.upgradeInsecureRequests = [];
 
-app.use((request, response, next) => {
-    response.locals.cspNonce = crypto.randomBytes(18).toString("base64");
-    next();
-});
 app.use(helmet({
     contentSecurityPolicy: { directives: contentSecurityDirectives },
     hsts: process.env.NODE_ENV === "production"
@@ -48,13 +43,13 @@ app.use(helmet({
         : false
 }));
 app.use(express.json({ limit: "1mb" }));
+app.use(express.static(path.join(__dirname, "public"), { dotfiles: "deny", index: false }));
 
 app.get(["/", "/index.html"], async (request, response, next) => {
     try {
         const html = await fs.promises.readFile(path.join(__dirname, "index.html"), "utf8");
-        const nonce = response.locals.cspNonce;
         response.set("Cache-Control", "no-store");
-        response.type("html").send(html.replace(/<(script|style)(?=[\s>])/gi, `<$1 nonce="${nonce}"`));
+        response.type("html").send(html);
     } catch (error) {
         next(error);
     }

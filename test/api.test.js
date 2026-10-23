@@ -11,14 +11,29 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         const home = await fetch(`${baseUrl}/`);
         assert.equal(home.status, 200);
         const html = await home.text();
-        assert.match(html, /Bean &amp; Bloom/);
+        assert.match(html, /Coffee Lab — Customizer/);
         assert.equal(home.headers.get("x-powered-by"), null);
         assert.equal(home.headers.get("x-content-type-options"), "nosniff");
         assert.equal(home.headers.get("cache-control"), "no-store");
         const policy = home.headers.get("content-security-policy");
-        const nonce = policy.match(/script-src[^;]*'nonce-([^']+)'/)[1];
-        assert.ok(html.includes(`<script nonce="${nonce}"`));
-        assert.ok(html.includes(`<style nonce="${nonce}"`));
+        assert.match(policy, /script-src 'self'/);
+        assert.match(policy, /style-src 'self'/);
+        assert.match(html, /href="\/css\/styles\.css"/);
+        assert.match(html, /src="\/js\/(?:state|pricing|app)\.js"/);
+        assert.doesNotMatch(html, /<style[\s>]/i);
+        assert.doesNotMatch(html, /<script>([\s\S]*?)<\/script>/i);
+        assert.doesNotMatch(html, /Share recipe|Export recipe card|Save to my bar/i);
+        assert.match(html, /id="creation-view-toggle"/);
+        assert.match(html, /id="summary-view"[^>]*hidden/);
+        assert.match(html, /id="summary-view-toggle"/);
+
+        const css = await fetch(`${baseUrl}/css/styles.css`);
+        assert.equal(css.status, 200);
+        assert.match(css.headers.get("content-type"), /text\/css/);
+        const stateModule = await fetch(`${baseUrl}/js/state.js`);
+        assert.equal(stateModule.status, 200);
+        const pricingModule = await fetch(`${baseUrl}/js/pricing.js`);
+        assert.equal(pricingModule.status, 200);
 
         const quote = await fetch(`${baseUrl}/api/coffees/quote`, {
             method: "POST",
