@@ -10,6 +10,7 @@ const {
     getReceiptDownloadUrl,
     retryOwnedReceipt,
     getAdminReceiptDownloadUrl,
+    retryAdminReceipt: retryAdminReceiptService,
     deleteStoredReceipt
 } = require("../services/receiptService");
 
@@ -214,7 +215,7 @@ async function trackOrder(request, response, next) {
         const supabase = getAdminClient();
         const { data: order, error } = await supabase
             .from("orders")
-            .select("tracking_code, status, fulfillment_method, receipt_status, delivery_reported_at, created_at, updated_at")
+            .select("tracking_code, status, fulfillment_method, receipt_status, delivery_reported_at, pickup_approved_at, created_at, updated_at")
             .eq("tracking_code", request.params.trackingCode)
             .maybeSingle();
         if (error) throw error;
@@ -227,6 +228,7 @@ async function trackOrder(request, response, next) {
                 fulfillmentMethod: order.fulfillment_method,
                 receiptStatus: order.receipt_status,
                 deliveryReported: Boolean(order.delivery_reported_at),
+                pickupApprovedAt: order.pickup_approved_at,
                 createdAt: order.created_at,
                 updatedAt: order.updated_at
             }
@@ -316,13 +318,13 @@ async function listAdminOrders(request, response, next) {
         const supabase = getAdminClient();
         let { data, error, count } = await supabase
             .from("orders")
-            .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
+            .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, pickup_approved_at, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
             .order("created_at", { ascending: false })
             .range((page - 1) * pageSize, page * pageSize - 1);
         let schemaWarning = null;
         if (error && hasMissingOptionalOrderColumns(error)) {
             console.warn("Admin orders query is using the base schema; apply the receipt and delivery approval migrations.");
-            schemaWarning = "Some order details and receipt status are unavailable until the latest Supabase receipt and delivery migrations are applied.";
+            schemaWarning = "Some order details and receipt status are unavailable until the latest Supabase receipt, delivery, and pickup migrations are applied.";
             ({ data, error, count } = await supabase
                 .from("orders")
                 .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
@@ -352,6 +354,7 @@ async function listAdminOrders(request, response, next) {
                 receiptStatus: order.receipt_status || "unavailable",
                 deliveryReportedAt: order.delivery_reported_at,
                 deliveryApprovedAt: order.delivery_approved_at,
+                pickupApprovedAt: order.pickup_approved_at,
                 createdAt: order.created_at,
                 items: order.order_items
             }))
@@ -377,10 +380,6 @@ async function approveDelivery(request, response, next) {
         if (order.status === "Delivered" || order.delivery_approved_at) {
             return response.status(409).json({ error: "This order is already approved as delivered." });
         }
-        if (!order.delivery_reported_at) {
-            return response.status(409).json({ error: "The customer has not reported this order as delivered." });
-        }
-
         const approvedAt = new Date().toISOString();
         const { data, error } = await supabase
             .from("orders")
@@ -392,12 +391,61 @@ async function approveDelivery(request, response, next) {
             })
             .eq("id", order.id)
             .is("delivery_approved_at", null)
-            .not("delivery_reported_at", "is", null)
             .select("id, status, delivery_approved_at")
             .maybeSingle();
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
         response.json({ order: { id: data.id, status: data.status, deliveryApprovedAt: data.delivery_approved_at } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function approvePickup(request, response, next) {
+    try {
+        const supabase = getAdminClient();
+        const { data: order, error: readError } = await supabase
+            .from("orders")
+            .select("id, fulfillment_method, status, pickup_approved_at")
+            .eq("id", request.params.orderId)
+            .maybeSingle();
+        if (readError) throw readError;
+        if (!order) return response.status(404).json({ error: "Order not found." });
+        if (order.fulfillment_method !== "pickup") {
+            return response.status(409).json({ error: "Only pickup orders can be approved as ready for pickup." });
+        }
+        if (order.status === "Ready for Pickup" || order.pickup_approved_at) {
+            return response.status(409).json({ error: "This order is already approved as ready for pickup." });
+        }
+        const approvedAt = new Date().toISOString();
+        const { data, error } = await supabase
+            .from("orders")
+            .update({
+                status: "Ready for Pickup",
+                pickup_approved_at: approvedAt,
+                pickup_approved_by: request.user.id,
+                updated_at: approvedAt
+            })
+            .eq("id", order.id)
+            .eq("status", order.status)
+            .is("pickup_approved_at", null)
+            .select("id, status, pickup_approved_at")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        response.json({ order: { id: data.id, status: data.status, pickupApprovedAt: data.pickup_approved_at } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function retryAdminReceipt(request, response, next) {
+    try {
+        const receipt = await retryAdminReceiptService(request.params.orderId);
+        if (receipt.status === "not_found") {
+            return response.status(404).json({ error: "Order not found." });
+        }
+        response.json({ receiptStatus: receipt.status });
     } catch (error) {
         next(error);
     }
@@ -505,6 +553,8 @@ module.exports = {
     reportDelivery,
     listAdminOrders,
     approveDelivery,
+    approvePickup,
+    retryAdminReceipt,
     downloadAdminReceipt,
     deleteAdminOrder,
     downloadReceipt,

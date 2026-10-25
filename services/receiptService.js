@@ -104,6 +104,20 @@ async function getAdminReceiptDownloadUrl(orderId) {
     };
 }
 
+async function retryAdminReceipt(orderId) {
+    const { data: order, error } = await getAdminClient()
+        .from("orders")
+        .select("id, receipt_status, receipt_object_key")
+        .eq("id", orderId)
+        .maybeSingle();
+    if (error) throw error;
+    if (!order) return { status: "not_found" };
+    if (order.receipt_status === "available" && order.receipt_object_key) {
+        return { status: "available" };
+    }
+    return { status: await createOrderReceipt(orderId) };
+}
+
 async function deleteStoredReceipt(objectKey) {
     if (objectKey) await deleteReceiptObject(objectKey);
 }
@@ -113,5 +127,6 @@ module.exports = {
     getReceiptDownloadUrl,
     retryOwnedReceipt,
     getAdminReceiptDownloadUrl,
+    retryAdminReceipt,
     deleteStoredReceipt
 };

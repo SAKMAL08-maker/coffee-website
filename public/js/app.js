@@ -335,41 +335,50 @@
         $("#checkout-dialog").showModal();
     }
 
+    function isFulfillmentComplete(order) {
+        return order.fulfillmentMethod === "pickup"
+            ? order.status === "Ready for Pickup"
+            : order.status === "Delivered";
+    }
+
     function renderTracking() {
         const order = state.orderStatus;
         if (!order) return;
         $("#tracking-order-number").textContent = order.number;
-        const isApprovedDelivered = order.status === "Delivered";
+        const isComplete = isFulfillmentComplete(order);
         const isDelivery = order.fulfillmentMethod === "delivery";
-        $("#tracking-eta").textContent = isApprovedDelivered
-            ? "Your delivery has been verified by Coffee Lab."
-            : "We’ll update this page once delivery is verified.";
-        $("#delivery-progress").classList.toggle("is-delivered", isApprovedDelivered);
-        $("#delivery-progress-icon").textContent = isApprovedDelivered ? "✓" : "•";
-        $("#delivery-progress-label").textContent = isApprovedDelivered ? "Delivered" : "Not yet delivered";
-        $("#report-delivered-button").hidden = !isDelivery || isApprovedDelivered || order.deliveryReported;
+        const completionLabel = isDelivery ? "Delivered" : "Ready for pickup";
+        $("#tracking-eyebrow").textContent = isDelivery ? "Your coffee is on its way" : "Pickup order";
+        $("#tracking-eta").textContent = isComplete
+            ? isDelivery ? "Your delivery has been verified by Coffee Lab." : "Your order is ready for pickup."
+            : isDelivery ? "We’ll update this page once delivery is verified." : "We’ll update this page once your order is ready for pickup.";
+        $("#fulfillment-progress-card").setAttribute("aria-label", isDelivery ? "Delivery confirmation" : "Pickup confirmation");
+        $("#fulfillment-progress").classList.toggle("is-complete", isComplete);
+        $("#fulfillment-progress-icon").textContent = isComplete ? "✓" : "•";
+        $("#fulfillment-progress-label").textContent = isComplete ? completionLabel : isDelivery ? "Not yet delivered" : "Not yet ready for pickup";
+        $("#report-delivered-button").hidden = !isDelivery || isComplete || order.deliveryReported;
         $("#report-delivered-button").disabled = Boolean(order.deliveryReportPending);
-        $("#tracking-status-message").textContent = isApprovedDelivered
-            ? "Your delivery was approved by an administrator."
+        $("#tracking-status-message").textContent = isComplete
+            ? isDelivery ? "Your delivery was approved by an administrator." : "An administrator verified that your order is ready for pickup."
             : order.deliveryReportError
                 ? `Could not report delivery: ${order.deliveryReportError}`
             : order.deliveryReported
                 ? "Thanks for letting us know. Your delivery report is waiting for administrator verification."
                 : isDelivery
                     ? "The green checkmark appears after an administrator verifies your delivery."
-                    : "This is a pickup order; delivery confirmation does not apply.";
+                    : "The green checkmark appears after an administrator verifies that your order is ready for pickup.";
         const receiptStatus = order.receiptStatus || "unavailable";
         const receiptMessages = {
             pending: "Your digital receipt is ready to generate.",
             available: "Your PDF receipt is ready to download.",
             failed: "We could not prepare your receipt. You can try again.",
-            unavailable: "Digital receipts are not available for this order."
+            unavailable: "This receipt has not been saved yet. You can try generating it again."
         };
         $("#receipt-message").textContent = receiptMessages[receiptStatus] || receiptMessages.failed;
         $("#download-receipt-button").hidden = receiptStatus !== "available";
         $("#retry-receipt-button").hidden = !["pending", "failed", "unavailable"].includes(receiptStatus);
         $("#retry-receipt-button").textContent = receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
-        $("#refresh-order-button").hidden = isApprovedDelivered;
+        $("#refresh-order-button").hidden = isComplete;
         $("#tracking-order-number").setAttribute("title", `Tracking code: ${order.trackingCode}`);
     }
 
@@ -379,7 +388,7 @@
         renderTracking();
         $("#tracking-title").focus();
         window.clearInterval(trackingPollTimer);
-        if (state.orderStatus && state.orderStatus.status !== "Delivered") {
+        if (state.orderStatus && !isFulfillmentComplete(state.orderStatus)) {
             refreshTrackingStatus();
             trackingPollTimer = window.setInterval(refreshTrackingStatus, 20000);
         }
@@ -391,14 +400,14 @@
             const response = await fetch(`/api/orders/track/${encodeURIComponent(state.orderStatus.trackingCode)}`);
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Tracking request failed (${response.status}).`);
-            if (!["Received", "Crafting", "Out for Delivery", "Arrived", "Delivered"].includes(result.order.status)) {
+            if (!["Received", "Crafting", "Out for Delivery", "Arrived", "Delivered", "Ready for Pickup"].includes(result.order.status)) {
                 throw new Error("The server returned an unknown order status.");
             }
             state.orderStatus.status = result.order.status;
             state.orderStatus.receiptStatus = result.order.receiptStatus || state.orderStatus.receiptStatus;
             state.orderStatus.deliveryReported = Boolean(result.order.deliveryReported);
             renderTracking();
-            if (state.orderStatus.status === "Delivered") window.clearInterval(trackingPollTimer);
+            if (isFulfillmentComplete(state.orderStatus)) window.clearInterval(trackingPollTimer);
         } catch (error) {
             $("#tracking-status-message").textContent = `Could not refresh order status: ${error.message}`;
         }

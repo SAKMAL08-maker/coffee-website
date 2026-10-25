@@ -21,8 +21,10 @@ router.post("/:orderId/receipt/retry", receiptLimiter, validateRequest(schemas.r
 router.get("/:orderId/receipt", receiptLimiter, validateRequest(schemas.orderId), authenticate, orderController.downloadReceipt);
 router.post("/:orderId/delivery-report", deliveryReportLimiter, validateRequest(schemas.deliveryReport), authenticate, orderController.reportDelivery);
 router.get("/admin/all", adminOrderLimiter, validateRequest(schemas.adminOrders), authenticate, requireAdmin, orderController.listAdminOrders);
+router.post("/:orderId/admin/receipt/retry", receiptLimiter, validateRequest(schemas.receiptRetry), authenticate, requireAdmin, orderController.retryAdminReceipt);
 router.get("/:orderId/admin/receipt", receiptLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.downloadAdminReceipt);
 router.patch("/:orderId/admin/approve-delivery", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.approveDelivery);
+router.patch("/:orderId/admin/approve-pickup", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.approvePickup);
 router.delete("/:orderId/admin", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.deleteAdminOrder);
 router.patch("/:orderId/status", validateRequest(schemas.status), authenticate, requireStaff, orderController.advanceOrderStatus);
 

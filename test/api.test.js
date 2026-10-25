@@ -35,6 +35,7 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="download-receipt-button"/);
         assert.match(html, /id="admin-page"/);
         assert.match(html, /id="report-delivered-button"/);
+        assert.match(html, /id="fulfillment-progress-card"/);
         assert.match(html, /class="intro" aria-labelledby="page-title"/);
         assert.doesNotMatch(html, /Your delivery partner/);
         assert.match(html, /id="customizer-page" hidden/);
@@ -42,7 +43,16 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.ok(html.indexOf('src="/js/admin.js"') < html.indexOf('src="/js/auth.js"'));
         const adminFrontend = await fetch(`${baseUrl}/js/admin.js`);
         assert.equal(adminFrontend.status, 200);
-        assert.match(await adminFrontend.text(), /window\.CoffeeLabAdmin = \{ startForUser \}/);
+        const adminScript = await adminFrontend.text();
+        assert.match(adminScript, /window\.CoffeeLabAdmin = \{ startForUser \}/);
+        assert.match(adminScript, /Approve delivered/);
+        assert.match(adminScript, /Verify ready for pickup/);
+        assert.match(adminScript, /generate-receipt/);
+        const appFrontend = await fetch(`${baseUrl}/js/app.js`);
+        assert.equal(appFrontend.status, 200);
+        const appScript = await appFrontend.text();
+        assert.match(appScript, /Not yet ready for pickup/);
+        assert.match(appScript, /Ready for Pickup/);
 
         const css = await fetch(`${baseUrl}/css/styles.css`);
         assert.equal(css.status, 200);
@@ -110,6 +120,33 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal(unauthenticatedAdminOrders.status, 401);
         const invalidAdminOrdersPage = await fetch(`${baseUrl}/api/orders/admin/all?page=0`);
         assert.equal(invalidAdminOrdersPage.status, 400);
+        const unauthenticatedAdminReceiptRetry = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/admin/receipt/retry`,
+            {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: "{}"
+            }
+        );
+        assert.equal(unauthenticatedAdminReceiptRetry.status, 401);
+        const unauthenticatedDeliveryApproval = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/admin/approve-delivery`,
+            {
+                method: "PATCH",
+                headers: { "content-type": "application/json" },
+                body: "{}"
+            }
+        );
+        assert.equal(unauthenticatedDeliveryApproval.status, 401);
+        const unauthenticatedPickupApproval = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/admin/approve-pickup`,
+            {
+                method: "PATCH",
+                headers: { "content-type": "application/json" },
+                body: "{}"
+            }
+        );
+        assert.equal(unauthenticatedPickupApproval.status, 401);
 
         const invalidReceiptRetry = await fetch(
             `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt/retry`,

@@ -300,15 +300,15 @@
 
         <main class="tracking-page" id="tracking-page" hidden aria-labelledby="tracking-title">
             <div class="tracking-heading">
-                <p class="eyebrow">Your coffee is on its way</p>
+                <p class="eyebrow" id="tracking-eyebrow">Your coffee is on its way</p>
                 <h1 id="tracking-title" tabindex="-1">Order <span id="tracking-order-number"></span></h1>
                 <p id="tracking-eta">We’ll update this page once delivery is verified.</p>
             </div>
-            <section class="tracking-card delivery-progress-card" aria-label="Delivery confirmation">
+            <section class="tracking-card fulfillment-progress-card" id="fulfillment-progress-card" aria-label="Order progress">
                 <h2>Order progress</h2>
-                <div class="delivery-progress" id="delivery-progress" aria-live="polite">
-                    <span class="delivery-progress-icon" id="delivery-progress-icon" aria-hidden="true">•</span>
-                    <strong id="delivery-progress-label">Not yet delivered</strong>
+                <div class="fulfillment-progress" id="fulfillment-progress" aria-live="polite">
+                    <span class="fulfillment-progress-icon" id="fulfillment-progress-icon" aria-hidden="true">•</span>
+                    <strong id="fulfillment-progress-label">Not yet delivered</strong>
                 </div>
                 <p class="notice" id="tracking-status-message" role="status" aria-live="polite"></p>
                 <button class="button button-primary" id="report-delivered-button" type="button">My order has already been delivered</button>

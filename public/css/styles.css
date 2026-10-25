@@ -219,10 +219,10 @@ dialog::backdrop { background: rgb(40 36 31 / 42%); backdrop-filter: blur(3px); 
 .driver-info span { margin-top: 4px; color: var(--muted); font-size: .78rem; }
 .tracking-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
 .tracking-card > p[role="status"] { color: var(--muted); }
-.delivery-progress-card { border-color: color-mix(in srgb, var(--accent) 38%, var(--line)); }
-.delivery-progress { display: flex; align-items: center; gap: 14px; margin: 22px 0; font-size: 1.25rem; }
-.delivery-progress-icon { display: grid; width: 54px; height: 54px; place-items: center; border: 2px solid var(--line); border-radius: 50%; background: var(--cream); color: var(--muted); font-size: 1.8rem; }
-.delivery-progress.is-delivered .delivery-progress-icon { border-color: var(--green); background: var(--green); color: white; }
+.fulfillment-progress-card { border-color: color-mix(in srgb, var(--accent) 38%, var(--line)); }
+.fulfillment-progress { display: flex; align-items: center; gap: 14px; margin: 22px 0; font-size: 1.25rem; }
+.fulfillment-progress-icon { display: grid; width: 54px; height: 54px; place-items: center; border: 2px solid var(--line); border-radius: 50%; background: var(--cream); color: var(--muted); font-size: 1.8rem; }
+.fulfillment-progress.is-complete .fulfillment-progress-icon { border-color: var(--green); background: var(--green); color: white; }
 .receipt-card { border-width: 2px; border-color: var(--coffee); }
 .receipt-card h2 { margin-top: 0; }
 .receipt-card > p { color: var(--muted); }

@@ -33,7 +33,7 @@
         const title = document.createElement("h2");
         title.textContent = `Order CL-${order.trackingCode.slice(-6).toUpperCase()}`;
         const status = document.createElement("span");
-        status.className = `admin-order-status${order.status === "Delivered" ? " is-delivered" : ""}`;
+        status.className = `admin-order-status${["Delivered", "Ready for Pickup"].includes(order.status) ? " is-delivered" : ""}`;
         status.textContent = order.status;
         heading.append(title, status);
         card.append(heading);
@@ -78,19 +78,21 @@
         ].forEach(([label, amount]) => appendDetail(priceDetails, label, formatMoney(amount)));
         card.append(priceDetails);
 
-        const deliveryState = document.createElement("p");
-        deliveryState.className = "admin-delivery-state";
-        if (order.deliveryApprovedAt) {
-            deliveryState.textContent = `Delivery verified ${new Date(order.deliveryApprovedAt).toLocaleString()}.`;
-        } else if (order.deliveryReportedAt) {
-            deliveryState.textContent = "Customer reports delivery; administrator approval is pending.";
-            deliveryState.dataset.pending = "true";
+        const fulfillmentState = document.createElement("p");
+        fulfillmentState.className = "admin-delivery-state";
+        if (order.fulfillmentMethod === "pickup" && order.pickupApprovedAt) {
+            fulfillmentState.textContent = `Pickup readiness verified ${new Date(order.pickupApprovedAt).toLocaleString()}.`;
+        } else if (order.fulfillmentMethod === "delivery" && order.deliveryApprovedAt) {
+            fulfillmentState.textContent = `Delivery verified ${new Date(order.deliveryApprovedAt).toLocaleString()}.`;
+        } else if (order.fulfillmentMethod === "delivery" && order.deliveryReportedAt) {
+            fulfillmentState.textContent = "Customer reports delivery; administrator approval is pending.";
+            fulfillmentState.dataset.pending = "true";
         } else {
-            deliveryState.textContent = order.fulfillmentMethod === "delivery"
+            fulfillmentState.textContent = order.fulfillmentMethod === "delivery"
                 ? "Waiting for the customer to report delivery."
-                : "Delivery verification is not applicable to pickup.";
+                : "Waiting for an administrator to verify that the order is ready for pickup.";
         }
-        card.append(deliveryState);
+        card.append(fulfillmentState);
 
         const receiptArea = document.createElement("div");
         receiptArea.className = "admin-receipt-row";
@@ -104,17 +106,32 @@
             receiptButton.dataset.adminAction = "receipt";
             receiptButton.textContent = "Download receipt PDF";
             receiptArea.append(receiptButton);
+        } else {
+            const generateButton = document.createElement("button");
+            generateButton.type = "button";
+            generateButton.className = "button button-small";
+            generateButton.dataset.adminAction = "generate-receipt";
+            generateButton.textContent = order.receiptStatus === "pending" ? "Generate receipt" : "Retry receipt";
+            receiptArea.append(generateButton);
         }
         card.append(receiptArea);
 
         const actions = document.createElement("div");
         actions.className = "admin-order-actions";
-        if (order.deliveryReportedAt && !order.deliveryApprovedAt) {
+        if (order.fulfillmentMethod === "delivery" && !order.deliveryApprovedAt) {
             const approveButton = document.createElement("button");
             approveButton.type = "button";
             approveButton.className = "button button-primary";
             approveButton.dataset.adminAction = "approve";
-            approveButton.textContent = "Approve delivery";
+            approveButton.textContent = "Approve delivered";
+            actions.append(approveButton);
+        }
+        if (order.fulfillmentMethod === "pickup" && !order.pickupApprovedAt) {
+            const approveButton = document.createElement("button");
+            approveButton.type = "button";
+            approveButton.className = "button button-primary";
+            approveButton.dataset.adminAction = "approve-pickup";
+            approveButton.textContent = "Verify ready for pickup";
             actions.append(approveButton);
         }
         const deleteButton = document.createElement("button");
@@ -225,7 +242,9 @@
 
         const actionUrls = {
             receipt: `/api/orders/${encodeURIComponent(orderId)}/admin/receipt`,
+            "generate-receipt": `/api/orders/${encodeURIComponent(orderId)}/admin/receipt/retry`,
             approve: `/api/orders/${encodeURIComponent(orderId)}/admin/approve-delivery`,
+            "approve-pickup": `/api/orders/${encodeURIComponent(orderId)}/admin/approve-pickup`,
             delete: `/api/orders/${encodeURIComponent(orderId)}/admin`
         };
         if (action === "receipt") {
@@ -236,19 +255,28 @@
         button.disabled = true;
         try {
             const response = await fetch(actionUrls[action], {
-                method: action === "approve" ? "PATCH" : "DELETE",
+                method: ["approve", "approve-pickup"].includes(action) ? "PATCH" : action === "generate-receipt" ? "POST" : "DELETE",
                 credentials: "same-origin",
                 headers: { "Content-Type": "application/json" },
-                body: action === "approve" ? "{}" : undefined
+                body: ["approve", "approve-pickup", "generate-receipt"].includes(action) ? "{}" : undefined
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Order action failed (${response.status}).`);
-            $("#admin-message").textContent = action === "approve"
-                ? "Delivery approved."
-                : "Order and its receipt deleted.";
+            $("#admin-message").textContent = action === "approve" || action === "approve-pickup"
+                ? action === "approve" ? "Order approved as delivered." : "Order verified as ready for pickup."
+                : action === "generate-receipt"
+                    ? result.receiptStatus === "available"
+                        ? "Receipt generated and saved to Backblaze."
+                        : result.receiptStatus === "failed"
+                            ? "Receipt generation or upload failed. Check the server logs and B2 application-key permissions."
+                            : "B2 storage is not configured on this server. Add the B2_* variables to its environment, then retry."
+                    : "Order and its receipt deleted.";
             await loadOrders();
         } catch (error) {
-            $("#admin-message").textContent = `Could not ${action === "approve" ? "approve delivery" : "delete order"}: ${error.message}`;
+            const actionDescription = action === "approve" ? "approve delivery"
+                : action === "approve-pickup" ? "verify pickup readiness"
+                    : action === "generate-receipt" ? "generate receipt" : "delete order";
+            $("#admin-message").textContent = `Could not ${actionDescription}: ${error.message}`;
             button.disabled = false;
         }
     }
