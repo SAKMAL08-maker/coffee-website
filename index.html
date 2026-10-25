@@ -322,6 +322,14 @@
                     <button class="button button-small" id="driver-contact" type="button">☎ Contact</button>
                 </div>
             </section>
+            <section class="tracking-card" aria-labelledby="receipt-title">
+                <h2 id="receipt-title">Digital receipt</h2>
+                <p id="receipt-message" role="status" aria-live="polite">Preparing your receipt…</p>
+                <div class="tracking-actions">
+                    <button class="button button-primary" id="download-receipt-button" type="button" hidden>Download receipt (PDF)</button>
+                    <button class="button" id="retry-receipt-button" type="button" hidden>Try receipt again</button>
+                </div>
+            </section>
             <section class="tracking-card" aria-label="Tracking controls">
                 <div class="tracking-actions">
                     <button class="button button-primary" id="refresh-order-button" type="button">Refresh order status</button>

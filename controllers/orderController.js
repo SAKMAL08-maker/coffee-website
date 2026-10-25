@@ -5,6 +5,11 @@ const {
     classifyDrink,
     calculateNutrition
 } = require("../services/coffeeService");
+const {
+    createOrderReceipt,
+    getReceiptDownloadUrl,
+    retryOwnedReceipt
+} = require("../services/receiptService");
 
 const SERVICE_FEE_BASIS_POINTS = 800;
 const TAX_BASIS_POINTS = 1200;
@@ -158,6 +163,30 @@ async function checkout(request, response, next) {
         });
         if (error) throw error;
 
+        let receiptStatus = "unavailable";
+        if (request.user) {
+            try {
+                receiptStatus = await createOrderReceipt(orderId);
+            } catch (receiptError) {
+                console.error("Could not create order receipt:", {
+                    orderId,
+                    errorName: receiptError.name
+                });
+                receiptStatus = "failed";
+            }
+        } else {
+            const { error: receiptStatusError } = await supabase
+                .from("orders")
+                .update({ receipt_status: "unavailable" })
+                .eq("id", orderId);
+            if (receiptStatusError) {
+                console.error("Could not record receipt availability:", {
+                    orderId,
+                    errorName: receiptStatusError.name
+                });
+            }
+        }
+
         response.status(201).json({
             order: {
                 id: orderId,
@@ -166,6 +195,7 @@ async function checkout(request, response, next) {
                 fulfillmentMethod,
                 itemCount: lineItems.length,
                 pricing,
+                receiptStatus,
                 createdAt: new Date().toISOString()
             }
         });
@@ -179,7 +209,7 @@ async function trackOrder(request, response, next) {
         const supabase = getAdminClient();
         const { data: order, error } = await supabase
             .from("orders")
-            .select("tracking_code, status, fulfillment_method, created_at, updated_at")
+            .select("tracking_code, status, fulfillment_method, receipt_status, created_at, updated_at")
             .eq("tracking_code", request.params.trackingCode)
             .maybeSingle();
         if (error) throw error;
@@ -190,10 +220,38 @@ async function trackOrder(request, response, next) {
                 trackingCode: order.tracking_code,
                 status: order.status,
                 fulfillmentMethod: order.fulfillment_method,
+                receiptStatus: order.receipt_status,
                 createdAt: order.created_at,
                 updatedAt: order.updated_at
             }
         });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function downloadReceipt(request, response, next) {
+    try {
+        const receipt = await getReceiptDownloadUrl(request.user.id, request.params.orderId);
+        if (receipt.status === "not_found") {
+            return response.status(404).json({ error: "Order not found." });
+        }
+        if (receipt.status !== "available") {
+            return response.status(409).json({ error: "This receipt is not available yet." });
+        }
+        response.redirect(302, receipt.url);
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function retryReceipt(request, response, next) {
+    try {
+        const receipt = await retryOwnedReceipt(request.user.id, request.params.orderId);
+        if (receipt.status === "not_found") {
+            return response.status(404).json({ error: "Order not found." });
+        }
+        response.json({ receiptStatus: receipt.status });
     } catch (error) {
         next(error);
     }
@@ -259,6 +317,8 @@ module.exports = {
     calculateOrderPricing,
     checkout,
     trackOrder,
+    downloadReceipt,
+    retryReceipt,
     advanceOrderStatus,
     listMyOrders
 };

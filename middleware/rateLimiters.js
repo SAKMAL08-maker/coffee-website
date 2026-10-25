@@ -19,5 +19,6 @@ module.exports = {
     checkoutLimiter: createLimiter(15 * 60 * 1000, 10),
     savedWriteLimiter: createLimiter(60 * 60 * 1000, 20),
     quoteLimiter: createLimiter(60 * 1000, 60),
-    trackingLimiter: createLimiter(60 * 1000, 30)
+    trackingLimiter: createLimiter(60 * 1000, 30),
+    receiptLimiter: createLimiter(60 * 1000, 10)
 };

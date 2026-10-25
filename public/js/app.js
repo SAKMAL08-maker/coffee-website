@@ -354,6 +354,16 @@
             ? ["Your order is in the queue.", "Your barista is crafting your coffee.", "Your order is ready at the pickup counter.", "Enjoy your coffee! Your pickup is complete."]
             : ["Your order is confirmed and in the queue.", "Your barista is crafting your coffee.", "Your delivery partner is heading your way.", "Your coffee has arrived. Enjoy!"];
         $("#tracking-status-message").textContent = messages[order.stage];
+        const receiptStatus = order.receiptStatus || "unavailable";
+        const receiptMessages = {
+            pending: "Your digital receipt is being prepared.",
+            available: "Your PDF receipt is ready to download.",
+            failed: "We could not prepare your receipt. You can try again.",
+            unavailable: "Digital receipts are not available for this order."
+        };
+        $("#receipt-message").textContent = receiptMessages[receiptStatus] || receiptMessages.failed;
+        $("#download-receipt-button").hidden = receiptStatus !== "available";
+        $("#retry-receipt-button").hidden = !["failed", "unavailable"].includes(receiptStatus);
         $("#driver-section").hidden = order.fulfillmentMethod === "pickup";
         $("#refresh-order-button").hidden = order.stage >= 3;
         $("#tracking-order-number").setAttribute("title", `Tracking code: ${order.trackingCode}`);
@@ -381,6 +391,7 @@
             const stage = statusStages.indexOf(result.order.status);
             if (stage < 0) throw new Error("The server returned an unknown order status.");
             state.orderStatus.stage = stage;
+            state.orderStatus.receiptStatus = result.order.receiptStatus || state.orderStatus.receiptStatus;
             renderTracking();
             if (stage >= 3) window.clearInterval(trackingPollTimer);
         } catch (error) {
@@ -581,7 +592,8 @@
                 stage: 0,
                 fulfillmentMethod: result.order.fulfillmentMethod,
                 deliveryAddress: state.deliveryAddress,
-                itemCount: result.order.itemCount
+                itemCount: result.order.itemCount,
+                receiptStatus: result.order.receiptStatus || "unavailable"
             };
             state.cartItems = [];
             editingCartItemId = null;
@@ -596,6 +608,32 @@
         }
     });
     $("#refresh-order-button").addEventListener("click", refreshTrackingStatus);
+    $("#download-receipt-button").addEventListener("click", () => {
+        if (!state.orderStatus?.id) return;
+        window.location.assign(`/api/orders/${encodeURIComponent(state.orderStatus.id)}/receipt`);
+    });
+    $("#retry-receipt-button").addEventListener("click", async (event) => {
+        if (!state.orderStatus?.id) return;
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = "Retrying…";
+        try {
+            const response = await fetch(`/api/orders/${encodeURIComponent(state.orderStatus.id)}/receipt/retry`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: "{}"
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || `Receipt request failed (${response.status}).`);
+            state.orderStatus.receiptStatus = result.receiptStatus;
+            renderTracking();
+        } catch (error) {
+            $("#receipt-message").textContent = `Could not prepare your receipt: ${error.message}`;
+        } finally {
+            button.disabled = false;
+            button.textContent = "Try receipt again";
+        }
+    });
     $("#driver-contact").addEventListener("click", () => {
         $("#tracking-status-message").textContent = "Driver contact is not connected in this demo.";
     });

@@ -113,6 +113,11 @@ const schemas = {
         params: z.object({ orderId: uuid }).strict(),
         query: emptyQuery
     },
+    receiptRetry: {
+        body: emptyBody,
+        params: z.object({ orderId: uuid }).strict(),
+        query: emptyQuery
+    },
     status: {
         body: z.object({ status: z.enum(["Received", "Crafting", "Out for Delivery", "Arrived"]) }).strict(),
         params: z.object({ orderId: uuid }).strict(),

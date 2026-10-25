@@ -31,6 +31,8 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="login-form"/);
         assert.match(html, /id="recovery-form"/);
         assert.match(html, /id="logout-button"/);
+        assert.match(html, /id="receipt-message"/);
+        assert.match(html, /id="download-receipt-button"/);
         assert.match(html, /id="customizer-page" hidden/);
         assert.match(html, /src="\/js\/auth\.js"/);
 
@@ -69,6 +71,29 @@ test("serves the customizer and validates quote and checkout API requests", asyn
 
         const invalidTrackingCode = await fetch(`${baseUrl}/api/orders/track/not-a-tracking-code`);
         assert.equal(invalidTrackingCode.status, 400);
+
+        const unauthenticatedReceipt = await fetch(`${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt`);
+        assert.equal(unauthenticatedReceipt.status, 401);
+
+        const unauthenticatedReceiptRetry = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt/retry`,
+            {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: "{}"
+            }
+        );
+        assert.equal(unauthenticatedReceiptRetry.status, 401);
+
+        const invalidReceiptRetry = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt/retry`,
+            {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ unexpected: true })
+            }
+        );
+        assert.equal(invalidReceiptRetry.status, 400);
 
         const unauthenticatedProfile = await fetch(`${baseUrl}/api/users/me`);
         assert.equal(unauthenticatedProfile.status, 401);
