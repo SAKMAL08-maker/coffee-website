@@ -388,10 +388,10 @@
         }
     }
 
-    function applyRecipe(recipe) {
-        Object.assign(state, JSON.parse(JSON.stringify(recipe)));
-        state.metric = state.metric === undefined ? true : state.metric;
-        $("#classics-select").value = "";
+    function applyRecipe(recipe, selectedClassic = "") {
+        const { name, ...configuration } = recipe;
+        Object.assign(state, JSON.parse(JSON.stringify(configuration)));
+        $("#classics-select").value = selectedClassic;
         render();
     }
 
@@ -416,6 +416,65 @@
             if (nextIndex < 0) return;
             event.preventDefault();
             setTab(tabs[nextIndex].id, true);
+        });
+    });
+
+    $$(".segment, .option-card").forEach((button) => {
+        button.addEventListener("click", () => {
+            const group = button.closest("[data-choice-group]");
+            if (!group) return;
+            state[group.dataset.choiceGroup] = button.dataset.value;
+            $("#classics-select").value = "";
+            render();
+        });
+    });
+
+    $$(".chip").forEach((button) => {
+        button.addEventListener("click", () => {
+            const sweetener = button.dataset.value;
+            state.sweeteners = state.sweeteners.includes(sweetener)
+                ? state.sweeteners.filter((value) => value !== sweetener)
+                : [...state.sweeteners, sweetener];
+            $("#classics-select").value = "";
+            render();
+        });
+    });
+
+    $$(".topping-switch").forEach((button) => {
+        button.addEventListener("click", () => {
+            const topping = button.dataset.topping;
+            state.toppings[topping] = !state.toppings[topping];
+            $("#classics-select").value = "";
+            render();
+        });
+    });
+
+    [
+        [elements.volume, "volumeMl"],
+        [elements.shots, "shots"],
+        [elements.foam, "foam"]
+    ].forEach(([input, stateKey]) => {
+        input.addEventListener("input", () => {
+            state[stateKey] = Number(input.value);
+            $("#classics-select").value = "";
+            render();
+        });
+    });
+
+    $$("[data-adjust]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const input = button.dataset.adjust === "volume" ? elements.volume : elements.shots;
+            input.value = String(Number(input.value) + Number(button.dataset.delta));
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+    });
+
+    $$("[data-counter]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const syrup = button.dataset.counter;
+            state.syrups[syrup] = Math.max(0, Math.min(6, state.syrups[syrup] + Number(button.dataset.delta)));
+            $("#classics-select").value = "";
+            render();
         });
     });
 
@@ -568,7 +627,7 @@
     });
     $("#classics-select").addEventListener("change", (event) => {
         const recipe = CLASSICS[event.target.value];
-        if (recipe) applyRecipe(recipe);
+        if (recipe) applyRecipe(recipe, event.target.value);
     });
     $("#surprise-button").addEventListener("click", () => {
         const pick = (values) => values[Math.floor(Math.random() * values.length)];
@@ -582,6 +641,7 @@
             sweeteners: Math.random() > .6 ? [pick(Object.keys(SWEETENERS))] : [],
             toppings: { cinnamon: Math.random() > .75, whippedCream: Math.random() > .8, cocoa: Math.random() > .8 }
         });
+        $("#classics-select").value = "";
         render();
         setNotice("A new little coffee idea, just for you.");
     });
