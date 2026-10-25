@@ -2,6 +2,9 @@
     const pageSize = 50;
     let currentPage = 1;
     let totalCount = 0;
+    let isLoadingOrders = false;
+    let isAdminAuthenticated = false;
+    let refreshTimer = null;
     const $ = (selector) => document.querySelector(selector);
 
     function formatMoney(cents) {
@@ -137,6 +140,8 @@
     }
 
     async function loadOrders() {
+        if (isLoadingOrders || !isAdminAuthenticated || document.hidden) return;
+        isLoadingOrders = true;
         const refreshButton = $("#admin-refresh-button");
         const message = $("#admin-message");
         refreshButton.disabled = true;
@@ -150,7 +155,7 @@
             totalCount = result.totalCount;
             if (!result.orders.length && currentPage > 1) {
                 currentPage -= 1;
-                await loadOrders();
+                window.setTimeout(loadOrders, 0);
                 return;
             }
             renderOrders(result.orders);
@@ -163,7 +168,14 @@
             message.textContent = `Could not load orders: ${error.message}`;
         } finally {
             refreshButton.disabled = false;
+            isLoadingOrders = false;
         }
+    }
+
+    function startAutomaticRefresh() {
+        if (refreshTimer) window.clearInterval(refreshTimer);
+        loadOrders();
+        refreshTimer = window.setInterval(loadOrders, 15000);
     }
 
     async function performOrderAction(button) {
@@ -205,11 +217,18 @@
 
     document.addEventListener("coffee-lab:authenticated", (event) => {
         if (event.detail?.user?.role === "admin") {
+            isAdminAuthenticated = true;
             currentPage = 1;
-            loadOrders();
+            startAutomaticRefresh();
         }
     });
     $("#admin-refresh-button").addEventListener("click", loadOrders);
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && isAdminAuthenticated) loadOrders();
+    });
+    window.addEventListener("focus", () => {
+        if (isAdminAuthenticated) loadOrders();
+    });
     $("#admin-previous-page").addEventListener("click", () => {
         if (currentPage <= 1) return;
         currentPage -= 1;

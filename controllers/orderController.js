@@ -172,7 +172,10 @@ async function checkout(request, response, next) {
             } catch (receiptError) {
                 console.error("Could not create order receipt:", {
                     orderId,
-                    errorName: receiptError.name
+                    errorName: receiptError.name,
+                    errorCode: receiptError.Code || receiptError.code,
+                    httpStatusCode: receiptError.$metadata?.httpStatusCode,
+                    errorMessage: receiptError.message
                 });
                 receiptStatus = "failed";
             }

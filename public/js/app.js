@@ -360,14 +360,15 @@
                     : "This is a pickup order; delivery confirmation does not apply.";
         const receiptStatus = order.receiptStatus || "unavailable";
         const receiptMessages = {
-            pending: "Your digital receipt is being prepared.",
+            pending: "Your digital receipt is ready to generate.",
             available: "Your PDF receipt is ready to download.",
             failed: "We could not prepare your receipt. You can try again.",
             unavailable: "Digital receipts are not available for this order."
         };
         $("#receipt-message").textContent = receiptMessages[receiptStatus] || receiptMessages.failed;
         $("#download-receipt-button").hidden = receiptStatus !== "available";
-        $("#retry-receipt-button").hidden = !["failed", "unavailable"].includes(receiptStatus);
+        $("#retry-receipt-button").hidden = !["pending", "failed", "unavailable"].includes(receiptStatus);
+        $("#retry-receipt-button").textContent = receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
         $("#refresh-order-button").hidden = isApprovedDelivered;
         $("#tracking-order-number").setAttribute("title", `Tracking code: ${order.trackingCode}`);
     }
@@ -660,7 +661,7 @@
             $("#receipt-message").textContent = `Could not prepare your receipt: ${error.message}`;
         } finally {
             button.disabled = false;
-            button.textContent = "Try receipt again";
+            button.textContent = state.orderStatus.receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
         }
     });
     $("#back-to-customizer-button").addEventListener("click", () => {

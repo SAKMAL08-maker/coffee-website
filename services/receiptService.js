@@ -84,7 +84,6 @@ async function retryOwnedReceipt(accountId, orderId) {
     if (order.receipt_status === "available" && order.receipt_object_key) {
         return { status: "available" };
     }
-    if (order.receipt_status === "pending") return { status: "pending" };
     return { status: await createOrderReceipt(orderId) };
 }
 
