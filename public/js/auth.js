@@ -30,7 +30,7 @@
         $("#unit-toggle").closest(".unit-control").hidden = isAdmin;
         $("#surprise-button").hidden = isAdmin;
         $("#signed-in-user").textContent = `Hi, ${user.username}`;
-        if (isAdmin) window.dispatchEvent(new CustomEvent("coffee-lab:authenticated", { detail: { user } }));
+        if (isAdmin) window.CoffeeLabAdmin?.startForUser(user);
     }
 
     async function readResponse(response) {

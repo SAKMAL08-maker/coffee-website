@@ -205,6 +205,17 @@
         refreshTimer = window.setInterval(loadOrders, 15000);
     }
 
+    function startForUser(user) {
+        if (user?.role !== "admin") return;
+        if (isAdminAuthenticated) {
+            loadOrders();
+            return;
+        }
+        isAdminAuthenticated = true;
+        currentPage = 1;
+        startAutomaticRefresh();
+    }
+
     async function performOrderAction(button) {
         const card = button.closest(".admin-order-card");
         const orderId = card?.dataset.orderId;
@@ -242,13 +253,7 @@
         }
     }
 
-    document.addEventListener("coffee-lab:authenticated", (event) => {
-        if (event.detail?.user?.role === "admin") {
-            isAdminAuthenticated = true;
-            currentPage = 1;
-            startAutomaticRefresh();
-        }
-    });
+    window.CoffeeLabAdmin = { startForUser };
     $("#admin-refresh-button").addEventListener("click", loadOrders);
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden && isAdminAuthenticated) loadOrders();
