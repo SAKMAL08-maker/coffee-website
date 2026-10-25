@@ -35,9 +35,11 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="download-receipt-button"/);
         assert.match(html, /id="admin-page"/);
         assert.match(html, /id="report-delivered-button"/);
+        assert.match(html, /class="intro" aria-labelledby="page-title"/);
         assert.doesNotMatch(html, /Your delivery partner/);
         assert.match(html, /id="customizer-page" hidden/);
         assert.match(html, /src="\/js\/auth\.js"/);
+        assert.ok(html.indexOf('src="/js/admin.js"') < html.indexOf('src="/js/auth.js"'));
 
         const css = await fetch(`${baseUrl}/css/styles.css`);
         assert.equal(css.status, 200);

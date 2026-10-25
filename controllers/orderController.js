@@ -299,20 +299,47 @@ async function reportDelivery(request, response, next) {
     }
 }
 
+function hasMissingOptionalOrderColumns(error) {
+    return ["42703", "PGRST204"].includes(error?.code)
+        || /column .* does not exist|could not find .* column/i.test(error?.message || "");
+}
+
+function isMissingOrdersTable(error) {
+    return ["42P01", "PGRST205"].includes(error?.code)
+        || /relation ["']?(public\.)?orders["']? does not exist|could not find the table .*orders/i.test(error?.message || "");
+}
+
 async function listAdminOrders(request, response, next) {
     try {
         const pageSize = 50;
         const page = Number(request.query.page) || 1;
-        const { data, error, count } = await getAdminClient()
+        const supabase = getAdminClient();
+        let { data, error, count } = await supabase
             .from("orders")
-            .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, created_at, order_items(name, classification, configuration, price_cents)", { count: "exact" })
+            .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
             .order("created_at", { ascending: false })
             .range((page - 1) * pageSize, page * pageSize - 1);
+        let schemaWarning = null;
+        if (error && hasMissingOptionalOrderColumns(error)) {
+            console.warn("Admin orders query is using the base schema; apply the receipt and delivery approval migrations.");
+            schemaWarning = "Some order details and receipt status are unavailable until the latest Supabase receipt and delivery migrations are applied.";
+            ({ data, error, count } = await supabase
+                .from("orders")
+                .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
+                .order("created_at", { ascending: false })
+                .range((page - 1) * pageSize, page * pageSize - 1));
+        }
+        if (error && isMissingOrdersTable(error)) {
+            return response.status(503).json({
+                error: "The Coffee Lab orders table is missing from this Supabase project. Apply the base coffee_lab migration before loading admin orders."
+            });
+        }
         if (error) throw error;
         response.json({
             page,
             pageSize,
             totalCount: count || 0,
+            schemaWarning,
             orders: data.map((order) => ({
                 id: order.id,
                 trackingCode: order.tracking_code,
@@ -322,7 +349,7 @@ async function listAdminOrders(request, response, next) {
                 deliveryAddress: order.delivery_address,
                 notes: order.notes,
                 pricing: order.pricing,
-                receiptStatus: order.receipt_status,
+                receiptStatus: order.receipt_status || "unavailable",
                 deliveryReportedAt: order.delivery_reported_at,
                 deliveryApprovedAt: order.delivery_approved_at,
                 createdAt: order.created_at,

@@ -5,6 +5,7 @@
     let isLoadingOrders = false;
     let isAdminAuthenticated = false;
     let refreshTimer = null;
+    let pendingRefresh = false;
     const $ = (selector) => document.querySelector(selector);
 
     function formatMoney(cents) {
@@ -140,18 +141,39 @@
     }
 
     async function loadOrders() {
-        if (isLoadingOrders || !isAdminAuthenticated || document.hidden) return;
+        if (!isAdminAuthenticated || document.hidden) return;
+        if (isLoadingOrders) {
+            pendingRefresh = true;
+            return;
+        }
         isLoadingOrders = true;
         const refreshButton = $("#admin-refresh-button");
         const message = $("#admin-message");
         refreshButton.disabled = true;
-        message.textContent = "Loading orders…";
+        if (!totalCount) message.textContent = "Loading orders…";
         try {
             const response = await fetch(`/api/orders/admin/all?page=${currentPage}`, {
                 credentials: "same-origin"
             });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || `Order request failed (${response.status}).`);
+            let result;
+            try {
+                result = await response.json();
+            } catch {
+                throw new Error(`The server returned an unreadable response (${response.status}).`);
+            }
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("Your administrator session is not authorized. Sign out and sign back in with an admin account.");
+                }
+                if (response.status === 503 && result.error) throw new Error(result.error);
+                if (response.status >= 500) {
+                    throw new Error("The server could not query orders. Confirm the latest Supabase migrations are applied, then check the Render logs.");
+                }
+                throw new Error(result.error || `Order request failed (${response.status}).`);
+            }
+            if (!Array.isArray(result.orders) || !Number.isInteger(result.totalCount)) {
+                throw new Error("The server returned an invalid orders response.");
+            }
             totalCount = result.totalCount;
             if (!result.orders.length && currentPage > 1) {
                 currentPage -= 1;
@@ -163,12 +185,17 @@
             $("#admin-page-label").textContent = `Page ${currentPage} of ${pageCount} · ${totalCount} order${totalCount === 1 ? "" : "s"}`;
             $("#admin-previous-page").disabled = currentPage <= 1;
             $("#admin-next-page").disabled = currentPage >= pageCount;
-            message.textContent = "";
+            message.textContent = result.schemaWarning || "";
+            message.dataset.state = result.schemaWarning ? "warning" : "";
         } catch (error) {
             message.textContent = `Could not load orders: ${error.message}`;
         } finally {
             refreshButton.disabled = false;
             isLoadingOrders = false;
+            if (pendingRefresh) {
+                pendingRefresh = false;
+                window.setTimeout(loadOrders, 0);
+            }
         }
     }
 
