@@ -370,7 +370,7 @@
         const receiptStatus = order.receiptStatus || "unavailable";
         const receiptMessages = {
             pending: "Your digital receipt is ready to generate.",
-            available: "Your PDF receipt is ready to download.",
+            available: "Your receipt image is ready to view, and the PDF is ready to download.",
             failed: "We could not prepare your receipt. You can try again.",
             unavailable: "This receipt has not been saved yet. You can try generating it again."
         };
@@ -378,6 +378,15 @@
         $("#download-receipt-button").hidden = receiptStatus !== "available";
         $("#retry-receipt-button").hidden = !["pending", "failed", "unavailable"].includes(receiptStatus);
         $("#retry-receipt-button").textContent = receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
+        const receiptPreview = $("#receipt-preview-image");
+        if (receiptStatus === "available" && order.id) {
+            const previewUrl = `/api/orders/${encodeURIComponent(order.id)}/receipt/preview`;
+            if (receiptPreview.getAttribute("src") !== previewUrl) receiptPreview.src = previewUrl;
+            receiptPreview.hidden = false;
+        } else {
+            receiptPreview.hidden = true;
+            receiptPreview.removeAttribute("src");
+        }
         $("#refresh-order-button").hidden = isComplete;
         $("#tracking-order-number").setAttribute("title", `Tracking code: ${order.trackingCode}`);
     }
@@ -672,6 +681,12 @@
             button.disabled = false;
             button.textContent = state.orderStatus.receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
         }
+    });
+    $("#receipt-preview-image").addEventListener("error", () => {
+        const image = $("#receipt-preview-image");
+        image.hidden = true;
+        image.removeAttribute("src");
+        $("#receipt-message").textContent = "The receipt image could not be loaded. Please try refreshing or generating the receipt again.";
     });
     $("#back-to-customizer-button").addEventListener("click", () => {
         window.clearInterval(trackingPollTimer);

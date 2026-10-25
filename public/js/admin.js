@@ -100,6 +100,12 @@
         receiptStatus.textContent = `Digital receipt: ${order.receiptStatus || "unavailable"}`;
         receiptArea.append(receiptStatus);
         if (order.receiptStatus === "available") {
+            const previewButton = document.createElement("button");
+            previewButton.type = "button";
+            previewButton.className = "button button-small";
+            previewButton.dataset.adminAction = "preview-receipt";
+            previewButton.textContent = "View receipt image";
+            receiptArea.append(previewButton);
             const receiptButton = document.createElement("button");
             receiptButton.type = "button";
             receiptButton.className = "button button-small";
@@ -115,6 +121,16 @@
             receiptArea.append(generateButton);
         }
         card.append(receiptArea);
+        const receiptPreview = document.createElement("img");
+        receiptPreview.className = "admin-receipt-preview";
+        receiptPreview.alt = `Receipt image for order CL-${order.trackingCode.slice(-6).toUpperCase()}`;
+        receiptPreview.hidden = true;
+        receiptPreview.addEventListener("error", () => {
+            receiptPreview.hidden = true;
+            const previewButton = receiptArea.querySelector('[data-admin-action="preview-receipt"]');
+            if (previewButton) previewButton.textContent = "Receipt image unavailable";
+        });
+        card.append(receiptPreview);
 
         const actions = document.createElement("div");
         actions.className = "admin-order-actions";
@@ -238,6 +254,14 @@
         const orderId = card?.dataset.orderId;
         const action = button.dataset.adminAction;
         if (!orderId || !action) return;
+        if (action === "preview-receipt") {
+            const preview = card.querySelector(".admin-receipt-preview");
+            const previewUrl = `/api/orders/${encodeURIComponent(orderId)}/admin/receipt/preview`;
+            if (preview.hidden) preview.src = previewUrl;
+            preview.hidden = !preview.hidden;
+            button.textContent = preview.hidden ? "View receipt image" : "Hide receipt image";
+            return;
+        }
         if (action === "delete" && !window.confirm("Permanently delete this order and its stored receipt? This cannot be undone.")) return;
 
         const actionUrls = {

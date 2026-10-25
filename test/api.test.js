@@ -18,6 +18,7 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         const policy = home.headers.get("content-security-policy");
         assert.match(policy, /script-src 'self'/);
         assert.match(policy, /style-src 'self'/);
+        assert.match(policy, /img-src[^;]*backblazeb2\.com/i);
         assert.match(html, /href="\/css\/styles\.css"/);
         assert.match(html, /src="\/js\/(?:state|pricing|app)\.js"/);
         assert.doesNotMatch(html, /<style[\s>]/i);
@@ -32,6 +33,7 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="recovery-form"/);
         assert.match(html, /id="logout-button"/);
         assert.match(html, /id="receipt-message"/);
+        assert.match(html, /id="receipt-preview-image"/);
         assert.match(html, /id="download-receipt-button"/);
         assert.match(html, /id="admin-page"/);
         assert.match(html, /id="report-delivered-button"/);
@@ -48,6 +50,7 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(adminScript, /Approve delivered/);
         assert.match(adminScript, /Verify ready for pickup/);
         assert.match(adminScript, /generate-receipt/);
+        assert.match(adminScript, /View receipt image/);
         const appFrontend = await fetch(`${baseUrl}/js/app.js`);
         assert.equal(appFrontend.status, 200);
         const appScript = await appFrontend.text();
@@ -95,6 +98,10 @@ test("serves the customizer and validates quote and checkout API requests", asyn
 
         const unauthenticatedReceipt = await fetch(`${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt`);
         assert.equal(unauthenticatedReceipt.status, 401);
+        const unauthenticatedReceiptPreview = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt/preview`
+        );
+        assert.equal(unauthenticatedReceiptPreview.status, 401);
 
         const unauthenticatedReceiptRetry = await fetch(
             `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt/retry`,
@@ -129,6 +136,10 @@ test("serves the customizer and validates quote and checkout API requests", asyn
             }
         );
         assert.equal(unauthenticatedAdminReceiptRetry.status, 401);
+        const unauthenticatedAdminReceiptPreview = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/admin/receipt/preview`
+        );
+        assert.equal(unauthenticatedAdminReceiptPreview.status, 401);
         const unauthenticatedDeliveryApproval = await fetch(
             `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/admin/approve-delivery`,
             {

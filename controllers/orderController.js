@@ -8,8 +8,10 @@ const {
 const {
     createOrderReceipt,
     getReceiptDownloadUrl,
+    getOwnedReceiptImageUrl,
     retryOwnedReceipt,
     getAdminReceiptDownloadUrl,
+    getReceiptImageUrl,
     retryAdminReceipt: retryAdminReceiptService,
     deleteStoredReceipt
 } = require("../services/receiptService");
@@ -253,6 +255,19 @@ async function downloadReceipt(request, response, next) {
     }
 }
 
+async function viewReceiptImage(request, response, next) {
+    try {
+        const receipt = await getOwnedReceiptImageUrl(request.user.id, request.params.orderId);
+        if (receipt.status === "not_found") return response.status(404).json({ error: "Order not found." });
+        if (receipt.status !== "available") {
+            return response.status(409).json({ error: "This receipt image is not available yet." });
+        }
+        response.redirect(302, receipt.url);
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function retryReceipt(request, response, next) {
     try {
         const receipt = await retryOwnedReceipt(request.user.id, request.params.orderId);
@@ -464,17 +479,32 @@ async function downloadAdminReceipt(request, response, next) {
     }
 }
 
+async function viewAdminReceiptImage(request, response, next) {
+    try {
+        const receipt = await getReceiptImageUrl(request.params.orderId);
+        if (receipt.status === "not_found") return response.status(404).json({ error: "Order not found." });
+        if (receipt.status !== "available") {
+            return response.status(409).json({ error: "This receipt image is not available yet." });
+        }
+        response.redirect(302, receipt.url);
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function deleteAdminOrder(request, response, next) {
     try {
         const supabase = getAdminClient();
         const { data: order, error: readError } = await supabase
             .from("orders")
-            .select("id, receipt_object_key")
+            .select("id, receipt_object_key, receipt_image_object_key")
             .eq("id", request.params.orderId)
             .maybeSingle();
         if (readError) throw readError;
         if (!order) return response.status(404).json({ error: "Order not found." });
-        if (order.receipt_object_key) await deleteStoredReceipt(order.receipt_object_key);
+        if (order.receipt_object_key || order.receipt_image_object_key) {
+            await deleteStoredReceipt(order.receipt_object_key, order.receipt_image_object_key);
+        }
 
         const { data, error } = await supabase
             .from("orders")
@@ -551,11 +581,13 @@ module.exports = {
     checkout,
     trackOrder,
     reportDelivery,
+    viewReceiptImage,
     listAdminOrders,
     approveDelivery,
     approvePickup,
     retryAdminReceipt,
     downloadAdminReceipt,
+    viewAdminReceiptImage,
     deleteAdminOrder,
     downloadReceipt,
     retryReceipt,

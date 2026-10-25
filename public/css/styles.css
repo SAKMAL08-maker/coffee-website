@@ -226,6 +226,8 @@ dialog::backdrop { background: rgb(40 36 31 / 42%); backdrop-filter: blur(3px); 
 .receipt-card { border-width: 2px; border-color: var(--coffee); }
 .receipt-card h2 { margin-top: 0; }
 .receipt-card > p { color: var(--muted); }
+.receipt-preview-image { display: block; width: min(100%, 620px); height: auto; margin: 18px auto 0; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+.admin-receipt-preview { display: block; width: min(100%, 520px); height: auto; margin: 12px auto 0; border: 1px solid var(--line); border-radius: 12px; }
 .button-danger { border-color: #a23d2e; color: #a23d2e; }
 .admin-page { max-width: 1050px; margin: 30px auto 60px; padding: 0 20px; }
 .admin-page > .notice { min-height: 1.4em; color: var(--muted); }

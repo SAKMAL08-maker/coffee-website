@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createReceiptPdf } = require("../services/receiptPdf");
+const { createReceiptImage } = require("../services/receiptImage");
 const { readStorageConfig } = require("../services/b2ReceiptStorage");
 
 test("creates a readable PDF receipt from a saved order", async () => {
@@ -18,6 +19,32 @@ test("creates a readable PDF receipt from a saved order", async () => {
             total_cents: 33750
         },
         order_items: [{ name: "Vanilla Latte", price_cents: 25000 }]
+    });
+
+    test("creates a self-contained receipt image with escaped order data and item totals", () => {
+        const image = createReceiptImage({
+            id: "c5c0c718-6e68-4a0f-b490-eaa4897bb4b1",
+            customer: { name: "Coffee <Customer>" },
+            fulfillment_method: "pickup",
+            created_at: "2026-10-26T12:00:00.000Z",
+            pricing: {
+                subtotal_cents: 25000,
+                delivery_fee_cents: 0,
+                service_fee_cents: 2000,
+                tax_cents: 3000,
+                tip_cents: 3750,
+                total_cents: 33750
+            },
+            order_items: [{ name: "Vanilla <Latte>", classification: "Latte", price_cents: 25000 }]
+        }).toString("utf8");
+
+        assert.match(image, /^<svg /);
+        assert.match(image, /Coffee Lab/);
+        assert.match(image, /Coffee &lt;Customer&gt;/);
+        assert.match(image, /Vanilla &lt;Latte&gt;/);
+        assert.match(image, /TOTAL PAID/);
+        assert.match(image, /PHP 337\.50/);
+        assert.doesNotMatch(image, /Coffee <Customer>/);
     });
 
     assert.ok(Buffer.isBuffer(pdf));

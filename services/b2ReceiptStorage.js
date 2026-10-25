@@ -65,6 +65,22 @@ async function uploadReceipt(orderId, pdfBuffer, environment = process.env) {
     return objectKey;
 }
 
+async function uploadReceiptImage(orderId, imageBuffer, environment = process.env) {
+    const config = readStorageConfig(environment);
+    if (!config) return null;
+
+    const client = createStorageClient(config);
+    const objectKey = `receipts/${orderId}.svg`;
+    await client.send(new PutObjectCommand({
+        Bucket: config.bucket,
+        Key: objectKey,
+        Body: imageBuffer,
+        ContentType: "image/svg+xml; charset=utf-8",
+        ContentDisposition: `inline; filename="Coffee-Lab-Receipt-${orderId.slice(0, 8)}.svg"`
+    }));
+    return objectKey;
+}
+
 async function createReceiptDownloadUrl(objectKey, environment = process.env) {
     const config = readStorageConfig(environment);
     if (!config) throw new Error("Backblaze B2 receipt storage is not configured.");
@@ -76,6 +92,19 @@ async function createReceiptDownloadUrl(objectKey, environment = process.env) {
         ResponseContentType: "application/pdf",
         ResponseContentDisposition: `attachment; filename="Coffee-Lab-Receipt-${objectKey.split("/").pop().replace(".pdf", "")}.pdf"`
     }), { expiresIn: 60 });
+}
+
+async function createReceiptImageUrl(objectKey, environment = process.env) {
+    const config = readStorageConfig(environment);
+    if (!config) throw new Error("Backblaze B2 receipt storage is not configured.");
+
+    const client = createStorageClient(config);
+    return getSignedUrl(client, new GetObjectCommand({
+        Bucket: config.bucket,
+        Key: objectKey,
+        ResponseContentType: "image/svg+xml",
+        ResponseContentDisposition: `inline; filename="Coffee-Lab-Receipt-${objectKey.split("/").pop().replace(".svg", "")}.svg"`
+    }), { expiresIn: 300 });
 }
 
 async function deleteReceiptObject(objectKey, environment = process.env) {
@@ -91,6 +120,8 @@ async function deleteReceiptObject(objectKey, environment = process.env) {
 module.exports = {
     readStorageConfig,
     uploadReceipt,
+    uploadReceiptImage,
     createReceiptDownloadUrl,
+    createReceiptImageUrl,
     deleteReceiptObject
 };

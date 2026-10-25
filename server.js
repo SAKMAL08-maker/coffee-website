@@ -29,7 +29,7 @@ const contentSecurityDirectives = {
     fontSrc: ["'self'", "data:"],
     formAction: ["'self'"],
     frameAncestors: ["'none'"],
-    imgSrc: ["'self'", "data:", "blob:"],
+    imgSrc: ["'self'", "https://*.backblazeb2.com", "data:", "blob:"],
     objectSrc: ["'none'"],
     scriptSrc: ["'self'"],
     styleSrc: ["'self'"],
