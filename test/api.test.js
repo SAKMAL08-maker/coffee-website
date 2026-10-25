@@ -41,6 +41,10 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /class="intro" aria-labelledby="page-title"/);
         assert.doesNotMatch(html, /Your delivery partner/);
         assert.match(html, /id="customizer-page" hidden/);
+        assert.match(html, /id="customer-nav"/);
+        assert.match(html, /id="order-history-nav-button"/);
+        assert.match(html, /id="order-history-page" hidden/);
+        assert.match(html, /id="order-history-list"/);
         assert.match(html, /src="\/js\/auth\.js"/);
         assert.ok(html.indexOf('src="/js/admin.js"') < html.indexOf('src="/js/auth.js"'));
         const adminFrontend = await fetch(`${baseUrl}/js/admin.js`);
@@ -56,6 +60,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         const appScript = await appFrontend.text();
         assert.match(appScript, /Not yet ready for pickup/);
         assert.match(appScript, /Ready for Pickup/);
+        assert.match(appScript, /\/api\/orders\/mine/);
+        assert.match(appScript, /Delivered/);
+        assert.match(appScript, /Ready for pickup/);
 
         const css = await fetch(`${baseUrl}/css/styles.css`);
         assert.equal(css.status, 200);
@@ -95,6 +102,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
 
         const invalidTrackingCode = await fetch(`${baseUrl}/api/orders/track/not-a-tracking-code`);
         assert.equal(invalidTrackingCode.status, 400);
+
+        const unauthenticatedOrderHistory = await fetch(`${baseUrl}/api/orders/mine`);
+        assert.equal(unauthenticatedOrderHistory.status, 401);
 
         const unauthenticatedReceipt = await fetch(`${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt`);
         assert.equal(unauthenticatedReceipt.status, 401);

@@ -25,6 +25,8 @@
         $("#app-header").hidden = false;
         const isAdmin = user.role === "admin";
         $("#customizer-page").hidden = isAdmin;
+        $("#customer-nav").hidden = isAdmin;
+        $("#order-history-page").hidden = true;
         $("#tracking-page").hidden = true;
         $("#admin-page").hidden = !isAdmin;
         $("#unit-toggle").closest(".unit-control").hidden = isAdmin;

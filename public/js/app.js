@@ -4,6 +4,7 @@
     let drawerReturnFocus = null;
     let trackingPollTimer = null;
     let activePreview = "creation";
+    let historyReturnView = "customizer";
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => [...document.querySelectorAll(selector)];
     const elements = {
@@ -341,6 +342,116 @@
             : order.status === "Delivered";
     }
 
+    function setCustomerView(view) {
+        window.clearInterval(trackingPollTimer);
+        $("#customizer-page").hidden = view !== "customizer";
+        $("#order-history-page").hidden = view !== "history";
+        $("#tracking-page").hidden = true;
+        $("#customizer-nav-button").classList.toggle("is-active", view === "customizer");
+        $("#order-history-nav-button").classList.toggle("is-active", view === "history");
+        if (view === "history") {
+            $("#order-history-nav-button").setAttribute("aria-current", "page");
+            $("#customizer-nav-button").removeAttribute("aria-current");
+            loadOrderHistory();
+            $("#order-history-title").focus();
+        } else {
+            $("#customizer-nav-button").setAttribute("aria-current", "page");
+            $("#order-history-nav-button").removeAttribute("aria-current");
+            $("#page-title").focus();
+        }
+    }
+
+    function getHistoryFulfillmentStatus(order) {
+        if (order.fulfillmentMethod === "pickup") {
+            return order.status === "Ready for Pickup"
+                ? { label: "Ready for pickup", complete: true }
+                : { label: "Pickup not yet ready", complete: false };
+        }
+        return order.status === "Delivered"
+            ? { label: "Delivered", complete: true }
+            : { label: "Not yet delivered", complete: false };
+    }
+
+    function renderOrderHistory(orders) {
+        const list = $("#order-history-list");
+        list.replaceChildren();
+        if (!orders.length) {
+            const empty = document.createElement("p");
+            empty.className = "order-history-empty";
+            empty.textContent = "You have no past orders yet. Your orders will appear here after you place them while signed in.";
+            list.append(empty);
+            return;
+        }
+
+        orders.forEach((order) => {
+            const card = document.createElement("article");
+            card.className = "order-history-card";
+            const heading = document.createElement("div");
+            heading.className = "order-history-card-heading";
+            const title = document.createElement("h2");
+            title.textContent = `Order CL-${order.trackingCode.slice(-6).toUpperCase()}`;
+            const fulfillmentStatus = getHistoryFulfillmentStatus(order);
+            const status = document.createElement("span");
+            status.className = `order-history-status${fulfillmentStatus.complete ? " is-complete" : ""}`;
+            status.textContent = fulfillmentStatus.label;
+            heading.append(title, status);
+
+            const placed = new Date(order.created_at);
+            const summary = document.createElement("p");
+            summary.textContent = `${order.fulfillmentMethod === "pickup" ? "Pickup" : "Delivery"} · ${
+                Number.isNaN(placed.getTime()) ? "Date unavailable" : placed.toLocaleString()
+            } · ${money((Number(order.pricing?.total_cents) || 0) / 100)}`;
+            const items = document.createElement("ul");
+            items.className = "order-history-items";
+            (order.items || []).forEach((item) => {
+                const row = document.createElement("li");
+                const classification = item.classification ? ` · ${item.classification}` : "";
+                row.textContent = `${item.name}${classification} — ${money((Number(item.price_cents) || 0) / 100)}`;
+                items.append(row);
+            });
+            const detailsButton = document.createElement("button");
+            detailsButton.type = "button";
+            detailsButton.className = "button button-small";
+            detailsButton.dataset.historyOrderId = order.id;
+            detailsButton.dataset.trackingCode = order.trackingCode;
+            detailsButton.dataset.orderStatus = order.status;
+            detailsButton.dataset.fulfillmentMethod = order.fulfillmentMethod;
+            detailsButton.dataset.receiptStatus = order.receiptStatus;
+            detailsButton.textContent = order.receiptStatus === "available" ? "View status and receipt" : "View order status";
+            card.append(heading, summary, items, detailsButton);
+            list.append(card);
+        });
+    }
+
+    async function loadOrderHistory() {
+        const message = $("#order-history-message");
+        const refreshButton = $("#refresh-order-history-button");
+        refreshButton.disabled = true;
+        message.textContent = "Loading your orders…";
+        try {
+            const response = await fetch("/api/orders/mine", { credentials: "same-origin" });
+            let result;
+            try {
+                result = await response.json();
+            } catch {
+                throw new Error(`The server returned an unreadable response (${response.status}).`);
+            }
+            if (!response.ok) {
+                if (response.status === 401) throw new Error("Your session expired. Sign in again to view order history.");
+                throw new Error(result.error || `Could not load orders (${response.status}).`);
+            }
+            if (!Array.isArray(result.orders)) throw new Error("The server returned an invalid order history.");
+            renderOrderHistory(result.orders);
+            message.textContent = result.orders.length
+                ? `${result.orders.length} recent order${result.orders.length === 1 ? "" : "s"} shown.`
+                : "";
+        } catch (error) {
+            message.textContent = `Could not load order history: ${error.message}`;
+        } finally {
+            refreshButton.disabled = false;
+        }
+    }
+
     function renderTracking() {
         const order = state.orderStatus;
         if (!order) return;
@@ -393,7 +504,11 @@
 
     function showTracking() {
         $("#customizer-page").hidden = true;
+        $("#order-history-page").hidden = true;
         $("#tracking-page").hidden = false;
+        $("#back-to-customizer-button").textContent = historyReturnView === "history"
+            ? "Back to order history"
+            : "Back to coffee lab";
         renderTracking();
         $("#tracking-title").focus();
         window.clearInterval(trackingPollTimer);
@@ -402,6 +517,25 @@
             trackingPollTimer = window.setInterval(refreshTrackingStatus, 20000);
         }
     }
+
+    $("#customizer-nav-button").addEventListener("click", () => setCustomerView("customizer"));
+    $("#order-history-nav-button").addEventListener("click", () => setCustomerView("history"));
+    $("#refresh-order-history-button").addEventListener("click", loadOrderHistory);
+    $("#order-history-list").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-history-order-id]");
+        if (!button) return;
+        historyReturnView = "history";
+        state.orderStatus = {
+            id: button.dataset.historyOrderId,
+            trackingCode: button.dataset.trackingCode,
+            number: `CL-${button.dataset.trackingCode.slice(-6).toUpperCase()}`,
+            status: button.dataset.orderStatus,
+            fulfillmentMethod: button.dataset.fulfillmentMethod,
+            receiptStatus: button.dataset.receiptStatus,
+            deliveryReported: false
+        };
+        showTracking();
+    });
 
     async function refreshTrackingStatus() {
         if (!state.orderStatus?.trackingCode) return;
@@ -619,6 +753,7 @@
                 receiptStatus: result.order.receiptStatus || "unavailable",
                 deliveryReported: false
             };
+            historyReturnView = "customizer";
             state.cartItems = [];
             editingCartItemId = null;
             $("#checkout-dialog").close();
@@ -690,9 +825,7 @@
     });
     $("#back-to-customizer-button").addEventListener("click", () => {
         window.clearInterval(trackingPollTimer);
-        $("#tracking-page").hidden = true;
-        $("#customizer-page").hidden = false;
-        $("#page-title").focus();
+        setCustomerView(historyReturnView);
     });
     document.addEventListener("keydown", (event) => {
         const drawer = $("#cart-drawer");

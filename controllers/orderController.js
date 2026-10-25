@@ -559,7 +559,7 @@ async function listMyOrders(request, response, next) {
     try {
         const { data, error } = await getAdminClient()
             .from("orders")
-            .select("id, tracking_code, status, fulfillment_method, pricing, created_at, updated_at")
+            .select("id, tracking_code, status, fulfillment_method, pricing, receipt_status, created_at, updated_at, order_items(name, classification, price_cents)")
             .eq("account_id", request.user.id)
             .order("created_at", { ascending: false })
             .limit(50);
@@ -568,7 +568,9 @@ async function listMyOrders(request, response, next) {
             orders: data.map((order) => ({
                 ...order,
                 trackingCode: order.tracking_code,
-                fulfillmentMethod: order.fulfillment_method
+                fulfillmentMethod: order.fulfillment_method,
+                receiptStatus: order.receipt_status || "unavailable",
+                items: order.order_items || []
             }))
         });
     } catch (error) {
