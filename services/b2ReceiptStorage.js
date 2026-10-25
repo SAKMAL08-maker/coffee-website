@@ -1,5 +1,6 @@
 const {
     GetObjectCommand,
+    DeleteObjectCommand,
     PutObjectCommand,
     S3Client
 } = require("@aws-sdk/client-s3");
@@ -77,8 +78,19 @@ async function createReceiptDownloadUrl(objectKey, environment = process.env) {
     }), { expiresIn: 60 });
 }
 
+async function deleteReceiptObject(objectKey, environment = process.env) {
+    const config = readStorageConfig(environment);
+    if (!config) throw new Error("Backblaze B2 receipt storage is not configured.");
+    const client = createStorageClient(config);
+    await client.send(new DeleteObjectCommand({
+        Bucket: config.bucket,
+        Key: objectKey
+    }));
+}
+
 module.exports = {
     readStorageConfig,
     uploadReceipt,
-    createReceiptDownloadUrl
+    createReceiptDownloadUrl,
+    deleteReceiptObject
 };

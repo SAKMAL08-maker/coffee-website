@@ -74,6 +74,14 @@ function requireStaff(request, response, next) {
     next();
 }
 
+function requireAdmin(request, response, next) {
+    if (!request.user) return response.status(401).json({ error: "Authentication is required." });
+    if (request.user.role !== "admin") {
+        return response.status(403).json({ error: "Administrator access is required." });
+    }
+    next();
+}
+
 module.exports = {
     SESSION_COOKIE_NAME,
     readSessionToken,
@@ -81,5 +89,6 @@ module.exports = {
     clearSessionCookie,
     authenticate,
     optionalAuthenticate,
-    requireStaff
+    requireStaff,
+    requireAdmin
 };

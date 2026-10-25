@@ -118,6 +118,15 @@ const schemas = {
         params: z.object({ orderId: uuid }).strict(),
         query: emptyQuery
     },
+    deliveryReport: {
+        body: emptyBody,
+        params: z.object({ orderId: uuid }).strict(),
+        query: emptyQuery
+    },
+    adminOrders: {
+        params: emptyParams,
+        query: z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict()
+    },
     status: {
         body: z.object({ status: z.enum(["Received", "Crafting", "Out for Delivery", "Arrived"]) }).strict(),
         params: z.object({ orderId: uuid }).strict(),

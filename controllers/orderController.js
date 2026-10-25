@@ -8,7 +8,9 @@ const {
 const {
     createOrderReceipt,
     getReceiptDownloadUrl,
-    retryOwnedReceipt
+    retryOwnedReceipt,
+    getAdminReceiptDownloadUrl,
+    deleteStoredReceipt
 } = require("../services/receiptService");
 
 const SERVICE_FEE_BASIS_POINTS = 800;
@@ -209,7 +211,7 @@ async function trackOrder(request, response, next) {
         const supabase = getAdminClient();
         const { data: order, error } = await supabase
             .from("orders")
-            .select("tracking_code, status, fulfillment_method, receipt_status, created_at, updated_at")
+            .select("tracking_code, status, fulfillment_method, receipt_status, delivery_reported_at, created_at, updated_at")
             .eq("tracking_code", request.params.trackingCode)
             .maybeSingle();
         if (error) throw error;
@@ -221,6 +223,7 @@ async function trackOrder(request, response, next) {
                 status: order.status,
                 fulfillmentMethod: order.fulfillment_method,
                 receiptStatus: order.receipt_status,
+                deliveryReported: Boolean(order.delivery_reported_at),
                 createdAt: order.created_at,
                 updatedAt: order.updated_at
             }
@@ -252,6 +255,158 @@ async function retryReceipt(request, response, next) {
             return response.status(404).json({ error: "Order not found." });
         }
         response.json({ receiptStatus: receipt.status });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function reportDelivery(request, response, next) {
+    try {
+        const supabase = getAdminClient();
+        const { data: order, error: readError } = await supabase
+            .from("orders")
+            .select("id, fulfillment_method, status, delivery_reported_at")
+            .eq("id", request.params.orderId)
+            .eq("account_id", request.user.id)
+            .maybeSingle();
+        if (readError) throw readError;
+        if (!order) return response.status(404).json({ error: "Order not found." });
+        if (order.fulfillment_method !== "delivery") {
+            return response.status(400).json({ error: "Delivery confirmation is only available for delivery orders." });
+        }
+        if (order.status === "Delivered") {
+            return response.status(409).json({ error: "This order has already been approved as delivered." });
+        }
+        if (order.delivery_reported_at) {
+            return response.json({ deliveryReported: true });
+        }
+
+        const { data, error } = await supabase
+            .from("orders")
+            .update({ delivery_reported_at: new Date().toISOString() })
+            .eq("id", order.id)
+            .is("delivery_reported_at", null)
+            .select("id")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(409).json({ error: "Delivery report changed; refresh and try again." });
+        response.json({ deliveryReported: true });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function listAdminOrders(request, response, next) {
+    try {
+        const pageSize = 50;
+        const page = Number(request.query.page) || 1;
+        const { data, error, count } = await getAdminClient()
+            .from("orders")
+            .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, created_at, order_items(name, classification, configuration, price_cents)", { count: "exact" })
+            .order("created_at", { ascending: false })
+            .range((page - 1) * pageSize, page * pageSize - 1);
+        if (error) throw error;
+        response.json({
+            page,
+            pageSize,
+            totalCount: count || 0,
+            orders: data.map((order) => ({
+                id: order.id,
+                trackingCode: order.tracking_code,
+                status: order.status,
+                fulfillmentMethod: order.fulfillment_method,
+                customer: order.customer,
+                deliveryAddress: order.delivery_address,
+                notes: order.notes,
+                pricing: order.pricing,
+                receiptStatus: order.receipt_status,
+                deliveryReportedAt: order.delivery_reported_at,
+                deliveryApprovedAt: order.delivery_approved_at,
+                createdAt: order.created_at,
+                items: order.order_items
+            }))
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function approveDelivery(request, response, next) {
+    try {
+        const supabase = getAdminClient();
+        const { data: order, error: readError } = await supabase
+            .from("orders")
+            .select("id, fulfillment_method, status, delivery_reported_at, delivery_approved_at")
+            .eq("id", request.params.orderId)
+            .maybeSingle();
+        if (readError) throw readError;
+        if (!order) return response.status(404).json({ error: "Order not found." });
+        if (order.fulfillment_method !== "delivery") {
+            return response.status(409).json({ error: "Only delivery orders can be approved as delivered." });
+        }
+        if (order.status === "Delivered" || order.delivery_approved_at) {
+            return response.status(409).json({ error: "This order is already approved as delivered." });
+        }
+        if (!order.delivery_reported_at) {
+            return response.status(409).json({ error: "The customer has not reported this order as delivered." });
+        }
+
+        const approvedAt = new Date().toISOString();
+        const { data, error } = await supabase
+            .from("orders")
+            .update({
+                status: "Delivered",
+                delivery_approved_at: approvedAt,
+                delivery_approved_by: request.user.id,
+                updated_at: approvedAt
+            })
+            .eq("id", order.id)
+            .is("delivery_approved_at", null)
+            .not("delivery_reported_at", "is", null)
+            .select("id, status, delivery_approved_at")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        response.json({ order: { id: data.id, status: data.status, deliveryApprovedAt: data.delivery_approved_at } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function downloadAdminReceipt(request, response, next) {
+    try {
+        const receipt = await getAdminReceiptDownloadUrl(request.params.orderId);
+        if (receipt.status === "not_found") return response.status(404).json({ error: "Order not found." });
+        if (receipt.status !== "available") {
+            return response.status(409).json({ error: "This receipt is not available." });
+        }
+        response.redirect(302, receipt.url);
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function deleteAdminOrder(request, response, next) {
+    try {
+        const supabase = getAdminClient();
+        const { data: order, error: readError } = await supabase
+            .from("orders")
+            .select("id, receipt_object_key")
+            .eq("id", request.params.orderId)
+            .maybeSingle();
+        if (readError) throw readError;
+        if (!order) return response.status(404).json({ error: "Order not found." });
+        if (order.receipt_object_key) await deleteStoredReceipt(order.receipt_object_key);
+
+        const { data, error } = await supabase
+            .from("orders")
+            .delete()
+            .eq("id", order.id)
+            .select("id")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        response.json({ message: "Order deleted." });
     } catch (error) {
         next(error);
     }
@@ -317,6 +472,11 @@ module.exports = {
     calculateOrderPricing,
     checkout,
     trackOrder,
+    reportDelivery,
+    listAdminOrders,
+    approveDelivery,
+    downloadAdminReceipt,
+    deleteAdminOrder,
     downloadReceipt,
     retryReceipt,
     advanceOrderStatus,

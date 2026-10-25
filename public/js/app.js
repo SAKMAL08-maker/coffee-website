@@ -339,21 +339,25 @@
         const order = state.orderStatus;
         if (!order) return;
         $("#tracking-order-number").textContent = order.number;
-        $("#tracking-eta").textContent = order.fulfillmentMethod === "pickup"
-            ? "Ready for pickup in about 7 minutes."
-            : `Estimated arrival: ${getEstimatedEta(state, order.itemCount)}.`;
-        const labels = order.fulfillmentMethod === "pickup"
-            ? ["Received", "Barista crafting", "Ready for pickup", "Picked up"]
-            : ["Received", "Barista crafting", "Out for delivery", "Arrived"];
-        $$(".tracking-step").forEach((step, index) => {
-            step.classList.toggle("complete", index < order.stage);
-            step.classList.toggle("current", index === order.stage);
-            step.querySelector(".step-label").textContent = labels[index];
-        });
-        const messages = order.fulfillmentMethod === "pickup"
-            ? ["Your order is in the queue.", "Your barista is crafting your coffee.", "Your order is ready at the pickup counter.", "Enjoy your coffee! Your pickup is complete."]
-            : ["Your order is confirmed and in the queue.", "Your barista is crafting your coffee.", "Your delivery partner is heading your way.", "Your coffee has arrived. Enjoy!"];
-        $("#tracking-status-message").textContent = messages[order.stage];
+        const isApprovedDelivered = order.status === "Delivered";
+        const isDelivery = order.fulfillmentMethod === "delivery";
+        $("#tracking-eta").textContent = isApprovedDelivered
+            ? "Your delivery has been verified by Coffee Lab."
+            : "We’ll update this page once delivery is verified.";
+        $("#delivery-progress").classList.toggle("is-delivered", isApprovedDelivered);
+        $("#delivery-progress-icon").textContent = isApprovedDelivered ? "✓" : "•";
+        $("#delivery-progress-label").textContent = isApprovedDelivered ? "Delivered" : "Not yet delivered";
+        $("#report-delivered-button").hidden = !isDelivery || isApprovedDelivered || order.deliveryReported;
+        $("#report-delivered-button").disabled = Boolean(order.deliveryReportPending);
+        $("#tracking-status-message").textContent = isApprovedDelivered
+            ? "Your delivery was approved by an administrator."
+            : order.deliveryReportError
+                ? `Could not report delivery: ${order.deliveryReportError}`
+            : order.deliveryReported
+                ? "Thanks for letting us know. Your delivery report is waiting for administrator verification."
+                : isDelivery
+                    ? "The green checkmark appears after an administrator verifies your delivery."
+                    : "This is a pickup order; delivery confirmation does not apply.";
         const receiptStatus = order.receiptStatus || "unavailable";
         const receiptMessages = {
             pending: "Your digital receipt is being prepared.",
@@ -364,8 +368,7 @@
         $("#receipt-message").textContent = receiptMessages[receiptStatus] || receiptMessages.failed;
         $("#download-receipt-button").hidden = receiptStatus !== "available";
         $("#retry-receipt-button").hidden = !["failed", "unavailable"].includes(receiptStatus);
-        $("#driver-section").hidden = order.fulfillmentMethod === "pickup";
-        $("#refresh-order-button").hidden = order.stage >= 3;
+        $("#refresh-order-button").hidden = isApprovedDelivered;
         $("#tracking-order-number").setAttribute("title", `Tracking code: ${order.trackingCode}`);
     }
 
@@ -375,7 +378,7 @@
         renderTracking();
         $("#tracking-title").focus();
         window.clearInterval(trackingPollTimer);
-        if (state.orderStatus && state.orderStatus.stage < 3) {
+        if (state.orderStatus && state.orderStatus.status !== "Delivered") {
             refreshTrackingStatus();
             trackingPollTimer = window.setInterval(refreshTrackingStatus, 20000);
         }
@@ -387,13 +390,14 @@
             const response = await fetch(`/api/orders/track/${encodeURIComponent(state.orderStatus.trackingCode)}`);
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Tracking request failed (${response.status}).`);
-            const statusStages = ["Received", "Crafting", "Out for Delivery", "Arrived"];
-            const stage = statusStages.indexOf(result.order.status);
-            if (stage < 0) throw new Error("The server returned an unknown order status.");
-            state.orderStatus.stage = stage;
+            if (!["Received", "Crafting", "Out for Delivery", "Arrived", "Delivered"].includes(result.order.status)) {
+                throw new Error("The server returned an unknown order status.");
+            }
+            state.orderStatus.status = result.order.status;
             state.orderStatus.receiptStatus = result.order.receiptStatus || state.orderStatus.receiptStatus;
+            state.orderStatus.deliveryReported = Boolean(result.order.deliveryReported);
             renderTracking();
-            if (stage >= 3) window.clearInterval(trackingPollTimer);
+            if (state.orderStatus.status === "Delivered") window.clearInterval(trackingPollTimer);
         } catch (error) {
             $("#tracking-status-message").textContent = `Could not refresh order status: ${error.message}`;
         }
@@ -589,11 +593,12 @@
                 number: `CL-${result.order.trackingCode.slice(-6).toUpperCase()}`,
                 trackingCode: result.order.trackingCode,
                 id: result.order.id,
-                stage: 0,
+                status: result.order.status,
                 fulfillmentMethod: result.order.fulfillmentMethod,
                 deliveryAddress: state.deliveryAddress,
                 itemCount: result.order.itemCount,
-                receiptStatus: result.order.receiptStatus || "unavailable"
+                receiptStatus: result.order.receiptStatus || "unavailable",
+                deliveryReported: false
             };
             state.cartItems = [];
             editingCartItemId = null;
@@ -608,6 +613,30 @@
         }
     });
     $("#refresh-order-button").addEventListener("click", refreshTrackingStatus);
+    $("#report-delivered-button").addEventListener("click", async (event) => {
+        if (!state.orderStatus?.id || state.orderStatus.deliveryReported) return;
+        const button = event.currentTarget;
+        button.disabled = true;
+        state.orderStatus.deliveryReportPending = true;
+        $("#tracking-status-message").textContent = "Sending your delivery report…";
+        try {
+            const response = await fetch(`/api/orders/${encodeURIComponent(state.orderStatus.id)}/delivery-report`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: "{}"
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || `Delivery report failed (${response.status}).`);
+            state.orderStatus.deliveryReported = result.deliveryReported;
+            state.orderStatus.deliveryReportError = "";
+        } catch (error) {
+            state.orderStatus.deliveryReportError = error.message;
+        } finally {
+            state.orderStatus.deliveryReportPending = false;
+            renderTracking();
+        }
+    });
     $("#download-receipt-button").addEventListener("click", () => {
         if (!state.orderStatus?.id) return;
         window.location.assign(`/api/orders/${encodeURIComponent(state.orderStatus.id)}/receipt`);
@@ -633,9 +662,6 @@
             button.disabled = false;
             button.textContent = "Try receipt again";
         }
-    });
-    $("#driver-contact").addEventListener("click", () => {
-        $("#tracking-status-message").textContent = "Driver contact is not connected in this demo.";
     });
     $("#back-to-customizer-button").addEventListener("click", () => {
         window.clearInterval(trackingPollTimer);

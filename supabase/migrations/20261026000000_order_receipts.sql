@@ -5,6 +5,9 @@ alter table public.orders
     add column if not exists receipt_generated_at timestamptz;
 
 alter table public.orders
+    drop constraint if exists orders_receipt_key_status_check;
+
+alter table public.orders
     add constraint orders_receipt_key_status_check
     check (
         (receipt_status = 'available' and receipt_object_key is not null and receipt_generated_at is not null)

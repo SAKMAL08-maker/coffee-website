@@ -1,6 +1,11 @@
 const { getAdminClient } = require("../config/supabase");
 const { createReceiptPdf } = require("./receiptPdf");
-const { readStorageConfig, uploadReceipt, createReceiptDownloadUrl } = require("./b2ReceiptStorage");
+const {
+    readStorageConfig,
+    uploadReceipt,
+    createReceiptDownloadUrl,
+    deleteReceiptObject
+} = require("./b2ReceiptStorage");
 
 async function updateReceiptStatus(supabase, orderId, values) {
     const { error } = await supabase
@@ -83,8 +88,31 @@ async function retryOwnedReceipt(accountId, orderId) {
     return { status: await createOrderReceipt(orderId) };
 }
 
+async function getAdminReceiptDownloadUrl(orderId) {
+    const { data, error } = await getAdminClient()
+        .from("orders")
+        .select("receipt_status, receipt_object_key")
+        .eq("id", orderId)
+        .maybeSingle();
+    if (error) throw error;
+    if (!data) return { status: "not_found" };
+    if (data.receipt_status !== "available" || !data.receipt_object_key) {
+        return { status: data.receipt_status || "unavailable" };
+    }
+    return {
+        status: "available",
+        url: await createReceiptDownloadUrl(data.receipt_object_key)
+    };
+}
+
+async function deleteStoredReceipt(objectKey) {
+    if (objectKey) await deleteReceiptObject(objectKey);
+}
+
 module.exports = {
     createOrderReceipt,
     getReceiptDownloadUrl,
-    retryOwnedReceipt
+    retryOwnedReceipt,
+    getAdminReceiptDownloadUrl,
+    deleteStoredReceipt
 };

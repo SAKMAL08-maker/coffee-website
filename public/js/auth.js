@@ -23,9 +23,14 @@
     function showCoffeeLab(user) {
         authPage.hidden = true;
         $("#app-header").hidden = false;
-        $("#customizer-page").hidden = false;
+        const isAdmin = user.role === "admin";
+        $("#customizer-page").hidden = isAdmin;
         $("#tracking-page").hidden = true;
+        $("#admin-page").hidden = !isAdmin;
+        $("#unit-toggle").closest(".unit-control").hidden = isAdmin;
+        $("#surprise-button").hidden = isAdmin;
         $("#signed-in-user").textContent = `Hi, ${user.username}`;
+        if (isAdmin) window.dispatchEvent(new CustomEvent("coffee-lab:authenticated", { detail: { user } }));
     }
 
     async function readResponse(response) {

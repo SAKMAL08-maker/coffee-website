@@ -4,7 +4,8 @@ const {
     readSessionToken,
     sessionCookie,
     clearSessionCookie,
-    requireStaff
+    requireStaff,
+    requireAdmin
 } = require("../middleware/authenticate");
 
 test("session cookies are HttpOnly and only persistent when requested", () => {
@@ -42,4 +43,21 @@ test("customer accounts cannot pass the staff authorization guard", () => {
 
     requireStaff({ user: { role: "admin" } }, response, () => { continued = true; });
     assert.equal(continued, true);
+});
+
+test("only admin accounts can pass the administrator authorization guard", () => {
+    const outcomes = [];
+    const response = {
+        status(status) {
+            outcomes.push(status);
+            return this;
+        },
+        json() {
+            return this;
+        }
+    };
+
+    requireAdmin({ user: { role: "staff" } }, response, () => outcomes.push("continued"));
+    requireAdmin({ user: { role: "admin" } }, response, () => outcomes.push("continued"));
+    assert.deepEqual(outcomes, [403, "continued"]);
 });

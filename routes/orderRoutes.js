@@ -1,9 +1,15 @@
 const express = require("express");
 const orderController = require("../controllers/orderController");
-const { authenticate, optionalAuthenticate, requireStaff } = require("../middleware/authenticate");
+const { authenticate, optionalAuthenticate, requireStaff, requireAdmin } = require("../middleware/authenticate");
 const { validateRequest } = require("../middleware/validateRequest");
 const schemas = require("../schemas/requestSchemas");
-const { checkoutLimiter, trackingLimiter, receiptLimiter } = require("../middleware/rateLimiters");
+const {
+    checkoutLimiter,
+    trackingLimiter,
+    receiptLimiter,
+    deliveryReportLimiter,
+    adminOrderLimiter
+} = require("../middleware/rateLimiters");
 
 const router = express.Router();
 
@@ -13,6 +19,11 @@ router.get("/track/:trackingCode", trackingLimiter, validateRequest(schemas.trac
 router.get("/mine", validateRequest(schemas.empty), authenticate, orderController.listMyOrders);
 router.post("/:orderId/receipt/retry", receiptLimiter, validateRequest(schemas.receiptRetry), authenticate, orderController.retryReceipt);
 router.get("/:orderId/receipt", receiptLimiter, validateRequest(schemas.orderId), authenticate, orderController.downloadReceipt);
+router.post("/:orderId/delivery-report", deliveryReportLimiter, validateRequest(schemas.deliveryReport), authenticate, orderController.reportDelivery);
+router.get("/admin/all", adminOrderLimiter, validateRequest(schemas.adminOrders), authenticate, requireAdmin, orderController.listAdminOrders);
+router.get("/:orderId/admin/receipt", receiptLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.downloadAdminReceipt);
+router.patch("/:orderId/admin/approve-delivery", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.approveDelivery);
+router.delete("/:orderId/admin", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.deleteAdminOrder);
 router.patch("/:orderId/status", validateRequest(schemas.status), authenticate, requireStaff, orderController.advanceOrderStatus);
 
 module.exports = router;

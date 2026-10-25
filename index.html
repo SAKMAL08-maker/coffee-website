@@ -302,27 +302,18 @@
             <div class="tracking-heading">
                 <p class="eyebrow">Your coffee is on its way</p>
                 <h1 id="tracking-title" tabindex="-1">Order <span id="tracking-order-number"></span></h1>
-                <p id="tracking-eta">We’re getting your order ready.</p>
+                <p id="tracking-eta">We’ll update this page once delivery is verified.</p>
             </div>
-            <section class="tracking-card" aria-label="Order progress">
+            <section class="tracking-card delivery-progress-card" aria-label="Delivery confirmation">
                 <h2>Order progress</h2>
-                <div class="tracking-steps" id="tracking-steps">
-                    <div class="tracking-step" data-stage="0"><span class="step-icon">✓</span><span class="step-label">Received</span></div>
-                    <div class="tracking-step" data-stage="1"><span class="step-icon">☕</span><span class="step-label">Barista crafting</span></div>
-                    <div class="tracking-step" data-stage="2"><span class="step-icon">🛵</span><span class="step-label">Out for delivery</span></div>
-                    <div class="tracking-step" data-stage="3"><span class="step-icon">🎉</span><span class="step-label">Arrived</span></div>
+                <div class="delivery-progress" id="delivery-progress" aria-live="polite">
+                    <span class="delivery-progress-icon" id="delivery-progress-icon" aria-hidden="true">•</span>
+                    <strong id="delivery-progress-label">Not yet delivered</strong>
                 </div>
                 <p class="notice" id="tracking-status-message" role="status" aria-live="polite"></p>
+                <button class="button button-primary" id="report-delivered-button" type="button">My order has already been delivered</button>
             </section>
-            <section class="tracking-card" id="driver-section" aria-labelledby="driver-title">
-                <h2 id="driver-title">Your delivery partner</h2>
-                <div class="driver-card">
-                    <div class="driver-avatar" aria-hidden="true">👨🏽‍🦱</div>
-                    <div class="driver-info"><strong>Alex Morgan</strong><span id="driver-vehicle">Electric scooter · Coffee Lab</span></div>
-                    <button class="button button-small" id="driver-contact" type="button">☎ Contact</button>
-                </div>
-            </section>
-            <section class="tracking-card" aria-labelledby="receipt-title">
+            <section class="tracking-card receipt-card" aria-labelledby="receipt-title">
                 <h2 id="receipt-title">Digital receipt</h2>
                 <p id="receipt-message" role="status" aria-live="polite">Preparing your receipt…</p>
                 <div class="tracking-actions">
@@ -336,6 +327,24 @@
                     <button class="button" id="back-to-customizer-button" type="button">Back to coffee lab</button>
                 </div>
             </section>
+        </main>
+
+        <main class="admin-page" id="admin-page" hidden aria-labelledby="admin-title">
+            <div class="admin-heading">
+                <div>
+                    <p class="eyebrow">Coffee Lab operations</p>
+                    <h1 id="admin-title" tabindex="-1">Order administration</h1>
+                    <p>Review customer delivery reports, verify receipts, and manage orders.</p>
+                </div>
+                <button class="button button-primary" id="admin-refresh-button" type="button">Refresh orders</button>
+            </div>
+            <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
+            <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
+            <nav class="admin-pagination" aria-label="Order pages">
+                <button class="button" id="admin-previous-page" type="button" disabled>Previous</button>
+                <span id="admin-page-label">Page 1</span>
+                <button class="button" id="admin-next-page" type="button" disabled>Next</button>
+            </nav>
         </main>
     </div>
 
@@ -364,6 +373,7 @@
     </dialog>
 
     <script src="/js/auth.js" defer></script>
+    <script src="/js/admin.js" defer></script>
     <script src="/js/state.js" defer></script>
     <script src="/js/pricing.js" defer></script>
     <script src="/js/app.js" defer></script>

@@ -33,6 +33,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="logout-button"/);
         assert.match(html, /id="receipt-message"/);
         assert.match(html, /id="download-receipt-button"/);
+        assert.match(html, /id="admin-page"/);
+        assert.match(html, /id="report-delivered-button"/);
+        assert.doesNotMatch(html, /Your delivery partner/);
         assert.match(html, /id="customizer-page" hidden/);
         assert.match(html, /src="\/js\/auth\.js"/);
 
@@ -43,6 +46,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal(stateModule.status, 200);
         const pricingModule = await fetch(`${baseUrl}/js/pricing.js`);
         assert.equal(pricingModule.status, 200);
+        const adminModule = await fetch(`${baseUrl}/js/admin.js`);
+        assert.equal(adminModule.status, 200);
+        assert.match(adminModule.headers.get("content-type"), /javascript/);
 
         const quote = await fetch(`${baseUrl}/api/coffees/quote`, {
             method: "POST",
@@ -84,6 +90,21 @@ test("serves the customizer and validates quote and checkout API requests", asyn
             }
         );
         assert.equal(unauthenticatedReceiptRetry.status, 401);
+
+        const unauthenticatedDeliveryReport = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/delivery-report`,
+            {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: "{}"
+            }
+        );
+        assert.equal(unauthenticatedDeliveryReport.status, 401);
+
+        const unauthenticatedAdminOrders = await fetch(`${baseUrl}/api/orders/admin/all?page=1`);
+        assert.equal(unauthenticatedAdminOrders.status, 401);
+        const invalidAdminOrdersPage = await fetch(`${baseUrl}/api/orders/admin/all?page=0`);
+        assert.equal(invalidAdminOrdersPage.status, 400);
 
         const invalidReceiptRetry = await fetch(
             `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt/retry`,
