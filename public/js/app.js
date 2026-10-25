@@ -405,6 +405,20 @@
         if (focus) $(`#${tabId}`).focus();
     }
 
+    $$(".tab").forEach((tab, index, tabs) => {
+        tab.addEventListener("click", () => setTab(tab.id));
+        tab.addEventListener("keydown", (event) => {
+            const nextIndex = event.key === "ArrowRight" ? (index + 1) % tabs.length
+                : event.key === "ArrowLeft" ? (index - 1 + tabs.length) % tabs.length
+                    : event.key === "Home" ? 0
+                        : event.key === "End" ? tabs.length - 1
+                            : -1;
+            if (nextIndex < 0) return;
+            event.preventDefault();
+            setTab(tabs[nextIndex].id, true);
+        });
+    });
+
     $("#unit-toggle").addEventListener("click", () => { state.metric = !state.metric; render(); });
     $("#creation-view-toggle").addEventListener("click", () => {
         showPreview("summary", true);
