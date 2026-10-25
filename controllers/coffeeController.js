@@ -40,7 +40,7 @@ async function saveCoffee(request, response, next) {
         const { data, error } = await getAdminClient()
             .from("coffees")
             .insert({
-                user_id: request.user.id,
+                account_id: request.user.id,
                 name,
                 configuration,
                 classification: classifyDrink(configuration, composition),
@@ -60,7 +60,7 @@ async function listSavedCoffees(request, response, next) {
         const { data, error } = await getAdminClient()
             .from("coffees")
             .select("id, name, configuration, classification, nutrition, created_at")
-            .eq("user_id", request.user.id)
+            .eq("account_id", request.user.id)
             .order("created_at", { ascending: false });
         if (error) throw error;
         response.json({ coffees: data });

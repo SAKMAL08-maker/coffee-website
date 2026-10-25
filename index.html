@@ -10,16 +10,76 @@
 </head>
 <body>
     <div class="shell">
-        <header class="topbar">
+        <section class="auth-page" id="auth-page" aria-labelledby="auth-title">
+            <a class="brand auth-brand" href="/" aria-label="Coffee Lab home"><span class="brand-mark" aria-hidden="true">☕</span><span>Coffee Lab</span></a>
+            <div class="auth-card">
+                <p class="eyebrow">A little coffee, just for you</p>
+                <h1 id="auth-title">Welcome to Coffee Lab</h1>
+                <p class="auth-intro">Sign in or create an account to build and order your coffee.</p>
+
+                <form class="auth-form" id="login-form" data-auth-screen="login">
+                    <label for="login-username">Username</label>
+                    <input id="login-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required>
+                    <label for="login-password">Password</label>
+                    <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+                    <label class="auth-checkbox"><input id="stay-signed-in" type="checkbox"><span>Stay signed in on this device</span></label>
+                    <button class="button button-primary auth-submit" type="submit">Log in</button>
+                    <p class="auth-switch">New to Coffee Lab? <button class="auth-link" type="button" data-show-auth="signup">Create an account</button></p>
+                    <button class="auth-link auth-recovery-link" type="button" data-show-auth="recovery">Forgot your password?</button>
+                </form>
+
+                <form class="auth-form" id="signup-form" data-auth-screen="signup" hidden>
+                    <label for="signup-username">Choose a username</label>
+                    <input id="signup-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" aria-describedby="username-help" required>
+                    <span class="field-help" id="username-help">3–24 letters, numbers, or underscores. Usernames are public.</span>
+                    <label for="signup-password">Create a password</label>
+                    <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+                    <label for="signup-password-confirm">Retype your password</label>
+                    <input id="signup-password-confirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+                    <p class="field-help">Use at least 12 characters. Password recovery requires a saved recovery code; there is no email or phone recovery.</p>
+                    <button class="button button-primary auth-submit" type="submit">Create account</button>
+                    <p class="auth-switch">Already have an account? <button class="auth-link" type="button" data-show-auth="login">Log in</button></p>
+                </form>
+
+                <form class="auth-form" id="recovery-form" data-auth-screen="recovery" hidden>
+                    <p class="field-help">Enter your username and one unused recovery code. Each code works once. If you lose your password and all recovery codes, this account cannot be recovered.</p>
+                    <label for="recovery-username">Username</label>
+                    <input id="recovery-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required>
+                    <label for="recovery-code">Unused recovery code</label>
+                    <input id="recovery-code" name="recoveryCode" autocomplete="off" autocapitalize="characters" required>
+                    <label for="reset-password">New password</label>
+                    <input id="reset-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+                    <label for="reset-password-confirm">Retype new password</label>
+                    <input id="reset-password-confirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+                    <button class="button button-primary auth-submit" type="submit">Reset password</button>
+                    <p class="auth-switch"><button class="auth-link" type="button" data-show-auth="login">Back to log in</button></p>
+                </form>
+
+                <section class="auth-form recovery-codes" id="recovery-codes-screen" data-auth-screen="codes" hidden aria-labelledby="recovery-codes-title">
+                    <h2 id="recovery-codes-title">Save your recovery codes</h2>
+                    <p>These codes are shown only once. Store them somewhere private and safe. Use one code to reset your password; used codes cannot be reused.</p>
+                    <ol class="recovery-code-list" id="recovery-code-list"></ol>
+                    <button class="button" id="copy-recovery-codes" type="button">Copy codes</button>
+                    <label class="auth-checkbox recovery-confirm"><input id="recovery-codes-saved" type="checkbox"><span>I saved these codes somewhere safe.</span></label>
+                    <button class="button button-primary auth-submit" id="finish-signup" type="button" disabled>Continue to log in</button>
+                </section>
+
+                <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+            </div>
+        </section>
+
+        <header class="topbar" id="app-header" hidden>
             <a class="brand" href="/" aria-label="Coffee Lab home"><span class="brand-mark" aria-hidden="true">☕</span><span>Coffee Lab</span></a>
             <div class="top-actions">
+                <span class="signed-in-user" id="signed-in-user"></span>
                 <div class="unit-control"><span id="unit-label">Metric</span><button class="switch" id="unit-toggle" type="button" role="switch" aria-checked="true" aria-label="Switch units"></button></div>
                 <button class="button button-small" id="theme-toggle" type="button" aria-pressed="false" aria-label="Enable dark mode"><span id="theme-icon" aria-hidden="true">☾</span><span id="theme-label">Dark</span></button>
                 <button class="button button-quiet" id="surprise-button" type="button">✦ Surprise me</button>
+                <button class="button button-small" id="logout-button" type="button">Log out</button>
             </div>
         </header>
 
-        <main id="customizer-page">
+        <main id="customizer-page" hidden>
             <section class="fulfillment-bar" aria-label="Delivery preferences">
                 <div class="fulfillment-options" role="group" aria-label="Fulfillment method">
                     <button class="fulfillment-option" id="delivery-option" type="button" aria-pressed="true">🛵 Delivery</button>
@@ -295,6 +355,7 @@
         </form>
     </dialog>
 
+    <script src="/js/auth.js" defer></script>
     <script src="/js/state.js" defer></script>
     <script src="/js/pricing.js" defer></script>
     <script src="/js/app.js" defer></script>

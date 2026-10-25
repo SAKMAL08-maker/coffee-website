@@ -12,7 +12,6 @@
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
-    "better-auth": "^1.7.12",
     "dotenv": "^18.0.8",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",

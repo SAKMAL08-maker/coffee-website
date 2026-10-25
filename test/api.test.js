@@ -26,6 +26,13 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="creation-view-toggle"/);
         assert.match(html, /id="summary-view"[^>]*hidden/);
         assert.match(html, /id="summary-view-toggle"/);
+        assert.match(html, /id="auth-page"/);
+        assert.match(html, /id="signup-form"/);
+        assert.match(html, /id="login-form"/);
+        assert.match(html, /id="recovery-form"/);
+        assert.match(html, /id="logout-button"/);
+        assert.match(html, /id="customizer-page" hidden/);
+        assert.match(html, /src="\/js\/auth\.js"/);
 
         const css = await fetch(`${baseUrl}/css/styles.css`);
         assert.equal(css.status, 200);
@@ -62,6 +69,26 @@ test("serves the customizer and validates quote and checkout API requests", asyn
 
         const invalidTrackingCode = await fetch(`${baseUrl}/api/orders/track/not-a-tracking-code`);
         assert.equal(invalidTrackingCode.status, 400);
+
+        const unauthenticatedProfile = await fetch(`${baseUrl}/api/users/me`);
+        assert.equal(unauthenticatedProfile.status, 401);
+
+        const invalidSignup = await fetch(`${baseUrl}/api/users/signup`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ username: "x", password: "short" })
+        });
+        assert.equal(invalidSignup.status, 400);
+
+        const crossOriginSignup = await fetch(`${baseUrl}/api/users/signup`, {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                origin: "https://attacker.invalid"
+            },
+            body: JSON.stringify({ username: "new_user", password: "a secure example password" })
+        });
+        assert.equal(crossOriginSignup.status, 403);
 
         const unexpectedQuery = await fetch(`${baseUrl}/api/orders/track/${"a".repeat(48)}?debug=true`);
         assert.equal(unexpectedQuery.status, 400);

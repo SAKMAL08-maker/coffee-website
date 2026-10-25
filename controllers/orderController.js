@@ -142,7 +142,7 @@ async function checkout(request, response, next) {
         const { data: orderId, error } = await supabase.rpc("create_coffee_order", {
             order_data: {
                 tracking_code: trackingCode,
-                user_id: request.user?.id || null,
+                account_id: request.user?.id || null,
                 customer: {
                     name: customer.name.trim(),
                     phone: customer.phone.trim(),
@@ -239,7 +239,7 @@ async function listMyOrders(request, response, next) {
         const { data, error } = await getAdminClient()
             .from("orders")
             .select("id, tracking_code, status, fulfillment_method, pricing, created_at, updated_at")
-            .eq("user_id", request.user.id)
+            .eq("account_id", request.user.id)
             .order("created_at", { ascending: false })
             .limit(50);
         if (error) throw error;

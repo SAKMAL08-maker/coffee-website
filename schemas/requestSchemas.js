@@ -29,15 +29,27 @@ const configuration = z.object({
     }).strict().optional()
 }).strict();
 
+const password = z.string().min(12).max(128);
+const username = z.string().trim().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/);
+
 const signupBody = z.object({
-    name: z.string().trim().min(1).max(80),
-    email: z.string().trim().email().max(254),
-    password: z.string().min(12).refine((value) => Buffer.byteLength(value, "utf8") <= 72)
+    username,
+    password
 }).strict();
 
 const loginBody = z.object({
-    email: z.string().trim().email().max(254),
-    password: z.string().min(1).max(1024)
+    username,
+    password: z.string().min(1).max(128),
+    staySignedIn: z.boolean().default(false)
+}).strict();
+
+const recoveryBody = z.object({
+    username,
+    recoveryCode: z.string().trim().min(20).max(32)
+}).strict();
+
+const resetPasswordBody = recoveryBody.extend({
+    password
 }).strict();
 
 const namedConfigurationBody = z.object({
@@ -83,6 +95,8 @@ const schemas = {
     emptyParams,
     signup: { body: signupBody, query: emptyQuery, params: emptyParams },
     login: { body: loginBody, query: emptyQuery, params: emptyParams },
+    recovery: { body: recoveryBody, query: emptyQuery, params: emptyParams },
+    resetPassword: { body: resetPasswordBody, query: emptyQuery, params: emptyParams },
     logout: { body: emptyBody, query: emptyQuery, params: emptyParams },
     savedRecipe: { body: namedConfigurationBody, query: emptyQuery, params: emptyParams },
     quote: { body: quoteBody, query: emptyQuery, params: emptyParams },
