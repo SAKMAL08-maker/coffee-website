@@ -3,6 +3,8 @@
 -- Supabase Dashboard > Authentication > Users, then link it here by email.
 -- Admins sign in with this Supabase Auth password and must enroll in TOTP.
 -- Replace both placeholders; verify the returned row is the intended account.
+-- After linking, run scripts/admin-mfa-bootstrap.js as the project owner
+-- to remove old factors and issue the one-time setup authorization.
 update public.coffee_users as coffee_user
 set role = 'admin',
     supabase_auth_user_id = (

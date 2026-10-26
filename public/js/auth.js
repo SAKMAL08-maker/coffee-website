@@ -93,23 +93,48 @@
 
     async function startAdminMfa(result) {
         adminMfaFactorId = result.factorId || "";
+        $("#admin-mfa-bootstrap-token").value = "";
+        $("#admin-mfa-bootstrap-token").hidden = false;
+        $("#admin-mfa-enroll").disabled = false;
         $("#admin-mfa-qr").hidden = true;
         $("#admin-mfa-secret").hidden = true;
         $("#admin-mfa-secret").textContent = "";
         $("#admin-mfa-code").value = "";
+        $("#admin-mfa-code").disabled = true;
+        $("#admin-mfa-verify").disabled = true;
+        $("#admin-mfa-enroll").hidden = false;
         showScreen("admin-mfa");
         $("#admin-mfa-description").textContent = result.setupRequired
-            ? `Welcome, ${result.username}. Set up an authenticator app to secure your administrator account.`
-            : `Enter the current authenticator code for ${result.username}.`;
+            ? `Welcome, ${result.username}. Your project owner must provide a one-time setup authorization before you can register an authenticator.`
+            : result.setupInProgress
+                ? `Finish the authenticator setup for ${result.username} using the app where you saved the setup key.`
+                : `Enter the current authenticator code for ${result.username}.`;
         $("#admin-mfa-setup").hidden = !result.setupRequired;
-        if (!result.setupRequired) return;
+        $("#admin-mfa-bootstrap-token").required = result.setupRequired;
+        if (result.factorId) {
+            $("#admin-mfa-code").disabled = false;
+            $("#admin-mfa-verify").disabled = false;
+        } else if (!result.setupRequired) {
+            showMessage("No owner-approved authenticator is available. Contact the Supabase project owner to authorize or recover setup.");
+        }
+    }
 
+    $("#admin-mfa-enroll").addEventListener("click", async () => {
+        const button = $("#admin-mfa-enroll");
+        const bootstrapToken = $("#admin-mfa-bootstrap-token").value.trim();
+        if (bootstrapToken.length < 32) {
+            showMessage("Enter the one-time setup authorization from the project owner.");
+            $("#admin-mfa-bootstrap-token").focus();
+            return;
+        }
+        button.disabled = true;
+        showMessage("");
         try {
             const response = await fetch("/api/users/admin/mfa/enroll", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "same-origin",
-                body: "{}"
+                body: JSON.stringify({ bootstrapToken })
             });
             const enrollment = await readResponse(response);
             adminMfaFactorId = enrollment.factorId;
@@ -117,10 +142,19 @@
             $("#admin-mfa-qr").hidden = false;
             $("#admin-mfa-secret").textContent = enrollment.secret;
             $("#admin-mfa-secret").hidden = false;
+            $("#admin-mfa-bootstrap-token").value = "";
+            $("#admin-mfa-bootstrap-token").required = false;
+            $("#admin-mfa-bootstrap-token").hidden = true;
+            button.hidden = true;
+            $("#admin-mfa-code").disabled = false;
+            $("#admin-mfa-verify").disabled = false;
+            $("#admin-mfa-code").focus();
         } catch (error) {
-            showMessage(`Could not start authenticator setup: ${error.message}`);
+            showMessage(`Could not authorize authenticator setup: ${error.message}`);
+        } finally {
+            button.disabled = false;
         }
-    }
+    });
 
     $("#admin-mfa-form").addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -144,6 +178,10 @@
             const result = await readResponse(response);
             adminMfaFactorId = "";
             $("#admin-mfa-form").reset();
+            $("#admin-mfa-bootstrap-token").hidden = false;
+            $("#admin-mfa-enroll").hidden = false;
+            $("#admin-mfa-code").disabled = true;
+            $("#admin-mfa-verify").disabled = true;
             showCoffeeLab(result.user);
         } catch (error) {
             showMessage(error.message);
@@ -167,6 +205,11 @@
             signOutError = error;
         } finally {
             adminMfaFactorId = "";
+            $("#admin-mfa-form").reset();
+            $("#admin-mfa-bootstrap-token").hidden = false;
+            $("#admin-mfa-enroll").hidden = false;
+            $("#admin-mfa-code").disabled = true;
+            $("#admin-mfa-verify").disabled = true;
             showScreen("login");
         }
         if (signOutError) showMessage(`Could not complete sign out: ${signOutError.message}`);

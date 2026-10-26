@@ -32,6 +32,8 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="login-form"/);
         assert.match(html, /id="admin-mfa-form"/);
         assert.match(html, /id="admin-mfa-qr"/);
+        assert.match(html, /id="admin-mfa-bootstrap-token"/);
+        assert.match(html, /id="admin-mfa-enroll"/);
         assert.match(html, /id="recovery-form"/);
         assert.match(html, /id="logout-button"/);
         assert.match(html, /id="receipt-message"/);
@@ -110,9 +112,15 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         const unauthenticatedAdminMfaEnroll = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: "{}"
+            body: JSON.stringify({ bootstrapToken: "a".repeat(32) })
         });
         assert.equal(unauthenticatedAdminMfaEnroll.status, 401);
+        const missingAdminMfaBootstrapToken = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{}"
+        });
+        assert.equal(missingAdminMfaBootstrapToken.status, 400);
         const unauthenticatedAdminMfaVerify = await fetch(`${baseUrl}/api/users/admin/mfa/verify`, {
             method: "POST",
             headers: { "content-type": "application/json" },

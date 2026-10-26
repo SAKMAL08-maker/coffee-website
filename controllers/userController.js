@@ -103,10 +103,17 @@ async function logIn(request, response, next) {
                 clearAdminCookies(response);
                 return response.status(401).json({ error: "Username or password is incorrect." });
             }
+            if (result.blocked) {
+                clearAdminCookies(response);
+                return response.status(403).json({
+                    error: "Administrator authenticator setup is not authorized or needs owner recovery. Contact the Supabase project owner."
+                });
+            }
             setPendingAdminCookies(response, result.session);
             return response.json({
                 mfaRequired: true,
                 setupRequired: result.setupRequired,
+                setupInProgress: result.setupInProgress || false,
                 factorId: result.factorId,
                 username: result.username
             });
@@ -129,7 +136,8 @@ async function enrollAdminMfa(request, response, next) {
     try {
         const result = await enrollAdminTotp(
             readCookie(request, ADMIN_MFA_ACCESS_COOKIE_NAME),
-            readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME)
+            readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME),
+            request.body.bootstrapToken
         );
         response.json(result);
     } catch (error) {

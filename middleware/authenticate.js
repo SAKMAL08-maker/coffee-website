@@ -1,5 +1,6 @@
 const { getAdminClient, createServerAuthClient } = require("../config/supabase");
 const { hashSessionToken } = require("../services/accountSecurity");
+const { isOnlyTrustedFactor } = require("../services/adminMfa");
 
 const SESSION_COOKIE_NAME = "coffee_lab_session";
 const ADMIN_ACCESS_COOKIE_NAME = "coffee_lab_admin_access";
@@ -95,13 +96,19 @@ async function authenticate(request, response, next) {
             const supabase = getAdminClient();
             const { data: user, error: userError } = await supabase
                 .from("coffee_users")
-                .select("id, username, role, created_at")
+                .select("id, username, role, created_at, admin_mfa_factor_id")
                 .eq("supabase_auth_user_id", claimsData.claims.sub)
                 .maybeSingle();
             if (userError) throw userError;
-            if (!user || user.role !== "admin") {
+            if (!user || user.role !== "admin" || !user.admin_mfa_factor_id) {
                 clearAdminCookies(response);
                 return response.status(403).json({ error: "Administrator access is not permitted." });
+            }
+            const { data: factors, error: factorsError } = await authClient.auth.mfa.listFactors();
+            if (factorsError) throw factorsError;
+            if (!isOnlyTrustedFactor(factors.all, user.admin_mfa_factor_id)) {
+                clearAdminCookies(response);
+                return response.status(403).json({ error: "The enrolled authenticator does not match the administrator-approved factor." });
             }
             if (sessionData.session.access_token !== adminAccessToken
                 || sessionData.session.refresh_token !== adminRefreshToken) {

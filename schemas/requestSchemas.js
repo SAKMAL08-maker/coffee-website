@@ -48,6 +48,10 @@ const adminMfaVerifyBody = z.object({
     code: z.string().regex(/^\d{6}$/)
 }).strict();
 
+const adminMfaEnrollBody = z.object({
+    bootstrapToken: z.string().min(32).max(256)
+}).strict();
+
 const recoveryBody = z.object({
     username,
     recoveryCode: z.string().trim().min(20).max(32)
@@ -102,6 +106,11 @@ const schemas = {
     login: { body: loginBody, query: emptyQuery, params: emptyParams },
     adminMfaVerify: {
         body: adminMfaVerifyBody,
+        params: emptyParams,
+        query: emptyQuery
+    },
+    adminMfaEnroll: {
+        body: adminMfaEnrollBody,
         params: emptyParams,
         query: emptyQuery
     },
