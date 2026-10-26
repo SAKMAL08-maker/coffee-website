@@ -43,6 +43,11 @@ const loginBody = z.object({
     staySignedIn: z.boolean().default(false)
 }).strict();
 
+const adminMfaVerifyBody = z.object({
+    factorId: uuid,
+    code: z.string().regex(/^\d{6}$/)
+}).strict();
+
 const recoveryBody = z.object({
     username,
     recoveryCode: z.string().trim().min(20).max(32)
@@ -95,6 +100,11 @@ const schemas = {
     emptyParams,
     signup: { body: signupBody, query: emptyQuery, params: emptyParams },
     login: { body: loginBody, query: emptyQuery, params: emptyParams },
+    adminMfaVerify: {
+        body: adminMfaVerifyBody,
+        params: emptyParams,
+        query: emptyQuery
+    },
     recovery: { body: recoveryBody, query: emptyQuery, params: emptyParams },
     resetPassword: { body: resetPasswordBody, query: emptyQuery, params: emptyParams },
     logout: { body: emptyBody, query: emptyQuery, params: emptyParams },

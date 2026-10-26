@@ -16,7 +16,8 @@
         });
         authMessage.textContent = "";
         authMessage.dataset.state = "";
-        const heading = name === "codes" ? $("#recovery-codes-title") : $("#auth-title");
+        const heading = document.querySelector(`[data-auth-screen="${name}"] h2`)
+            || (name === "codes" ? $("#recovery-codes-title") : $("#auth-title"));
         heading.focus?.();
     }
 
@@ -81,7 +82,94 @@
             });
             return readResponse(response);
         });
-        if (result) showCoffeeLab(result.user);
+        if (result?.mfaRequired) {
+            await startAdminMfa(result);
+        } else if (result) {
+            showCoffeeLab(result.user);
+        }
+    });
+
+    let adminMfaFactorId = "";
+
+    async function startAdminMfa(result) {
+        adminMfaFactorId = result.factorId || "";
+        $("#admin-mfa-qr").hidden = true;
+        $("#admin-mfa-secret").hidden = true;
+        $("#admin-mfa-secret").textContent = "";
+        $("#admin-mfa-code").value = "";
+        showScreen("admin-mfa");
+        $("#admin-mfa-description").textContent = result.setupRequired
+            ? `Welcome, ${result.username}. Set up an authenticator app to secure your administrator account.`
+            : `Enter the current authenticator code for ${result.username}.`;
+        $("#admin-mfa-setup").hidden = !result.setupRequired;
+        if (!result.setupRequired) return;
+
+        try {
+            const response = await fetch("/api/users/admin/mfa/enroll", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: "{}"
+            });
+            const enrollment = await readResponse(response);
+            adminMfaFactorId = enrollment.factorId;
+            $("#admin-mfa-qr").src = enrollment.qrCode;
+            $("#admin-mfa-qr").hidden = false;
+            $("#admin-mfa-secret").textContent = enrollment.secret;
+            $("#admin-mfa-secret").hidden = false;
+        } catch (error) {
+            showMessage(`Could not start authenticator setup: ${error.message}`);
+        }
+    }
+
+    $("#admin-mfa-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!adminMfaFactorId) {
+            showMessage("The authenticator setup is incomplete. Sign in again to retry.");
+            return;
+        }
+        const submitButton = event.currentTarget.querySelector("button[type='submit']");
+        submitButton.disabled = true;
+        showMessage("");
+        try {
+            const response = await fetch("/api/users/admin/mfa/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify({
+                    factorId: adminMfaFactorId,
+                    code: $("#admin-mfa-code").value.trim()
+                })
+            });
+            const result = await readResponse(response);
+            adminMfaFactorId = "";
+            $("#admin-mfa-form").reset();
+            showCoffeeLab(result.user);
+        } catch (error) {
+            showMessage(error.message);
+            $("#admin-mfa-code").focus();
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
+
+    $("#admin-mfa-cancel").addEventListener("click", async () => {
+        let signOutError;
+        try {
+            const response = await fetch("/api/users/logout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: "{}"
+            });
+            await readResponse(response);
+        } catch (error) {
+            signOutError = error;
+        } finally {
+            adminMfaFactorId = "";
+            showScreen("login");
+        }
+        if (signOutError) showMessage(`Could not complete sign out: ${signOutError.message}`);
     });
 
     $("#signup-form").addEventListener("submit", async (event) => {

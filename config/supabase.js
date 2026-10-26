@@ -21,8 +21,15 @@ function getAdminClient() {
     return adminClient;
 }
 
+function createServerAuthClient() {
+    const { url, serviceRoleKey } = readSupabaseConfig();
+    return createClient(url, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }
+    });
+}
+
 function assertSupabaseConfig() {
     readSupabaseConfig();
 }
 
-module.exports = { getAdminClient, assertSupabaseConfig };
+module.exports = { getAdminClient, createServerAuthClient, assertSupabaseConfig };

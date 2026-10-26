@@ -1,5 +1,11 @@
 const { getAdminClient } = require("../config/supabase");
 const {
+    startAdminLogin,
+    createMfaSession,
+    enrollAdminTotp,
+    verifyAdminTotp
+} = require("../services/adminMfa");
+const {
     createRecoveryCode,
     normalizeRecoveryCode,
     hashRecoveryCode,
@@ -11,7 +17,15 @@ const {
 const {
     sessionCookie,
     clearSessionCookie,
-    readSessionToken
+    readSessionToken,
+    readCookie,
+    ADMIN_MFA_ACCESS_COOKIE_NAME,
+    ADMIN_MFA_REFRESH_COOKIE_NAME,
+    ADMIN_ACCESS_COOKIE_NAME,
+    ADMIN_REFRESH_COOKIE_NAME,
+    setPendingAdminCookies,
+    setVerifiedAdminCookies,
+    clearAdminCookies
 } = require("../middleware/authenticate");
 const {
     normalizeConfiguration,
@@ -78,10 +92,25 @@ async function logIn(request, response, next) {
         const username = normalizedUsername(request.body.username);
         const { data: user, error } = await getAdminClient()
             .from("coffee_users")
-            .select("id, username, password_hash, role, created_at")
+            .select("id, username, password_hash, role, created_at, supabase_auth_user_id")
             .eq("username_key", username)
             .maybeSingle();
         if (error) throw error;
+
+        if (user?.role === "admin") {
+            const result = await startAdminLogin(username, request.body.password);
+            if (!result) {
+                clearAdminCookies(response);
+                return response.status(401).json({ error: "Username or password is incorrect." });
+            }
+            setPendingAdminCookies(response, result.session);
+            return response.json({
+                mfaRequired: true,
+                setupRequired: result.setupRequired,
+                factorId: result.factorId,
+                username: result.username
+            });
+        }
 
         const storedPasswordHash = user?.password_hash || await (dummyPasswordHash ||= hashPassword("Coffee Lab invalid-account timing value"));
         const passwordMatches = await verifyPassword(request.body.password, storedPasswordHash);
@@ -91,6 +120,42 @@ async function logIn(request, response, next) {
 
         await createSession(response, user, request.body.staySignedIn);
         response.json({ user: { id: user.id, username: user.username, role: user.role } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function enrollAdminMfa(request, response, next) {
+    try {
+        const result = await enrollAdminTotp(
+            readCookie(request, ADMIN_MFA_ACCESS_COOKIE_NAME),
+            readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME)
+        );
+        response.json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function verifyAdminMfa(request, response, next) {
+    try {
+        const result = await verifyAdminTotp(
+            readCookie(request, ADMIN_MFA_ACCESS_COOKIE_NAME),
+            readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME),
+            request.body.factorId,
+            request.body.code
+        );
+        if (!result.valid) {
+            return response.status(401).json({ error: "That authenticator code is invalid or expired. Try the latest code." });
+        }
+        setVerifiedAdminCookies(response, result.session);
+        response.json({
+            user: {
+                id: result.user.id,
+                username: result.user.username,
+                role: result.user.role
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -114,18 +179,41 @@ async function logOut(request, response, next) {
             const { error } = await getAdminClient()
                 .from("coffee_sessions")
                 .delete()
-                .eq("id", request.sessionId);
+                .eq("token_hash", hashSessionToken(token));
+            if (error) throw error;
+        }
+        const accessToken = readCookie(request, ADMIN_ACCESS_COOKIE_NAME)
+            || readCookie(request, ADMIN_MFA_ACCESS_COOKIE_NAME);
+        const refreshToken = readCookie(request, ADMIN_REFRESH_COOKIE_NAME)
+            || readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME);
+        if (accessToken && refreshToken) {
+            const { authClient } = await createMfaSession(accessToken, refreshToken);
+            const { error } = await authClient.auth.signOut({ scope: "local" });
             if (error) throw error;
         }
         response.set("Set-Cookie", clearSessionCookie());
+        clearAdminCookies(response);
         response.json({ message: "Session ended." });
     } catch (error) {
+        response.set("Set-Cookie", clearSessionCookie());
+        clearAdminCookies(response);
         next(error);
     }
 }
 
 async function resetPassword(request, response, next) {
     try {
+        const { data: account, error: accountError } = await getAdminClient()
+            .from("coffee_users")
+            .select("role")
+            .eq("username_key", normalizedUsername(request.body.username))
+            .maybeSingle();
+        if (accountError) throw accountError;
+        if (account?.role === "admin") {
+            return response.status(400).json({
+                error: "Username or recovery code is invalid or already used. Administrator passwords are managed through Supabase Auth; contact the project owner for a reset."
+            });
+        }
         const { data, error } = await getAdminClient().rpc("reset_coffee_account_password", {
             p_username_key: normalizedUsername(request.body.username),
             p_recovery_code_hash: hashRecoveryCode(normalizeRecoveryCode(request.body.recoveryCode)),
@@ -198,6 +286,8 @@ async function removeSavedRecipe(request, response, next) {
 module.exports = {
     signUp,
     logIn,
+    enrollAdminMfa,
+    verifyAdminMfa,
     getCurrentUser,
     logOut,
     resetPassword,

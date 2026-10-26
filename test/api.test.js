@@ -30,6 +30,8 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="auth-page"/);
         assert.match(html, /id="signup-form"/);
         assert.match(html, /id="login-form"/);
+        assert.match(html, /id="admin-mfa-form"/);
+        assert.match(html, /id="admin-mfa-qr"/);
         assert.match(html, /id="recovery-form"/);
         assert.match(html, /id="logout-button"/);
         assert.match(html, /id="receipt-message"/);
@@ -105,6 +107,24 @@ test("serves the customizer and validates quote and checkout API requests", asyn
 
         const unauthenticatedOrderHistory = await fetch(`${baseUrl}/api/orders/mine`);
         assert.equal(unauthenticatedOrderHistory.status, 401);
+        const unauthenticatedAdminMfaEnroll = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{}"
+        });
+        assert.equal(unauthenticatedAdminMfaEnroll.status, 401);
+        const unauthenticatedAdminMfaVerify = await fetch(`${baseUrl}/api/users/admin/mfa/verify`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ factorId: "c5c0c718-6e68-4a0f-b490-eaa4897bb4b1", code: "123456" })
+        });
+        assert.equal(unauthenticatedAdminMfaVerify.status, 401);
+        const invalidAdminMfaCode = await fetch(`${baseUrl}/api/users/admin/mfa/verify`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ factorId: "c5c0c718-6e68-4a0f-b490-eaa4897bb4b1", code: "12345x" })
+        });
+        assert.equal(invalidAdminMfaCode.status, 400);
 
         const unauthenticatedReceipt = await fetch(`${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt`);
         assert.equal(unauthenticatedReceipt.status, 401);

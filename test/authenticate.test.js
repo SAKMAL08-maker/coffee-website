@@ -4,6 +4,10 @@ const {
     readSessionToken,
     sessionCookie,
     clearSessionCookie,
+    ADMIN_ACCESS_COOKIE_NAME,
+    ADMIN_REFRESH_COOKIE_NAME,
+    ADMIN_MFA_ACCESS_COOKIE_NAME,
+    ADMIN_MFA_REFRESH_COOKIE_NAME,
     requireStaff,
     requireAdmin
 } = require("../middleware/authenticate");
@@ -17,6 +21,11 @@ test("session cookies are HttpOnly and only persistent when requested", () => {
     assert.doesNotMatch(temporaryCookie, /Max-Age/);
     assert.match(persistentCookie, /Max-Age=2592000/);
     assert.match(clearSessionCookie(), /Max-Age=0/);
+    assert.match(clearSessionCookie(), /HttpOnly/);
+    assert.equal(ADMIN_ACCESS_COOKIE_NAME, "coffee_lab_admin_access");
+    assert.equal(ADMIN_REFRESH_COOKIE_NAME, "coffee_lab_admin_refresh");
+    assert.equal(ADMIN_MFA_ACCESS_COOKIE_NAME, "coffee_lab_admin_mfa_access");
+    assert.equal(ADMIN_MFA_REFRESH_COOKIE_NAME, "coffee_lab_admin_mfa_refresh");
 });
 
 test("session cookie parsing only returns the named opaque session value", () => {
@@ -59,5 +68,8 @@ test("only admin accounts can pass the administrator authorization guard", () =>
 
     requireAdmin({ user: { role: "staff" } }, response, () => outcomes.push("continued"));
     requireAdmin({ user: { role: "admin" } }, response, () => outcomes.push("continued"));
-    assert.deepEqual(outcomes, [403, "continued"]);
+    requireAdmin({ user: { role: "admin" }, authMethod: "coffee-session", aal: "aal1" }, response, () => outcomes.push("continued"));
+    requireAdmin({ user: { role: "admin" }, authMethod: "supabase-mfa", aal: "aal1" }, response, () => outcomes.push("continued"));
+    requireAdmin({ user: { role: "admin" }, authMethod: "supabase-mfa", aal: "aal2" }, response, () => outcomes.push("continued"));
+    assert.deepEqual(outcomes, [403, 403, 403, 403, "continued"]);
 });

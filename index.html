@@ -15,7 +15,7 @@
             <div class="auth-card">
                 <p class="eyebrow">A little coffee, just for you</p>
                 <h1 id="auth-title">Welcome to Coffee Lab</h1>
-                <p class="auth-intro">Sign in or create an account to build and order your coffee.</p>
+                <p class="auth-intro">Sign in or create an account to build and order your coffee. Administrator accounts use Supabase Auth and require an authenticator code.</p>
 
                 <form class="auth-form" id="login-form" data-auth-screen="login">
                     <label for="login-username">Username</label>
@@ -23,6 +23,7 @@
                     <label for="login-password">Password</label>
                     <input id="login-password" name="password" type="password" autocomplete="current-password" required>
                     <label class="auth-checkbox"><input id="stay-signed-in" type="checkbox"><span>Stay signed in on this device</span></label>
+                    <span class="field-help">Administrator sessions are browser-only and require an authenticator code each time.</span>
                     <button class="button button-primary auth-submit" type="submit">Log in</button>
                     <p class="auth-switch">New to Coffee Lab? <button class="auth-link" type="button" data-show-auth="signup">Create an account</button></p>
                     <button class="auth-link auth-recovery-link" type="button" data-show-auth="recovery">Forgot your password?</button>
@@ -63,6 +64,22 @@
                     <label class="auth-checkbox recovery-confirm"><input id="recovery-codes-saved" type="checkbox"><span>I saved these codes somewhere safe.</span></label>
                     <button class="button button-primary auth-submit" id="finish-signup" type="button" disabled>Continue to log in</button>
                 </section>
+
+                <form class="auth-form" id="admin-mfa-form" data-auth-screen="admin-mfa" hidden>
+                    <h2 id="admin-mfa-title">Administrator verification</h2>
+                    <p id="admin-mfa-description" class="field-help"></p>
+                    <div id="admin-mfa-setup" hidden>
+                        <p class="field-help">Scan this QR code with an authenticator app, then enter its current six-digit code below. Keep the setup key private.</p>
+                        <img class="admin-mfa-qr" id="admin-mfa-qr" alt="Authenticator setup QR code" hidden>
+                        <p class="field-help">Manual setup key:</p>
+                        <code class="admin-mfa-secret" id="admin-mfa-secret" hidden></code>
+                    </div>
+                    <label for="admin-mfa-code">Six-digit authenticator code</label>
+                    <input id="admin-mfa-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required>
+                    <button class="button button-primary auth-submit" type="submit">Verify and continue</button>
+                    <button class="button auth-submit" id="admin-mfa-cancel" type="button">Cancel and sign out</button>
+                    <p class="field-help">If you lose access to your authenticator, contact the trusted Supabase project owner for a verified account recovery.</p>
+                </form>
 
                 <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
             </div>

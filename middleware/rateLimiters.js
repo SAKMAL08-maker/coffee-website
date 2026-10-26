@@ -16,6 +16,8 @@ function createLimiter(windowMs, limit) {
 module.exports = {
     createLimiter,
     authLimiter: createLimiter(15 * 60 * 1000, 8),
+    adminMfaLimiter: createLimiter(15 * 60 * 1000, 6),
+    adminMfaEnrollLimiter: createLimiter(15 * 60 * 1000, 3),
     checkoutLimiter: createLimiter(15 * 60 * 1000, 10),
     savedWriteLimiter: createLimiter(60 * 60 * 1000, 20),
     quoteLimiter: createLimiter(60 * 1000, 60),
