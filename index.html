@@ -33,6 +33,7 @@
                     <label for="signup-username">Choose a username</label>
                     <input id="signup-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" aria-describedby="username-help" required>
                     <span class="field-help" id="username-help">3–24 letters, numbers, or underscores. Usernames are public.</span>
+                    <p class="privacy-notice">By creating an account, you acknowledge that Coffee Lab uses account and security information to operate your account. Read our <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for details and how to contact us about your information.</p>
                     <label for="signup-password">Create a password</label>
                     <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
                     <label for="signup-password-confirm">Retype your password</label>
@@ -315,6 +316,7 @@
 
             <footer class="actions-footer">
                 <p class="field-help">Crafted to your taste.</p>
+                <a class="privacy-footer-link" href="/privacy.html">Privacy Policy</a>
                 <div class="footer-actions">
                     <button class="button button-primary" id="add-to-cart-button" type="button">＋ Add to order basket</button>
                     <button class="button cart-trigger" id="open-cart-button" type="button">🧺 Basket <span class="cart-count" id="cart-count">0</span></button>
@@ -401,6 +403,7 @@
             <h2 id="checkout-title">Complete your order</h2>
             <p>Review the details and place your coffee order.</p>
             <p class="field-help">Prototype checkout only: no payment is processed and no delivery service is contacted.</p>
+            <p class="privacy-notice">We use your name, phone number, order details, and delivery address when applicable to manage this order. Location is optional. See our <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for storage, retention, and privacy requests.</p>
             <div class="checkout-summary" id="checkout-summary"></div>
             <label for="customer-name">Name</label>
             <input id="customer-name" name="customerName" autocomplete="name" maxlength="80" required>
