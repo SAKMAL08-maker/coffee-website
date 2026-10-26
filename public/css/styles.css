@@ -586,3 +586,13 @@ dialog::backdrop { background: rgb(40 36 31 / 42%); backdrop-filter: blur(3px); 
     .privacy-header { align-items: flex-start; }
     .privacy-page { margin: 10px auto 40px; padding: 22px; }
 }
+
+
+/* Keep the privacy policy discoverable from both signed-out and signed-in screens. */
+.privacy-global-link { margin: 18px 0 28px; text-align: center; font-size: .85rem; }
+.privacy-global-link a, .privacy-nav-link { color: var(--coffee); font-size: .82rem; font-weight: 750; text-underline-offset: 3px; }
+.privacy-nav-link { white-space: nowrap; }
+:root[data-theme="dark"] .privacy-global-link a, :root[data-theme="dark"] .privacy-nav-link { color: #e0b28f; }
+@media (max-width: 760px) {
+    .privacy-nav-link { order: 10; }
+}
