@@ -52,7 +52,7 @@ app.get("/healthz", async (request, response) => {
         // A read-only query confirms Supabase connectivity without returning data.
         const { error } = await getAdminClient()
             .from("coffee_users")
-            .select("id", { head: true, count: "exact" })
+            .select("id")
             .limit(1);
         if (error) throw error;
         response.status(200).json({ status: "ok" });
