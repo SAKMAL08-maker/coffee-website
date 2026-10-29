@@ -28,6 +28,7 @@ router.get("/:orderId/admin/receipt/preview", receiptLimiter, validateRequest(sc
 router.get("/:orderId/admin/receipt", receiptLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.downloadAdminReceipt);
 router.patch("/:orderId/admin/approve-delivery", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.approveDelivery);
 router.patch("/:orderId/admin/approve-pickup", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.approvePickup);
+router.patch("/:orderId/admin/cash-collected", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.markCashCollected);
 router.delete("/:orderId/admin", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.deleteAdminOrder);
 router.patch("/:orderId/status", statusLimiter, validateRequest(schemas.status), authenticate, requireStaff, orderController.advanceOrderStatus);
 
