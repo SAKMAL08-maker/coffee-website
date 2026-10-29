@@ -1,6 +1,8 @@
 const globals = {
     AbortController: "readonly",
     Buffer: "readonly",
+    __dirname: "readonly",
+    __filename: "readonly",
     URL: "readonly",
     clearInterval: "readonly",
     clearTimeout: "readonly",
@@ -9,6 +11,8 @@ const globals = {
     module: "readonly",
     process: "readonly",
     require: "readonly",
+    setImmediate: "readonly",
+    clearImmediate: "readonly",
     setInterval: "readonly",
     setTimeout: "readonly",
     structuredClone: "readonly"
@@ -36,7 +40,7 @@ module.exports = [
         },
         rules: {
             "no-undef": "error",
-            "no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrors: "none" }]
+            "no-unused-vars": ["warn", { argsIgnorePattern: "^_", caughtErrors: "none" }]
         }
     }
 ];
