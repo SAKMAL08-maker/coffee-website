@@ -22,7 +22,8 @@ function createReceiptPdf(order) {
         document.moveDown().fontSize(10).font("Helvetica")
             .text(`Order: CL-${orderNumber}`)
             .text(`Date: ${new Date(order.created_at).toLocaleString("en-PH", { timeZone: "UTC" })}`)
-            .text(`Fulfillment: ${order.fulfillment_method === "pickup" ? "Pickup" : "Delivery"}`)
+             .text(`Fulfillment: ${order.fulfillment_method === "pickup" ? "Pickup" : "Delivery"}`)
+            .text(`Payment: Cash on ${order.fulfillment_method === "pickup" ? "pickup" : "delivery"}`)
             .text(`Customer: ${String(customer.name || "Coffee Lab customer").slice(0, 80)}`);
 
         if (order.fulfillment_method === "delivery" && order.delivery_address) {
