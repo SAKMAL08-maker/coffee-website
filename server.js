@@ -47,6 +47,20 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public"), { dotfiles: "deny", index: false }));
 app.use("/api", verifySameOrigin);
 
+app.get("/healthz", async (request, response) => {
+    try {
+        // A read-only query confirms Supabase connectivity without returning data.
+        const { error } = await require("./config/supabase").getAdminClient()
+            .from("coffee_users")
+            .select("id", { head: true, count: "exact" })
+            .limit(1);
+        if (error) throw error;
+        response.status(200).json({ status: "ok" });
+    } catch (error) {
+        response.status(503).json({ status: "unavailable", dependency: "database" });
+    }
+});
+
 app.get(["/", "/index.html"], async (request, response, next) => {
     try {
         const html = await fs.promises.readFile(path.join(__dirname, "index.html"), "utf8");
