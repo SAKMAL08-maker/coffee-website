@@ -303,6 +303,7 @@ async function listAdminOrders(request, response, next) {
                 paymentMethod: order.payment_method || "cash",
                 cashCollectedAt: order.cash_collected_at,
                 cashCollectedBy: order.cash_collected_by,
+                cashCollectionAvailable: order.cash_collected_at !== undefined,
                 receiptStatus: order.receipt_status || "unavailable",
                 deliveryReportedAt: order.delivery_reported_at,
                 deliveryApprovedAt: order.delivery_approved_at,
