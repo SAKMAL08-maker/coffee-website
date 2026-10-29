@@ -26,7 +26,7 @@ jobs:
       - name: Lint backend and tests
         run: npx --yes eslint@9.36.0 server.js config controllers middleware routes schemas services test
       - name: Check configuration formatting
-        run: npx --yes prettier@3.6.2 --check eslint.config.js .github/workflows/ci.yml .github/PULL_REQUEST_TEMPLATE.md
+        run: npx --yes prettier@3.6.2 --check .github/workflows/ci.yml .prettierrc.json
       - name: Run tests
         run: npm test
       - name: Audit production dependencies
