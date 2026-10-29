@@ -49,7 +49,9 @@
         appendDetail(details, "Placed", Number.isNaN(createdAt.getTime()) ? "Unknown" : createdAt.toLocaleString());
         appendDetail(details, "Total", formatMoney(order.pricing?.total_cents));
         appendDetail(details, "Payment", order.paymentMethod === "cash" ? "Cash" : order.paymentMethod || "Cash");
-        appendDetail(details, "Cash collected", order.cashCollectedAt ? new Date(order.cashCollectedAt).toLocaleString() : "Not yet collected");
+        if (order.cashCollectionAvailable) {
+            appendDetail(details, "Cash collected", order.cashCollectedAt ? new Date(order.cashCollectedAt).toLocaleString() : "Not yet collected");
+        }
         if (order.notes) appendDetail(details, "Order notes", order.notes);
         card.append(details);
 
@@ -152,7 +154,7 @@
             approveButton.textContent = "Verify ready for pickup";
             actions.append(approveButton);
         }
-        if (!order.cashCollectedAt) {
+        if (order.cashCollectionAvailable && !order.cashCollectedAt) {
             const cashButton = document.createElement("button");
             cashButton.type = "button";
             cashButton.className = "button button-primary";
