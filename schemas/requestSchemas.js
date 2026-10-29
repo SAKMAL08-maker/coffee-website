@@ -66,7 +66,11 @@ const namedConfigurationBody = z.object({
     configuration
 }).strict();
 
-const quoteBody = z.object({ configuration }).strict();
+const quoteBody = z.object({
+    configuration,
+    fulfillmentMethod: z.enum(["delivery", "pickup"]).optional(),
+    tipPercent: z.number().finite().min(0).max(100).optional()
+}).strict();
 
 const orderItem = z.object({
     name: z.string().trim().min(1).max(80).optional(),
