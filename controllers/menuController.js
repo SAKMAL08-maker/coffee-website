@@ -20,4 +20,13 @@ async function updateAdminMenuPrice(request, response, next) {
     }
 }
 
-module.exports = { listAdminMenu, updateAdminMenuPrice };
+async function listPublicMenu(request, response, next) {
+    try {
+        const catalog = await getMenuCatalog();
+        response.json({ source: catalog.source, ingredients: catalog.ingredients, prices: catalog.prices });
+    } catch (error) {
+        next(error);
+    }
+}
+
+module.exports = { listPublicMenu, listAdminMenu, updateAdminMenuPrice };
