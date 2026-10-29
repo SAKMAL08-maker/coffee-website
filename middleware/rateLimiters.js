@@ -25,5 +25,6 @@ module.exports = {
     receiptLimiter: createLimiter(60 * 1000, 10),
     deliveryReportLimiter: createLimiter(60 * 60 * 1000, 5),
     adminOrderLimiter: createLimiter(60 * 1000, 30),
-    statusLimiter: createLimiter(60 * 1000, 20)
+    statusLimiter: createLimiter(60 * 1000, 20),
+    menuPriceLimiter: createLimiter(60 * 1000, 10)
 };
