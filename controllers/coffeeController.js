@@ -5,6 +5,7 @@ const {
     classifyDrink,
     calculateNutrition
 } = require("../services/coffeeService");
+const { calculateOrderPricing } = require("../services/pricingService");
 
 function validateBody(body, allowedKeys) {
     if (!body || typeof body !== "object" || Array.isArray(body)
@@ -18,10 +19,19 @@ async function createQuote(request, response, next) {
         validateBody(request.body, ["configuration"]);
         const configuration = normalizeConfiguration(request.body.configuration);
         const composition = getComposition(configuration);
+        const fulfillmentMethod = request.body.fulfillmentMethod || "delivery";
+        const tipPercent = request.body.tipPercent === undefined ? 15 : request.body.tipPercent;
+        const { lineItems, pricing } = calculateOrderPricing(
+            [{ configuration }],
+            fulfillmentMethod,
+            tipPercent
+        );
         response.json({
             configuration,
             classification: classifyDrink(configuration, composition),
-            nutrition: calculateNutrition(configuration)
+            nutrition: calculateNutrition(configuration),
+            itemPriceCents: lineItems[0].price_cents,
+            pricing
         });
     } catch (error) {
         next(error);
