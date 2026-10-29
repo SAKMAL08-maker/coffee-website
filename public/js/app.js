@@ -114,6 +114,31 @@
         elements.legend.innerHTML = rows.length ? rows.join("") : "<tr><td>Choose ingredients to begin</td><td>—</td></tr>";
     }
 
+    async function loadMenuCatalog() {
+        try {
+            const response = await fetch("/api/coffees/menu");
+            if (!response.ok) return;
+            const catalog = await response.json();
+            const groups = {
+                base: BASES,
+                milk: MILKS,
+                syrup: SYRUPS,
+                sweetener: SWEETENERS
+            };
+            for (const ingredient of catalog.ingredients || []) {
+                const target = groups[ingredient.category]?.[ingredient.ingredient_key];
+                if (!target) continue;
+                target.label = ingredient.label;
+                for (const key of ["caffeineMg", "calories", "sugar", "ml"]) {
+                    if (Number.isFinite(ingredient.metadata?.[key])) target[key] = ingredient.metadata[key];
+                }
+            }
+            render();
+        } catch {
+            // Keep the bundled catalog as the offline/demo fallback.
+        }
+    }
+
     function render() {
         const composition = getComposition();
         const metrics = getMetrics(composition);
@@ -887,4 +912,5 @@
     });
     showPreview(activePreview);
     render();
+    loadMenuCatalog();
 })();
