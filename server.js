@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const helmet = require("helmet");
-const { assertSupabaseConfig } = require("./config/supabase");
+const { assertSupabaseConfig, getAdminClient } = require("./config/supabase");
 const userRoutes = require("./routes/userRoutes");
 const coffeeRoutes = require("./routes/coffeeRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -50,7 +50,7 @@ app.use("/api", verifySameOrigin);
 app.get("/healthz", async (request, response) => {
     try {
         // A read-only query confirms Supabase connectivity without returning data.
-        const { error } = await require("./config/supabase").getAdminClient()
+        const { error } = await getAdminClient()
             .from("coffee_users")
             .select("id", { head: true, count: "exact" })
             .limit(1);
