@@ -88,6 +88,8 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal(quote.status, 200);
         assert.equal(quoteBody.classification, "Latte");
         assert.equal(quoteBody.nutrition.caffeineMg, 128);
+        assert.equal(quoteBody.itemPriceCents, 25000);
+        assert.equal(quoteBody.pricing.total_cents, 38650);
 
         const invalidQuote = await fetch(`${baseUrl}/api/coffees/quote`, {
             method: "POST",
