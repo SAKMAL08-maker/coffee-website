@@ -34,3 +34,10 @@
 - **Decisions and why:** Selected the caffeine guardian as the single differentiator because it reuses existing nutrition metadata and the existing half-caf configuration instead of introducing a complex royalty ledger.
 - **Verification:** Tests not run in this environment due incomplete ZIP dependencies and `npm ci` timeout.
 - **Maintainer must verify by hand:** Review/apply the migration manually; test daily totals against known demo orders and confirm cutoff times use Manila time. Caffeine values are estimates, not medical advice.
+
+## 2026-10-30 — Phase 6: data-driven menu (time-permitting)
+
+- **What changed:** Added additive ingredient/menu-price tables seeded from existing values, a one-minute in-memory cache with hardcoded fallback, a public menu catalog endpoint, and a protected admin menu price-edit endpoint. Pricing now awaits the cached server-side values.
+- **Decisions and why:** Retain the current hardcoded price constants as a safe fallback when the migration has not been applied or the menu tables are unavailable. Price changes are restricted to known keys and integer values.
+- **Verification:** Tests not run in this environment due incomplete ZIP dependencies and `npm ci` timeout.
+- **Maintainer must verify by hand:** Review and manually apply the migration, verify the menu source changes from fallback to database after deployment, and test an admin price update followed by a new quote. Never apply SQL automatically.
