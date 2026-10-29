@@ -1,15 +1,15 @@
 # Repository Guidance
 
 ## Project
-- This repository is named `coffee-game` and currently uses a CommonJS `package.json`.
-- `index.html` and `server.js` are the intended app entry points; both are currently empty.
-- There are no declared dependencies or working test/build scripts yet.
+- Coffee Lab is a Node.js + Express 5 CommonJS app with a plain HTML/CSS/JavaScript frontend.
+- `index.html` and `server.js` are active entry points; neither is a placeholder.
+- Tests use Node's built-in `node:test` runner via `npm test`.
 
 ## Changes
 - Keep changes focused and use the existing plain HTML and Node.js setup unless the task calls for a different stack.
 - Preserve CommonJS module syntax in `server.js` unless the package module type is intentionally changed.
 - When adding dependencies or scripts, update `package.json` and provide a relevant verification command.
-- Do not claim the placeholder `npm test` script validates the app; replace it with a real test command when tests are introduced.
+- Run `npm test` and report the actual result; do not claim success without executing it.
 
 # Role & Objective
 You are an expert Senior Full-Stack Developer and Software Architect. Your task is to help me systematically build a web application built with an HTML/JS frontend, Node.js/Express backend, Supabase database, and Render deployment hosting.
