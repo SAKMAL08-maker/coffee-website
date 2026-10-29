@@ -14,6 +14,7 @@ const {
 const ORDER_STATUSES = ["Received", "Crafting", "Out for Delivery", "Arrived"];
 const { calculateOrderPricing } = require("../services/pricingService");
 const { canTransitionOrderStatus } = require("../services/orderStatusMachine");
+const { createCashCollectionUpdate } = require("../services/cashCollectionService");
 
 function badRequest(message) {
     return Object.assign(new Error(message), { statusCode: 400 });
@@ -93,6 +94,7 @@ async function checkout(request, response, next) {
                 ...(fulfillmentMethod === "delivery" ? { delivery_address: deliveryAddress.trim() } : {}),
                 ...(coordinates ? { delivery_coordinates: coordinates } : {}),
                 ...(notes ? { notes: notes.trim() } : {}),
+                payment_method: "cash",
                 pricing
             },
             item_data: lineItems
@@ -132,6 +134,7 @@ async function checkout(request, response, next) {
                 trackingCode,
                 status: "Received",
                 fulfillmentMethod,
+                paymentMethod: "cash",
                 itemCount: lineItems.length,
                 pricing,
                 receiptStatus,
@@ -264,7 +267,7 @@ async function listAdminOrders(request, response, next) {
         const supabase = getAdminClient();
         let { data, error, count } = await supabase
             .from("orders")
-            .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, pickup_approved_at, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
+            .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, payment_method, cash_collected_at, cash_collected_by, receipt_status, delivery_reported_at, delivery_approved_at, pickup_approved_at, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
             .order("created_at", { ascending: false })
             .range((page - 1) * pageSize, page * pageSize - 1);
         let schemaWarning = null;
@@ -297,6 +300,9 @@ async function listAdminOrders(request, response, next) {
                 deliveryAddress: order.delivery_address,
                 notes: order.notes,
                 pricing: order.pricing,
+                paymentMethod: order.payment_method || "cash",
+                cashCollectedAt: order.cash_collected_at,
+                cashCollectedBy: order.cash_collected_by,
                 receiptStatus: order.receipt_status || "unavailable",
                 deliveryReportedAt: order.delivery_reported_at,
                 deliveryApprovedAt: order.delivery_approved_at,
@@ -451,6 +457,33 @@ async function deleteAdminOrder(request, response, next) {
     }
 }
 
+async function markCashCollected(request, response, next) {
+    try {
+        const supabase = getAdminClient();
+        const { data: order, error: readError } = await supabase
+            .from("orders")
+            .select("id, payment_method, cash_collected_at, cash_collected_by")
+            .eq("id", request.params.orderId)
+            .maybeSingle();
+        if (readError) throw readError;
+        const collectedAt = new Date().toISOString();
+        const update = createCashCollectionUpdate(order, request.user.id, collectedAt);
+        const { data, error } = await supabase
+            .from("orders")
+            .update(update)
+            .eq("id", order.id)
+            .is("cash_collected_at", null)
+            .is("cash_collected_by", null)
+            .select("id, cash_collected_at, cash_collected_by")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(409).json({ error: "Cash collection status changed; refresh and try again." });
+        response.json({ order: { id: data.id, cashCollectedAt: data.cash_collected_at } });
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function advanceOrderStatus(request, response, next) {
     try {
         if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)
@@ -517,6 +550,7 @@ module.exports = {
     listAdminOrders,
     approveDelivery,
     approvePickup,
+    markCashCollected,
     retryAdminReceipt,
     downloadAdminReceipt,
     viewAdminReceiptImage,
