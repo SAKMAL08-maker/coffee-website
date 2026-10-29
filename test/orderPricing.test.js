@@ -12,7 +12,7 @@ test.after(() => {
 });
 
 
-const { calculateOrderPricing } = require("../controllers/orderController");
+const { calculateOrderPricing } = require("../services/pricingService");
 
 const standardEspresso = {
     configuration: {
