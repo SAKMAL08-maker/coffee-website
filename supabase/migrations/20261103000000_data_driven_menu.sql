@@ -45,3 +45,19 @@ insert into public.menu_prices (price_key, value) values
     ('service_fee_basis_points', 800),
     ('tax_basis_points', 1200)
 on conflict (price_key) do nothing;
+
+-- Menu data is public to read; writes stay behind the server-side service-role API.
+alter table public.ingredients enable row level security;
+alter table public.menu_prices enable row level security;
+
+drop policy if exists ingredients_read_available on public.ingredients;
+create policy ingredients_read_available
+    on public.ingredients for select
+    to anon, authenticated
+    using (is_available = true);
+
+drop policy if exists menu_prices_read on public.menu_prices;
+create policy menu_prices_read
+    on public.menu_prices for select
+    to anon, authenticated
+    using (true);
