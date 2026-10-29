@@ -8,7 +8,8 @@ const {
     trackingLimiter,
     receiptLimiter,
     deliveryReportLimiter,
-    adminOrderLimiter
+    adminOrderLimiter,
+    statusLimiter
 } = require("../middleware/rateLimiters");
 
 const router = express.Router();
@@ -28,6 +29,6 @@ router.get("/:orderId/admin/receipt", receiptLimiter, validateRequest(schemas.or
 router.patch("/:orderId/admin/approve-delivery", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.approveDelivery);
 router.patch("/:orderId/admin/approve-pickup", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.approvePickup);
 router.delete("/:orderId/admin", adminOrderLimiter, validateRequest(schemas.orderId), authenticate, requireAdmin, orderController.deleteAdminOrder);
-router.patch("/:orderId/status", validateRequest(schemas.status), authenticate, requireStaff, orderController.advanceOrderStatus);
+router.patch("/:orderId/status", statusLimiter, validateRequest(schemas.status), authenticate, requireStaff, orderController.advanceOrderStatus);
 
 module.exports = router;
