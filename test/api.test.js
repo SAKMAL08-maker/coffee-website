@@ -91,6 +91,13 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal(adminModule.status, 200);
         assert.match(adminModule.headers.get("content-type"), /javascript/);
 
+        const menu = await fetch(`${baseUrl}/api/coffees/menu`);
+        assert.equal(menu.status, 200);
+        const menuBody = await menu.json();
+        assert.equal(menuBody.source, "fallback");
+        assert.equal(menuBody.prices.base_price_cents, 25000);
+        assert.ok(menuBody.ingredients.some((ingredient) => ingredient.ingredient_key === "espresso"));
+
         const quote = await fetch(`${baseUrl}/api/coffees/quote`, {
             method: "POST",
             headers: { "content-type": "application/json" },
