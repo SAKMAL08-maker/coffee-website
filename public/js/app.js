@@ -264,26 +264,44 @@
         };
     }
 
-    function addCurrentDrinkToCart() {
+    async function addCurrentDrinkToCart() {
         const composition = getComposition();
-        const pricing = getDrinkPrice(state);
         const name = getDrinkName(composition) === "Custom Concoction"
             ? `Custom ${BASES[state.base].label} drink`
             : getDrinkName(composition);
         const metrics = getMetrics(composition);
-        const existingIndex = state.cartItems.findIndex((item) => item.id === editingCartItemId);
-        const item = {
-            id: editingCartItemId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
-            name,
-            state: getDrinkConfiguration(),
-            metrics,
-            price: pricing.subtotal
-        };
-        if (existingIndex >= 0) state.cartItems[existingIndex] = item;
-        else state.cartItems.push(item);
-        editingCartItemId = null;
-        resetEditor();
-        setNotice(existingIndex >= 0 ? `${name} updated in your basket.` : `${name} added to your basket.`);
+        const configuration = getDrinkConfiguration();
+        const tipPercent = state.tipPercent === "custom" ? Number(state.customTipPercent) : Number(state.tipPercent);
+        try {
+            const response = await fetch("/api/coffees/quote", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                    configuration,
+                    fulfillmentMethod: state.fulfillmentMethod,
+                    tipPercent
+                })
+            });
+            const quote = await response.json();
+            if (!response.ok || !Number.isInteger(quote.itemPriceCents)) {
+                throw new Error(quote.error || "Could not get an up-to-date server price.");
+            }
+            const existingIndex = state.cartItems.findIndex((item) => item.id === editingCartItemId);
+            const item = {
+                id: editingCartItemId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
+                name,
+                state: configuration,
+                metrics,
+                price: quote.itemPriceCents / 100
+            };
+            if (existingIndex >= 0) state.cartItems[existingIndex] = item;
+            else state.cartItems.push(item);
+            editingCartItemId = null;
+            resetEditor();
+            setNotice(existingIndex >= 0 ? `${name} updated in your basket.` : `${name} added to your basket.`);
+        } catch (error) {
+            setNotice(error.message || "Could not add this drink. Please try again.");
+        }
     }
 
     function resetEditor() {
