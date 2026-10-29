@@ -47,12 +47,13 @@ async function getMenuCatalog(now = Date.now()) {
             }
         }
         cachedCatalog = {
+            source: "database",
             prices,
             ingredients: ingredientsResult.data?.length ? ingredientsResult.data : DEFAULT_INGREDIENTS
         };
     } catch {
         // Preserve demo checkout if the optional menu tables are not yet migrated or unavailable.
-        cachedCatalog = { prices: { ...DEFAULT_MENU_PRICES }, ingredients: DEFAULT_INGREDIENTS };
+        cachedCatalog = { source: "fallback", prices: { ...DEFAULT_MENU_PRICES }, ingredients: DEFAULT_INGREDIENTS };
     }
     cacheExpiresAt = now + CACHE_TTL_MS;
     return cachedCatalog;
