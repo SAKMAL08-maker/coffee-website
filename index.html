@@ -126,6 +126,21 @@
                 <p class="intro-copy">Build a little coffee moment, exactly how you like it.</p>
             </section>
 
+            <section class="caffeine-guardian" aria-labelledby="caffeine-guardian-title">
+                <div>
+                    <p class="eyebrow">A gentle nudge</p>
+                    <h2 id="caffeine-guardian-title">Caffeine guardian</h2>
+                    <p id="caffeine-guardian-summary" aria-live="polite">Loading today's caffeine total…</p>
+                    <p class="field-help">Estimate based on your saved orders placed today in Manila time.</p>
+                </div>
+                <div class="caffeine-guardian-controls">
+                    <label for="caffeine-cutoff-time">My caffeine cutoff</label>
+                    <input id="caffeine-cutoff-time" type="time">
+                    <button class="button button-small" id="save-caffeine-cutoff" type="button">Save cutoff</button>
+                    <button class="button button-primary" id="half-caf-suggestion" type="button" hidden>Make this half-caf</button>
+                </div>
+            </section>
+
             <div class="layout">
                 <section class="visual-column" aria-label="Live drink preview and nutrition">
                     <article class="canvas-card" id="creation-view">
