@@ -150,6 +150,11 @@ const schemas = {
         params: emptyParams,
         query: z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict()
     },
+    caffeineGuardian: {
+        body: z.object({ caffeineCutoffTime: z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/).nullable() }).strict(),
+        params: emptyParams,
+        query: emptyQuery
+    },
     status: {
         body: z.object({ status: z.enum(["Received", "Crafting", "Out for Delivery", "Arrived"]) }).strict(),
         params: z.object({ orderId: uuid }).strict(),
