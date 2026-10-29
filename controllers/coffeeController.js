@@ -16,7 +16,7 @@ function validateBody(body, allowedKeys) {
 
 async function createQuote(request, response, next) {
     try {
-        validateBody(request.body, ["configuration"]);
+        validateBody(request.body, ["configuration", "fulfillmentMethod", "tipPercent"]);
         const configuration = normalizeConfiguration(request.body.configuration);
         const composition = getComposition(configuration);
         const fulfillmentMethod = request.body.fulfillmentMethod || "delivery";
