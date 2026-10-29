@@ -27,3 +27,10 @@
 - **Decisions and why:** Cash remains the only payment method. Collection is one-way and uses conditional updates to reduce duplicate marking; no payment processing was added.
 - **Verification:** Tests could not be run in this environment because dependencies are incomplete and `npm ci` timed out.
 - **Maintainer must verify by hand:** Review/apply the migration manually after checking the referenced `coffee_users` table; test the admin action with a demo order and confirm receipt regeneration reflects cash payment.
+
+## 2026-10-30 — Phase 5: caffeine guardian
+
+- **What changed:** Added a per-account caffeine cutoff preference, Manila-day caffeine total from saved order-item nutrition, a half-caf suggestion, additive migration, and helper tests.
+- **Decisions and why:** Selected the caffeine guardian as the single differentiator because it reuses existing nutrition metadata and the existing half-caf configuration instead of introducing a complex royalty ledger.
+- **Verification:** Tests not run in this environment due incomplete ZIP dependencies and `npm ci` timeout.
+- **Maintainer must verify by hand:** Review/apply the migration manually; test daily totals against known demo orders and confirm cutoff times use Manila time. Caffeine values are estimates, not medical advice.
