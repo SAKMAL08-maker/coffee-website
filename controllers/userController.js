@@ -1,4 +1,5 @@
 const { getAdminClient } = require("../config/supabase");
+const { getManilaDayWindow, sumCaffeineMg, isAfterCutoff } = require("../services/caffeineGuardian");
 const {
     startAdminLogin,
     createMfaSession,
@@ -291,6 +292,51 @@ async function removeSavedRecipe(request, response, next) {
     }
 }
 
+async function getCaffeineGuardian(request, response, next) {
+    try {
+        const supabase = getAdminClient();
+        const { start, end } = getManilaDayWindow();
+        const [preferenceResult, ordersResult] = await Promise.all([
+            supabase.from("coffee_users").select("caffeine_cutoff_time").eq("id", request.user.id).maybeSingle(),
+            supabase.from("orders").select("created_at, order_items(nutrition)")
+                .eq("account_id", request.user.id).gte("created_at", start).lt("created_at", end)
+        ]);
+        if (preferenceResult.error) throw preferenceResult.error;
+        if (ordersResult.error) throw ordersResult.error;
+        if (!preferenceResult.data) return response.status(404).json({ error: "Customer account not found." });
+        const cutoffTime = preferenceResult.data.caffeine_cutoff_time
+            ? String(preferenceResult.data.caffeine_cutoff_time).slice(0, 5)
+            : null;
+        response.json({
+            caffeineCutoffTime: cutoffTime,
+            dailyCaffeineMg: sumCaffeineMg(ordersResult.data),
+            shouldSuggestHalfCaf: isAfterCutoff(cutoffTime)
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function updateCaffeineGuardian(request, response, next) {
+    try {
+        const { data, error } = await getAdminClient()
+            .from("coffee_users")
+            .update({ caffeine_cutoff_time: request.body.caffeineCutoffTime })
+            .eq("id", request.user.id)
+            .select("caffeine_cutoff_time")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(404).json({ error: "Customer account not found." });
+        response.json({
+            caffeineCutoffTime: data.caffeine_cutoff_time
+                ? String(data.caffeine_cutoff_time).slice(0, 5)
+                : null
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
     signUp,
     logIn,
@@ -301,5 +347,7 @@ module.exports = {
     resetPassword,
     listSavedBar,
     addSavedRecipe,
-    removeSavedRecipe
+    removeSavedRecipe,
+    getCaffeineGuardian,
+    updateCaffeineGuardian
 };
