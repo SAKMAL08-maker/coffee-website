@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a small, high-impact improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints and manual verification
+      description: Keep the current stack, cash-only checkout, and free-tier limits in mind.
+    validations:
+      required: false
