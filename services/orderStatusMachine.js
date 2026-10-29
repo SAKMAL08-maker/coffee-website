@@ -4,7 +4,7 @@ const ALLOWED_TRANSITIONS = Object.freeze({
     Received: Object.freeze(["Crafting"]),
     Crafting: Object.freeze(["Out for Delivery"]),
     "Out for Delivery": Object.freeze(["Arrived"]),
-    Arrived: Object.freeze(["Delivered"]),
+    Arrived: Object.freeze([]),
     Delivered: Object.freeze([])
 });
 
