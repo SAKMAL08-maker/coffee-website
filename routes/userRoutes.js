@@ -15,6 +15,8 @@ router.post("/admin/mfa/enroll", adminMfaEnrollLimiter, validateRequest(schemas.
 router.post("/admin/mfa/verify", adminMfaLimiter, validateRequest(schemas.adminMfaVerify), userController.verifyAdminMfa);
 router.post("/password/reset", authLimiter, validateRequest(schemas.resetPassword), userController.resetPassword);
 router.get("/saved-bar", validateRequest(schemas.empty), authenticate, userController.listSavedBar);
+router.get("/caffeine-guardian", validateRequest(schemas.empty), authenticate, userController.getCaffeineGuardian);
+router.patch("/caffeine-guardian", savedWriteLimiter, validateRequest(schemas.caffeineGuardian), authenticate, userController.updateCaffeineGuardian);
 router.post("/saved-bar", savedWriteLimiter, validateRequest(schemas.savedRecipe), authenticate, userController.addSavedRecipe);
 router.delete("/saved-bar/:recipeId", savedWriteLimiter, validateRequest(schemas.recipeId), authenticate, userController.removeSavedRecipe);
 
