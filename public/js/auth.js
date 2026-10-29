@@ -34,6 +34,7 @@
         $("#surprise-button").hidden = isAdmin;
         $("#signed-in-user").textContent = `Hi, ${user.username}`;
         if (isAdmin) window.CoffeeLabAdmin?.startForUser(user);
+        else window.CoffeeLabCaffeineGuardian?.start();
     }
 
     async function readResponse(response) {
