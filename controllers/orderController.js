@@ -78,7 +78,7 @@ async function checkout(request, response, next) {
         if (fulfillmentMethod !== "delivery" && coordinates) {
             throw badRequest("Delivery coordinates can only be provided for delivery orders.");
         }
-        const { lineItems, pricing } = calculateOrderPricing(items, fulfillmentMethod, tipPercent);
+        const { lineItems, pricing } = await calculateOrderPricing(items, fulfillmentMethod, tipPercent);
         const trackingCode = crypto.randomBytes(24).toString("hex");
         const supabase = getAdminClient();
         const { data: orderId, error } = await supabase.rpc("create_coffee_order", {
