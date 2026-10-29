@@ -21,7 +21,7 @@ async function createQuote(request, response, next) {
         const composition = getComposition(configuration);
         const fulfillmentMethod = request.body.fulfillmentMethod || "delivery";
         const tipPercent = request.body.tipPercent === undefined ? 15 : request.body.tipPercent;
-        const { lineItems, pricing } = calculateOrderPricing(
+        const { lineItems, pricing } = await calculateOrderPricing(
             [{ configuration }],
             fulfillmentMethod,
             tipPercent
