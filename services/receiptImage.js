@@ -91,6 +91,7 @@ function createReceiptImage(order) {
             <text x="72" y="190" class="order">${escapeXml(orderCode)}</text>
             <text x="72" y="228" class="meta">${escapeXml(formatDate(order.created_at))}</text>
             <text x="72" y="266" class="meta">${escapeXml(fulfillment)} · ${escapeXml(customerName)}</text>
+            <text x="72" y="305" class="meta">Payment: Cash on ${escapeXml(fulfillment.toLowerCase())}</text>
             ${address}
             <path d="M72 380H828" class="rule"/>
             <text x="72" y="414" class="section">ITEM</text>
