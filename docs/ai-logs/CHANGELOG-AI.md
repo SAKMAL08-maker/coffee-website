@@ -20,3 +20,10 @@
 - **Decisions and why:** Document current architecture rather than inventing personal experiences or claiming legal/security certification. Keep manual migration review and PR approval explicit.
 - **Verification:** Documentation-only changes have not been linted or tested locally in this environment.
 - **Maintainer must verify by hand:** Confirm the ADRs match actual implementation, complete the learning log and AI examples honestly, and review deployment steps against current Render/Supabase/B2 dashboards.
+
+## 2026-10-30 — Phase 4: cash handling
+
+- **What changed:** Added an additive migration for cash-only payment metadata and collection tracking; added a server-side collection helper, admin-only rate-limited route/action, checkout notice, and cash payment instructions on receipt PDF/image.
+- **Decisions and why:** Cash remains the only payment method. Collection is one-way and uses conditional updates to reduce duplicate marking; no payment processing was added.
+- **Verification:** Tests could not be run in this environment because dependencies are incomplete and `npm ci` timed out.
+- **Maintainer must verify by hand:** Review/apply the migration manually after checking the referenced `coffee_users` table; test the admin action with a demo order and confirm receipt regeneration reflects cash payment.
