@@ -136,8 +136,8 @@ Examples of problem-solving milestones visible in the project record include rep
 ### Repository and branch observations
 
 - The repository has a GitHub remote at `SAKMAL08-maker/coffee-website`.
-- Branches observed during documentation include `main`, `version_0.2`, and `version_0.9`; the working branch at inspection was `version_0.9`.
-- History contains versioned branches and feature/fix commits. No documented trunk-based, GitFlow, pull-request approval, or protected-branch policy was found. Do not assume one is enforced.
+- Branch names and deployment targets change over time. Use the repository's current default branch as the PR base and work on a dedicated `phase-<n>-<short-topic>` branch; do not rely on historical branch observations.
+- History contains versioned branches and feature/fix commits. The recommended workflow is feature branches and reviewed pull requests; repository branch protection and required approvals must be verified in GitHub settings.
 - `.gitignore` excludes `.env` and `node_modules/`. The committed `.env.example` documents variable names but contains placeholders.
 - Keep changes reviewable, avoid committing credentials or customer data, and test migrations against a staging project before production.
 
@@ -208,7 +208,7 @@ npm ci
 Copy-Item .env.example .env
 ```
 
-If the team has moved development to another branch, use the current agreed branch instead of `version_0.9`.
+Use the current agreed branch and verify the configured Render deploy branch in the Render dashboard; do not assume a historical branch is current.
 
 ### Configure environment
 
