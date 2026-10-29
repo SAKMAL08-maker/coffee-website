@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { calculateOrderPricing } = require("../controllers/orderController");
+const { calculateOrderPricing } = require("../services/pricingService");
 
 const standardEspresso = {
     configuration: {
