@@ -22,7 +22,7 @@ async function createOrderReceipt(orderId) {
     const supabase = getAdminClient();
     const { data: order, error } = await supabase
         .from("orders")
-        .select("id, customer, fulfillment_method, delivery_address, pricing, created_at, order_items(name, classification, price_cents)")
+        .select("id, customer, fulfillment_method, delivery_address, payment_method, pricing, created_at, order_items(name, classification, price_cents)")
         .eq("id", orderId)
         .maybeSingle();
     if (error) throw error;
