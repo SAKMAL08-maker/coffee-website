@@ -150,6 +150,11 @@ const schemas = {
         params: emptyParams,
         query: z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict()
     },
+    menuPrice: {
+        body: z.object({ value: z.number().int().min(0).max(10000000) }).strict(),
+        params: z.object({ priceKey: z.string().regex(/^[a-z][a-z0-9_]*$/) }).strict(),
+        query: emptyQuery
+    },
     caffeineGuardian: {
         body: z.object({ caffeineCutoffTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable() }).strict(),
         params: emptyParams,
