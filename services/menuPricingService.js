@@ -24,7 +24,14 @@ const DEFAULT_INGREDIENTS = Object.freeze([
     { ingredient_key: "almond", label: "Almond milk", category: "milk", metadata: {} },
     { ingredient_key: "vanilla", label: "Vanilla syrup", category: "syrup", metadata: {} },
     { ingredient_key: "caramel", label: "Caramel sauce", category: "syrup", metadata: {} },
-    { ingredient_key: "chocolate", label: "Dark chocolate mocha", category: "syrup", metadata: {} }
+    { ingredient_key: "chocolate", label: "Dark chocolate mocha", category: "syrup", metadata: {} },
+    { ingredient_key: "whiteSugar", label: "White sugar", category: "sweetener", metadata: { calories: 16, sugar: 4 } },
+    { ingredient_key: "rawSugar", label: "Raw sugar", category: "sweetener", metadata: { calories: 16, sugar: 4 } },
+    { ingredient_key: "honey", label: "Honey", category: "sweetener", metadata: { calories: 21, sugar: 5.7 } },
+    { ingredient_key: "stevia", label: "Stevia", category: "sweetener", metadata: { calories: 0, sugar: 0 } },
+    { ingredient_key: "cinnamon", label: "Cinnamon", category: "topping", metadata: {} },
+    { ingredient_key: "whippedCream", label: "Whipped cream", category: "topping", metadata: {} },
+    { ingredient_key: "cocoa", label: "Cocoa", category: "topping", metadata: {} }
 ]);
 let cachedCatalog;
 let cacheExpiresAt = 0;
