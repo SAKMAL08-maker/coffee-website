@@ -1,11 +1,6 @@
 const crypto = require("crypto");
 const { getAdminClient } = require("../config/supabase");
 const {
-    normalizeConfiguration,
-    classifyDrink,
-    calculateNutrition
-} = require("../services/coffeeService");
-const {
     createOrderReceipt,
     getReceiptDownloadUrl,
     getOwnedReceiptImageUrl,
