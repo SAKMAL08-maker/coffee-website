@@ -247,3 +247,26 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         });
     }
 });
+
+
+test("health endpoint reports unavailable when Supabase configuration is absent", async () => {
+    const originalUrl = process.env.SUPABASE_URL;
+    const originalKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const server = app.listen(0);
+    await new Promise((resolve) => server.once("listening", resolve));
+    try {
+        const response = await fetch(`http://127.0.0.1:${server.address().port}/healthz`);
+        assert.equal(response.status, 503);
+        assert.deepEqual(await response.json(), { status: "unavailable", dependency: "database" });
+    } finally {
+        if (originalUrl === undefined) delete process.env.SUPABASE_URL;
+        else process.env.SUPABASE_URL = originalUrl;
+        if (originalKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+        else process.env.SUPABASE_SERVICE_ROLE_KEY = originalKey;
+        await new Promise((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
