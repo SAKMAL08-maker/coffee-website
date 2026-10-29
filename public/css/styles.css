@@ -596,3 +596,23 @@ dialog::backdrop { background: rgb(40 36 31 / 42%); backdrop-filter: blur(3px); 
 @media (max-width: 760px) {
     .privacy-nav-link { order: 10; }
 }
+
+.caffeine-guardian {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+    gap: 20px;
+    align-items: center;
+    margin: 0 0 24px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--paper);
+}
+.caffeine-guardian h2 { margin: 0 0 6px; font-size: 1.1rem; }
+.caffeine-guardian p { margin: 4px 0; color: var(--muted); }
+.caffeine-guardian-controls { display: grid; gap: 8px; }
+.caffeine-guardian-controls label { font-size: .85rem; font-weight: 700; }
+.caffeine-guardian-controls input { min-width: 0; width: 100%; }
+@media (max-width: 640px) {
+    .caffeine-guardian { grid-template-columns: 1fr; }
+}
