@@ -48,6 +48,8 @@
         appendDetail(details, order.fulfillmentMethod === "delivery" ? "Delivery address" : "Pickup", order.deliveryAddress || "Pickup counter");
         appendDetail(details, "Placed", Number.isNaN(createdAt.getTime()) ? "Unknown" : createdAt.toLocaleString());
         appendDetail(details, "Total", formatMoney(order.pricing?.total_cents));
+        appendDetail(details, "Payment", order.paymentMethod === "cash" ? "Cash" : order.paymentMethod || "Cash");
+        appendDetail(details, "Cash collected", order.cashCollectedAt ? new Date(order.cashCollectedAt).toLocaleString() : "Not yet collected");
         if (order.notes) appendDetail(details, "Order notes", order.notes);
         card.append(details);
 
@@ -149,6 +151,14 @@
             approveButton.dataset.adminAction = "approve-pickup";
             approveButton.textContent = "Verify ready for pickup";
             actions.append(approveButton);
+        }
+        if (!order.cashCollectedAt) {
+            const cashButton = document.createElement("button");
+            cashButton.type = "button";
+            cashButton.className = "button button-primary";
+            cashButton.dataset.adminAction = "cash-collected";
+            cashButton.textContent = "Mark cash collected";
+            actions.append(cashButton);
         }
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
@@ -269,6 +279,7 @@
             "generate-receipt": `/api/orders/${encodeURIComponent(orderId)}/admin/receipt/retry`,
             approve: `/api/orders/${encodeURIComponent(orderId)}/admin/approve-delivery`,
             "approve-pickup": `/api/orders/${encodeURIComponent(orderId)}/admin/approve-pickup`,
+            "cash-collected": `/api/orders/${encodeURIComponent(orderId)}/admin/cash-collected`,
             delete: `/api/orders/${encodeURIComponent(orderId)}/admin`
         };
         if (action === "receipt") {
@@ -279,15 +290,15 @@
         button.disabled = true;
         try {
             const response = await fetch(actionUrls[action], {
-                method: ["approve", "approve-pickup"].includes(action) ? "PATCH" : action === "generate-receipt" ? "POST" : "DELETE",
+                method: ["approve", "approve-pickup", "cash-collected"].includes(action) ? "PATCH" : action === "generate-receipt" ? "POST" : "DELETE",
                 credentials: "same-origin",
                 headers: { "Content-Type": "application/json" },
-                body: ["approve", "approve-pickup", "generate-receipt"].includes(action) ? "{}" : undefined
+                body: ["approve", "approve-pickup", "cash-collected", "generate-receipt"].includes(action) ? "{}" : undefined
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Order action failed (${response.status}).`);
-            $("#admin-message").textContent = action === "approve" || action === "approve-pickup"
-                ? action === "approve" ? "Order approved as delivered." : "Order verified as ready for pickup."
+            $("#admin-message").textContent = action === "approve" || action === "approve-pickup" || action === "cash-collected"
+                ? action === "approve" ? "Order approved as delivered." : action === "approve-pickup" ? "Order verified as ready for pickup." : "Cash collection recorded."
                 : action === "generate-receipt"
                     ? result.receiptStatus === "available"
                         ? "Receipt generated and saved to Backblaze."
@@ -299,7 +310,8 @@
         } catch (error) {
             const actionDescription = action === "approve" ? "approve delivery"
                 : action === "approve-pickup" ? "verify pickup readiness"
-                    : action === "generate-receipt" ? "generate receipt" : "delete order";
+                    : action === "cash-collected" ? "record cash collection"
+                        : action === "generate-receipt" ? "generate receipt" : "delete order";
             $("#admin-message").textContent = `Could not ${actionDescription}: ${error.message}`;
             button.disabled = false;
         }
