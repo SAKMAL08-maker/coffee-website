@@ -180,6 +180,20 @@ const schemas = {
     publishRecipe: { body: namedConfigurationBody, query: emptyQuery, params: emptyParams },
     publicRecipe: { body: emptyBody, query: emptyQuery, params: z.object({ slug: recipeSlug }).strict() },
     myRecipes: { body: emptyBody, query: emptyQuery, params: emptyParams },
+    caffeineCheck: { body: quoteBody, query: emptyQuery, params: emptyParams },
+    caffeineSettings: {
+        // "HH:MM" (24-hour) sets the cutoff; null clears it.
+        body: z
+            .object({
+                cutoffTime: z
+                    .string()
+                    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+                    .nullable()
+            })
+            .strict(),
+        query: emptyQuery,
+        params: emptyParams
+    },
     tracking: {
         params: z.object({ trackingCode: z.string().regex(/^[a-f0-9]{48}$/) }).strict(),
         query: emptyQuery

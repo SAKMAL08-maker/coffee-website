@@ -219,6 +219,7 @@
         renderLegend(composition);
         elements.classification.textContent = getDrinkName(composition);
         $("#caffeine-value").textContent = `${metrics.caffeine} mg`;
+        if (isCaffeineGuardianActive) caffeineChecker.schedule(getDrinkConfiguration());
         $("#calories-value").textContent = `${metrics.calories} kcal`;
         $("#sugar-value").textContent = `${metrics.sugar} g`;
         $("#volume-readout").textContent = displayVolume(state.volumeMl);
@@ -699,6 +700,60 @@
         }
     }
 
+    // ---- Caffeine guardian (network calls in caffeineGuardian.js; decisions on the server) ----
+    let isCaffeineGuardianActive = false;
+    const caffeineChecker = window.CoffeeLabCaffeine.createCaffeineChecker(renderCaffeineGuardian, () => {
+        // Not signed in as a customer, or the check failed: hide rather than show stale numbers.
+        $("#caffeine-guardian").hidden = true;
+    });
+
+    function describeCaffeineReasons(result) {
+        const reasons = [];
+        if (result.reasons.includes("over-daily-limit")) {
+            reasons.push(`this drink takes you to ${result.projectedMg} mg today (guide: ${result.dailyLimitMg} mg)`);
+        }
+        if (result.reasons.includes("past-cutoff")) reasons.push(`it is past your ${result.cutoffTime} cutoff`);
+        return reasons.join(", and ");
+    }
+
+    function renderCaffeineGuardian(result) {
+        $("#caffeine-guardian").hidden = false;
+        $("#caffeine-today").textContent =
+            `Today: ${result.todayMg} mg ordered · this drink ${result.drinkMg} mg · daily guide ${result.dailyLimitMg} mg`;
+        const cutoffInput = $("#caffeine-cutoff-input");
+        if (document.activeElement !== cutoffInput) cutoffInput.value = result.cutoffTime || "";
+
+        const warning = $("#caffeine-warning");
+        warning.hidden = !result.reasons.length;
+        if (!result.reasons.length) return;
+        const reasonText = describeCaffeineReasons(result);
+        const halfCafButton = $("#half-caf-button");
+        if (result.suggestion) {
+            $("#caffeine-warning-text").textContent = `Heads up: ${reasonText}.`;
+            halfCafButton.textContent = `Make it half-caf (${result.suggestion.drinkMg} mg, saves ${result.suggestion.savesMg} mg)`;
+            halfCafButton.hidden = false;
+        } else {
+            $("#caffeine-warning-text").textContent = `Heads up: ${reasonText}. Decaf keeps it to a trace.`;
+            halfCafButton.hidden = true;
+        }
+    }
+
+    function applyHalfCaf() {
+        state.caffeineMode = "half";
+        render();
+        setNotice("Switched to half-caf.");
+    }
+
+    async function saveCaffeineCutoff() {
+        try {
+            const cutoffTime = await window.CoffeeLabCaffeine.saveCutoffTime($("#caffeine-cutoff-input").value || null);
+            setNotice(cutoffTime ? `Caffeine cutoff set to ${cutoffTime}.` : "Caffeine cutoff cleared.");
+            caffeineChecker.checkNow(getDrinkConfiguration());
+        } catch (error) {
+            setNotice(error.message);
+        }
+    }
+
     // ---- Community recipes (network calls in communityRecipes.js) ----
     let activeSharedRecipe = null;
 
@@ -959,6 +1014,13 @@
         openCart();
     });
     $("#publish-recipe-button").addEventListener("click", openPublishRecipeDialog);
+    $("#half-caf-button").addEventListener("click", applyHalfCaf);
+    $("#caffeine-cutoff-input").addEventListener("change", saveCaffeineCutoff);
+    document.addEventListener("coffeelab:signed-in", (event) => {
+        isCaffeineGuardianActive = event.detail.role !== "admin";
+        $("#caffeine-guardian").hidden = true;
+        if (isCaffeineGuardianActive) caffeineChecker.checkNow(getDrinkConfiguration());
+    });
     $("#publish-recipe-form").addEventListener("submit", publishCurrentRecipe);
     $("#close-publish-recipe").addEventListener("click", () => $("#publish-recipe-dialog").close());
     $("#open-cart-button").addEventListener("click", openCart);
