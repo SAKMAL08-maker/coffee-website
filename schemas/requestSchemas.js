@@ -180,7 +180,12 @@ const schemas = {
     publishRecipe: { body: namedConfigurationBody, query: emptyQuery, params: emptyParams },
     publicRecipe: { body: emptyBody, query: emptyQuery, params: z.object({ slug: recipeSlug }).strict() },
     myRecipes: { body: emptyBody, query: emptyQuery, params: emptyParams },
-    caffeineCheck: { body: quoteBody, query: emptyQuery, params: emptyParams },
+    caffeineCheck: {
+        // basket = drinks added but not yet ordered (same 20-item cap as checkout); caffeine is computed server-side.
+        body: z.object({ configuration, basket: z.array(configuration).max(20).default([]) }).strict(),
+        query: emptyQuery,
+        params: emptyParams
+    },
     caffeineSettings: {
         // "HH:MM" (24-hour) sets the cutoff; null clears it.
         body: z

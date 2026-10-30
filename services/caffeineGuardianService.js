@@ -66,14 +66,22 @@ function sumCaffeineMg(orderItems) {
     }, 0);
 }
 
+function caffeineOf(configuration) {
+    return calculateNutrition(normalizeConfiguration(configuration)).caffeineMg;
+}
+
 /**
- * Pure decision for one drink. `configuration` must already be valid (Zod-checked).
+ * Pure decision for one drink. Configurations must already be valid (Zod-checked).
+ * `basketConfigurations` are drinks already in the basket but not yet ordered;
+ * their caffeine is recalculated here, so the browser never supplies a number.
  * Suggests half-caf only when it is an actual change (a regular-caffeine drink).
  */
-function evaluateDrink({ configuration, todayMg, cutoffTime, now = new Date() }) {
+function evaluateDrink({ configuration, todayMg, basketConfigurations = [], cutoffTime, now = new Date() }) {
     const normalized = normalizeConfiguration(configuration);
     const drinkMg = calculateNutrition(normalized).caffeineMg;
-    const projectedMg = todayMg + drinkMg;
+    const basketMg = basketConfigurations.reduce((total, basketDrink) => total + caffeineOf(basketDrink), 0);
+    const plannedMg = todayMg + basketMg;
+    const projectedMg = plannedMg + drinkMg;
     const cutoffMinutes = parseCutoffMinutes(cutoffTime);
     const { minutesSinceMidnight } = getShopClock(now);
 
@@ -87,13 +95,14 @@ function evaluateDrink({ configuration, todayMg, cutoffTime, now = new Date() })
         suggestion = {
             caffeineMode: "half",
             drinkMg: halfCafMg,
-            projectedMg: todayMg + halfCafMg,
+            projectedMg: plannedMg + halfCafMg,
             savesMg: drinkMg - halfCafMg
         };
     }
 
     return {
         todayMg,
+        basketMg,
         drinkMg,
         projectedMg,
         dailyLimitMg: DAILY_CAFFEINE_LIMIT_MG,
@@ -124,12 +133,12 @@ async function fetchCutoffTime(supabase, accountId) {
     return data?.caffeine_cutoff_time || null;
 }
 
-async function checkDrinkForCustomer(supabase, accountId, configuration, now = new Date()) {
+async function checkDrinkForCustomer(supabase, accountId, { configuration, basket = [] }, now = new Date()) {
     const [todayMg, cutoffTime] = await Promise.all([
         fetchTodayCaffeineMg(supabase, accountId, now),
         fetchCutoffTime(supabase, accountId)
     ]);
-    return evaluateDrink({ configuration, todayMg, cutoffTime, now });
+    return evaluateDrink({ configuration, todayMg, basketConfigurations: basket, cutoffTime, now });
 }
 
 async function saveCutoffTime(supabase, accountId, cutoffTime) {

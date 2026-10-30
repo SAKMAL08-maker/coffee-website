@@ -27,6 +27,18 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         // Community recipes (Phase 5) are server-backed and named differently from the removed client-only sharing.
         assert.match(html, /id="publish-recipe-button"/);
         assert.match(html, /src="\/js\/communityRecipes\.js"/);
+        // The caffeine guardian must stay visible while building a drink: it once sat inside the
+        // summary card, which is hidden until the customer flips the preview, so nobody saw it.
+        const summaryCard = html.slice(
+            html.indexOf('id="summary-view"'),
+            html.indexOf("</article>", html.indexOf('id="summary-view"'))
+        );
+        assert.doesNotMatch(summaryCard, /caffeine-guardian/);
+        const guardianIndex = html.indexOf('id="caffeine-guardian"');
+        assert.ok(
+            guardianIndex > 0 && guardianIndex < html.indexOf('id="add-to-cart-button"'),
+            "guardian sits above the add button"
+        );
         assert.match(html, /id="creation-view-toggle"/);
         assert.match(html, /id="summary-view"[^>]*hidden/);
         assert.match(html, /id="summary-view-toggle"/);

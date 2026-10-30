@@ -165,7 +165,12 @@ test("today's total only reads this customer's orders since Manila midnight", as
         { order_items: [{ nutrition: { caffeineMg: 150 } }] }
     ];
     fakeDatabase.cutoffTime = "15:00:00";
-    const result = await checkDrinkForCustomer(createFakeSupabaseClient(), ACCOUNT_ID, tripleShot, AFTERNOON);
+    const result = await checkDrinkForCustomer(
+        createFakeSupabaseClient(),
+        ACCOUNT_ID,
+        { configuration: tripleShot },
+        AFTERNOON
+    );
     assert.equal(result.todayMg, 342);
     assert.deepEqual(result.reasons, ["over-daily-limit", "past-cutoff"]);
     const ordersQuery = fakeDatabase.queries.find((query) => query.table === "orders");
@@ -201,6 +206,55 @@ test("caffeine routes: authenticated, validated, rate-limited", async () => {
             400,
             "the client cannot supply its own total"
         );
+    } finally {
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
+test("drinks in the basket count too: three 3-shots trigger the half-caf offer", () => {
+    // Two 3-shot espressos already in the basket (192 mg each), nothing ordered yet today.
+    const result = evaluateDrink({
+        configuration: tripleShot,
+        todayMg: 0,
+        basketConfigurations: [tripleShot, tripleShot],
+        cutoffTime: null,
+        now: MORNING
+    });
+    assert.equal(result.basketMg, 384);
+    assert.equal(result.projectedMg, 576);
+    assert.deepEqual(result.reasons, ["over-daily-limit"]);
+    assert.deepEqual(result.suggestion, { caffeineMode: "half", drinkMg: 96, projectedMg: 480, savesMg: 96 });
+});
+
+test("basket caffeine is recalculated on the server from each drink", () => {
+    const result = evaluateDrink({
+        configuration: { base: "espresso", shots: 1 },
+        todayMg: 100,
+        basketConfigurations: [{ base: "espresso", shots: 2, caffeineMode: "decaf" }, { base: "coldBrew" }],
+        cutoffTime: null,
+        now: MORNING
+    });
+    const expectedBasketMg =
+        calculateNutrition(normalizeConfiguration({ base: "espresso", shots: 2, caffeineMode: "decaf" })).caffeineMg +
+        calculateNutrition(normalizeConfiguration({ base: "coldBrew" })).caffeineMg;
+    assert.equal(result.basketMg, expectedBasketMg);
+    assert.equal(result.projectedMg, 100 + expectedBasketMg + result.drinkMg);
+});
+
+test("check route rejects a basket with smuggled numbers or more than 20 drinks", async () => {
+    const server = app.listen(0);
+    const baseUrl = `http://127.0.0.1:${server.address().port}`;
+    const check = (body) =>
+        fetch(`${baseUrl}/api/caffeine/check`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+    try {
+        assert.equal((await check({ configuration: tripleShot, basket: [{ caffeineMg: 0 }] })).status, 400);
+        assert.equal((await check({ configuration: tripleShot, basket: Array(21).fill(tripleShot) })).status, 400);
+        // A valid basket passes validation and only then hits authentication.
+        assert.equal((await check({ configuration: tripleShot, basket: [tripleShot] })).status, 401);
     } finally {
         await new Promise((resolve) => server.close(resolve));
     }
