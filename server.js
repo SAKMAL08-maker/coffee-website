@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const helmet = require("helmet");
+const compression = require("compression");
 const { assertSupabaseConfig } = require("./config/supabase");
 const userRoutes = require("./routes/userRoutes");
 const coffeeRoutes = require("./routes/coffeeRoutes");
@@ -47,6 +48,8 @@ app.use(
         hsts: process.env.NODE_ENV === "production" ? { maxAge: 31_536_000, includeSubDomains: true } : false
     })
 );
+// Scalability option B: gzip text responses (HTML, CSS, JS, JSON are ~234 KB raw).
+app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 // Mounted outside /api on purpose: uptime pingers are cross-site callers, so the
 // same-origin guard below must not apply. It exposes no data, only up/down.
@@ -54,9 +57,19 @@ app.use("/healthz", healthRoutes);
 app.use(express.static(path.join(__dirname, "public"), { dotfiles: "deny", index: false }));
 app.use("/api", verifySameOrigin);
 
+// The page never changes while the server runs, so production reads it once.
+// Development re-reads it so edits show up without a restart.
+let cachedIndexHtml = null;
+async function readIndexHtml() {
+    if (cachedIndexHtml) return cachedIndexHtml;
+    const html = await fs.promises.readFile(path.join(__dirname, "index.html"), "utf8");
+    if (process.env.NODE_ENV === "production") cachedIndexHtml = html;
+    return html;
+}
+
 app.get(["/", "/index.html"], async (request, response, next) => {
     try {
-        const html = await fs.promises.readFile(path.join(__dirname, "index.html"), "utf8");
+        const html = await readIndexHtml();
         response.set("Cache-Control", "no-store");
         response.type("html").send(html);
     } catch (error) {

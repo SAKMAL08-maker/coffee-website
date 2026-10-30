@@ -15,6 +15,8 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal(home.headers.get("x-powered-by"), null);
         assert.equal(home.headers.get("x-content-type-options"), "nosniff");
         assert.equal(home.headers.get("cache-control"), "no-store");
+        // Option B: text responses are compressed (fetch decompresses transparently).
+        assert.match(home.headers.get("content-encoding") || "", /^(gzip|br|deflate)$/);
         const policy = home.headers.get("content-security-policy");
         assert.match(policy, /script-src 'self'/);
         assert.match(policy, /style-src 'self'/);
