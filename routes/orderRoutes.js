@@ -8,10 +8,16 @@ const {
     trackingLimiter,
     receiptLimiter,
     deliveryReportLimiter,
-    adminOrderLimiter
+    adminOrderLimiter,
+    orderQuoteLimiter,
+    orderStatusLimiter
 } = require("../middleware/rateLimiters");
 
 const router = express.Router();
+
+// Read-only price quote for the cart and customizer preview; no auth needed,
+// but limited because the browser calls it as customers change ingredients.
+router.post("/quote", orderQuoteLimiter, validateRequest(schemas.orderQuote), orderController.createOrderQuote);
 
 router.post(
     "/checkout",
@@ -109,6 +115,7 @@ router.delete(
 );
 router.patch(
     "/:orderId/status",
+    orderStatusLimiter,
     validateRequest(schemas.status),
     authenticate,
     requireStaff,

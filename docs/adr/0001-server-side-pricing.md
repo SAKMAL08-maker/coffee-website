@@ -9,7 +9,7 @@ Customers build drinks in the browser, and the browser shows a live price. Anyth
 
 ## Decision
 
-- The server is the only source of truth for prices. `POST /api/orders/checkout` receives drink **configurations**, never prices; `calculateOrderPricing` in `controllers/orderController.js` recomputes every line item and fee before saving.
+- The server is the only source of truth for prices. `POST /api/orders/checkout` receives drink **configurations**, never prices; `calculateOrderPricing` in `services/pricingService.js` recomputes every line item and fee before saving.
 - All server amounts are **integer centavos** (`price_cents`, `subtotal_cents`, `tax_cents`, …). Percentages are applied in basis points and rounded once per component with `Math.round`.
 - Order rows store the computed breakdown, so receipts and history show what was charged even if prices change later.
 
@@ -17,5 +17,6 @@ Customers build drinks in the browser, and the browser shows a live price. Anyth
 
 - ✅ A tampered request cannot change what an order costs.
 - ✅ No floating-point drift in stored totals.
-- ⚠️ The browser still has its own copy of the pricing rules (`public/js/pricing.js`, in pesos as floats) to show a live preview. The two can drift, for example on rounding with a custom tip percentage. **Phase 3** moves pricing into `services/pricingService.js` and makes the browser ask the server for quotes, so the rules live in one place.
+- ✅ Since Phase 3 the rules live only in `services/pricingService.js`. The browser no longer has its own copy (it used to compute in pesos as floats, which could drift by a centavo on custom tips); it displays quotes from `POST /api/orders/quote`, which uses the same function as checkout. `test/pricingRegression.test.js` proves the refactor kept every total identical.
+- ⚠️ Live price updates need a network round-trip (debounced, cached); if the quote request fails the UI shows "—" and checkout still calculates correctly.
 - ⚠️ Price changes currently require a code deploy (hardcoded constants). Phase 6 (optional) moves them to database tables.

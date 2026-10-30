@@ -142,6 +142,14 @@ const checkoutBody = z
         }
     });
 
+// Same pricing inputs as checkout, without customer or address details: a quote saves nothing.
+const orderQuoteBody = z
+    .object({
+        items: z.array(orderItem).min(1).max(20),
+        fulfillmentMethod: z.enum(["delivery", "pickup"]),
+        tipPercent: z.number().finite().min(0).max(100).default(15)
+    })
+    .strict();
 const schemas = {
     emptyQuery,
     emptyParams,
@@ -163,6 +171,7 @@ const schemas = {
     savedRecipe: { body: namedConfigurationBody, query: emptyQuery, params: emptyParams },
     quote: { body: quoteBody, query: emptyQuery, params: emptyParams },
     checkout: { body: checkoutBody, query: emptyQuery, params: emptyParams },
+    orderQuote: { body: orderQuoteBody, query: emptyQuery, params: emptyParams },
     tracking: {
         params: z.object({ trackingCode: z.string().regex(/^[a-f0-9]{48}$/) }).strict(),
         query: emptyQuery
