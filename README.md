@@ -10,6 +10,15 @@ Coffee Lab is a coffee customizer and ordering web app. Customers build a drink 
 
 For a deeper walkthrough (order lifecycle, security controls, design choices) see [DOCUMENTATION.md](DOCUMENTATION.md).
 
+| Doc                                            | Read it when you want to…                                       |
+| ---------------------------------------------- | --------------------------------------------------------------- |
+| [CONTRIBUTING.md](CONTRIBUTING.md)             | make a change: branching, commits, PRs, conventions, migrations |
+| [PLAN.md](PLAN.md)                             | see the roadmap, business plan, and learning log                |
+| [docs/adr/](docs/adr/README.md)                | understand why key design decisions were made                   |
+| [docs/runbook.md](docs/runbook.md)             | deploy, roll back, rotate keys, or set up keep-alive            |
+| [AI-USAGE.md](AI-USAGE.md)                     | see how AI tools are used and checked                           |
+| [instructions/guide.md](instructions/guide.md) | set up Supabase, Render, admin MFA, and B2 from scratch         |
+
 ## Architecture
 
 ```mermaid
@@ -104,12 +113,12 @@ scripts/       Owner-run admin MFA bootstrap utility
 services/      Business logic: drinks, receipts, B2 storage, account security, MFA
 supabase/      Ordered SQL migrations and admin setup SQL
 test/          Node test-runner tests
-docs/ai-logs/  How AI-assisted work is recorded
+docs/          ADRs, operations runbook, AI work logs
 ```
 
 ## AI-assisted development
 
-AI tools (GitHub Copilot, ChatGPT, Claude Code) have been used on this project, and every change is reviewed by the owner before merging. See [docs/ai-logs/](docs/ai-logs/README.md) for how that work is logged.
+AI tools (GitHub Copilot, ChatGPT, Claude Code) have been used on this project, and every change is reviewed by the owner before merging. See [AI-USAGE.md](AI-USAGE.md) for the rules and known AI mistakes, and [docs/ai-logs/](docs/ai-logs/README.md) for the per-change log.
 
 ## License
 

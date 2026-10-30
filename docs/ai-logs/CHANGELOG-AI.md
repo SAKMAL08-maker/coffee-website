@@ -75,3 +75,31 @@ Append-only. Format and rules: [README.md](README.md).
 
 - [ ] Merge this PR with **"Create a merge commit"**, not squash or rebase. Squash/rebase changes the commit hash and `.git-blame-ignore-revs` would point at nothing.
 - [ ] After deploy, click through the customizer, cart, checkout, and admin dashboard once. HTML whitespace changes are designed to be safe, but a visual glance confirms it.
+
+## 2026-10-30 · Phase 2 · Collaboration docs
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `phase-2-collaboration-docs`
+
+**What changed**
+
+- `CONTRIBUTING.md`: workflow, branch names, Conventional Commits, code conventions table, tests, migration rules, AI rules.
+- `docs/adr/`: index plus 4 ADRs: server-side pricing (0001), Backblaze B2 receipts (0002), admin MFA (0003), custom customer auth (0004).
+- `docs/runbook.md`: deploy, rollback (Render + GitHub revert), key rotation (Supabase, B2, sessions, admin TOTP), keep-alive setup, alert triage, incident checklist.
+- `PLAN.md`: roadmap, a short business plan **marked as a draft**, and a learning log that quotes commit messages verbatim.
+- `AI-USAGE.md`: tools, working rules, recorded AI mistakes, and **placeholders** for the owner's own corrections.
+- README doc index; `instructions/guide.md` release checks now include lint and format.
+
+**Why:** reviewers and new teammates need the reasons behind the design, a repeatable way to operate it, and an honest account of AI involvement.
+
+**What Claude deliberately did not write**
+
+- Why B2 was chosen over Supabase Storage, why Supabase Auth MFA over alternatives, and why customers moved off Supabase Auth: not recorded anywhere, so each ADR has an "Owner to confirm" block with Claude's clearly labelled inferences.
+- Any example of the owner correcting AI output beyond what commit messages say.
+
+**Human checks required**
+
+- [ ] Fill the ✍️ placeholders in ADR-0002, ADR-0003, ADR-0004, `PLAN.md` (business plan + learning log), and `AI-USAGE.md`, or delete ones you don't want.
+- [ ] Business plan figures and customer segments are assumptions. Replace them with your own.
+- [ ] Runbook steps match what you actually see in the Render, Supabase, and Backblaze dashboards (menu names change).
+- [ ] Before you ever run `delete from public.coffee_sessions;` from the runbook: it logs out every customer.
