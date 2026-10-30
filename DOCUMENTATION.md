@@ -108,7 +108,7 @@ Nutrition, recipe labels, service fees, taxes, and other displayed calculations 
 
 ### Caffeine guardian
 
-- Signed-in customers see a panel under the drink metrics: caffeine **ordered today**, this drink's caffeine, and a daily guide of 400 mg (common guidance for healthy adults; shown as guidance, not medical advice).
+- Signed-in customers see a panel just above **Add to order basket**: caffeine **ordered today**, caffeine **in the basket**, this drink's caffeine, and a daily guide of 400 mg (common guidance for healthy adults; shown as guidance, not medical advice).
 - **Cutoff time:** "No caffeine after" (`PUT /api/caffeine/settings`, stored in `coffee_users.caffeine_cutoff_time`; empty clears it).
 - **Half-caf nudge:** when a regular-caffeine drink would go over the guide or is built after the cutoff, the panel offers **Make it half-caf** with the exact milligrams saved. One tap switches the drink.
 - Decided on the server (`services/caffeineGuardianService.js`, `POST /api/caffeine/check`) from the same nutrition function checkout stores on each order item. "Today" and the cutoff use **Asia/Manila** time regardless of the server's clock. The browser can't supply its own total.

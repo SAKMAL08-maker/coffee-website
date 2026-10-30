@@ -1,10 +1,10 @@
 const { getAdminClient } = require("../config/supabase");
 const { checkDrinkForCustomer, saveCutoffTime } = require("../services/caffeineGuardianService");
 
-// Today's caffeine, this drink's caffeine, and a half-caf suggestion when needed.
+// Today's ordered caffeine + basket + this drink, and a half-caf suggestion when needed.
 async function checkDrink(request, response, next) {
     try {
-        const result = await checkDrinkForCustomer(getAdminClient(), request.user.id, request.body.configuration);
+        const result = await checkDrinkForCustomer(getAdminClient(), request.user.id, request.body);
         response.set("Cache-Control", "no-store");
         response.json(result);
     } catch (error) {

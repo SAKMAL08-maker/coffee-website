@@ -220,3 +220,24 @@ Append-only. Format and rules: [README.md](README.md).
 
 - [ ] Approve applying the migration (Claude will run it via the Supabase MCP only after your yes).
 - [ ] Manual checklist in the PR.
+
+## 2026-10-30 · Fix · Caffeine guardian visibility and basket
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `fix-caffeine-guardian-visibility` · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/19
+
+**What the owner found:** after three 3-shot drinks, no half-caf offer appeared and there was no "No caffeine after" control.
+
+**Diagnosis (from Supabase logs, not guesswork)**
+
+1. The live code was deployed and `/api/caffeine/check` succeeded for the owner's account, but the panel sat inside the summary card, which is hidden until the preview is flipped. This was the AI's placement error.
+2. No checkout reached the database (last order: 2026-10-27), so the three drinks were in the basket, and the guardian only counted _placed_ orders.
+
+**Fix**
+
+- Panel moved above "Add to order basket", always visible.
+- The check now also counts the basket: the browser sends basket drink configurations, never numbers; the server recomputes caffeine (strict Zod, max 20).
+- Regression test: `test/api.test.js` fails if the panel is inside the hidden summary card (verified to fail on the old markup).
+- 3 more caffeine tests, including "three 3-shots trigger the half-caf offer".
+
+**Lesson:** the unit tests proved the logic but not that the UI was visible. The manual checklist caught it, and there is now a structural test for it.
