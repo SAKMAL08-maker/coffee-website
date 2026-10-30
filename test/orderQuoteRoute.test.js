@@ -41,6 +41,7 @@ test("POST /api/orders/quote returns the same totals checkout would save", async
             assert.equal(quote.pricing.totalCents, saved.pricing.total_cents);
             assert.equal(quote.pricing.deliveryFeeCents, fulfillmentMethod === "delivery" ? 4900 : 0);
             assert.equal(quote.items.length, 2);
+            assert.equal(quote.paymentInstruction, `Pay in cash on ${fulfillmentMethod}`);
             assert.equal(quote.items[0].priceCents, saved.lineItems[0].price_cents);
         }
     });

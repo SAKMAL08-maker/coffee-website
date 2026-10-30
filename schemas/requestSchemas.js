@@ -194,6 +194,12 @@ const schemas = {
         params: z.object({ orderId: uuid }).strict(),
         query: emptyQuery
     },
+    // No body fields: the server records who and when; the client can't backdate or attribute it.
+    cashCollection: {
+        body: emptyBody,
+        params: z.object({ orderId: uuid }).strict(),
+        query: emptyQuery
+    },
     adminOrders: {
         params: emptyParams,
         query: z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict()

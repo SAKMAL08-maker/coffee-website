@@ -137,3 +137,31 @@ Append-only. Format and rules: [README.md](README.md).
 
 - [ ] Render env: is `TRUST_PROXY_HOPS` set (e.g. `1`)? If not, all visitors may share one rate-limit bucket, and the new 120/min quote limit could be hit with several customers at once.
 - [ ] Manual UI pass (checklist in the PR): prices update while customizing, cart prices, tip/custom tip, pickup ↔ delivery, checkout total equals the order's saved total.
+
+## 2026-10-30 · Phase 4 · Cash handling
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `phase-4-cash-handling` (stacked on `phase-3-pricing-refactor`) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/14
+
+**What changed**
+
+- Migration `20261101000000_cash_payment_tracking.sql` (additive): `orders.payment_method` (not null, default `'cash'`, check `in ('cash')`), `cash_collected_at`, `cash_collected_by` (FK to `coffee_users`), an all-or-nothing consistency check, and a partial index for uncollected cash.
+- `services/paymentService.js`: payment wording and the "can collect" rule in one module.
+- Checkout dialog shows "Pay in cash on pickup/delivery" (text supplied by the quote endpoint); PDF and image receipts show the same line, and "TOTAL PAID" became "TOTAL DUE".
+- Admin: `PATCH /api/orders/:orderId/admin/cash-collected` (`requireAdmin`, strict Zod with empty body, 20/min limiter). Race-safe: the update only matches while `cash_collected_at` is null. Dashboard shows cash status and a "Mark cash collected" button.
+- Admin order list now falls back schema-by-schema (cash → approvals → base), so deploying this code before the migration degrades gracefully instead of failing.
+- Admin action handler refactored from nested ternaries into a lookup table.
+- 11 new tests (37 → 48).
+
+**Why:** cash is the only payment method; customers must know before ordering, and the shop must know which orders still owe money.
+
+**Verification of the migration (without touching Supabase)**
+
+- Parsed with `libpg-query` (Postgres's real parser): 6 statements OK. Syntax only.
+- `create_coffee_order` inserts with an explicit column list (`20261025000000_username_accounts.sql`), so the new default applies and checkout needs no change.
+
+**Human checks required**
+
+- [ ] Apply the migration in Supabase **before merging** (order and checks in the PR).
+- [ ] Old app after migration: place an order on the currently deployed site; in Supabase it should have `payment_method = 'cash'`.
+- [ ] After deploy: checkout note, receipt line, admin button, second click returns "already recorded".

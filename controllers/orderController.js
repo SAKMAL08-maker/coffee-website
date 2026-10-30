@@ -8,6 +8,11 @@ const {
     getApprovalStatus
 } = require("../services/orderStatusMachine");
 const {
+    DEFAULT_PAYMENT_METHOD,
+    canMarkCashCollected,
+    describePaymentInstruction
+} = require("../services/paymentService");
+const {
     createOrderReceipt,
     getReceiptDownloadUrl,
     getOwnedReceiptImageUrl,
@@ -28,7 +33,11 @@ async function createOrderQuote(request, response, next) {
     try {
         const { items, fulfillmentMethod, tipPercent } = request.body;
         response.set("Cache-Control", "no-store");
-        response.json(createOrderQuoteService(items, fulfillmentMethod, tipPercent));
+        response.json({
+            ...createOrderQuoteService(items, fulfillmentMethod, tipPercent),
+            // How the customer will pay, so checkout shows the same wording as the receipt.
+            paymentInstruction: describePaymentInstruction(fulfillmentMethod)
+        });
     } catch (error) {
         next(error);
     }
@@ -311,34 +320,39 @@ function isMissingOrdersTable(error) {
     );
 }
 
+const ADMIN_ORDER_BASE_COLUMNS =
+    "id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, created_at";
+const ADMIN_ORDER_ITEM_COLUMNS = "order_items(id, name, classification, configuration, price_cents)";
+const ADMIN_ORDER_APPROVAL_COLUMNS = "receipt_status, delivery_reported_at, delivery_approved_at, pickup_approved_at";
+const ADMIN_ORDER_PAYMENT_COLUMNS = "payment_method, cash_collected_at";
+// Newest schema first. Each fallback drops the columns a later migration added,
+// so the dashboard keeps working (with less detail) if code ships before a migration.
+const ADMIN_ORDER_COLUMN_SETS = [
+    [ADMIN_ORDER_BASE_COLUMNS, ADMIN_ORDER_APPROVAL_COLUMNS, ADMIN_ORDER_PAYMENT_COLUMNS, ADMIN_ORDER_ITEM_COLUMNS],
+    [ADMIN_ORDER_BASE_COLUMNS, ADMIN_ORDER_APPROVAL_COLUMNS, ADMIN_ORDER_ITEM_COLUMNS],
+    [ADMIN_ORDER_BASE_COLUMNS, ADMIN_ORDER_ITEM_COLUMNS]
+].map((columnGroups) => columnGroups.join(", "));
+
 async function listAdminOrders(request, response, next) {
     try {
         const pageSize = 50;
         const page = Number(request.query.page) || 1;
         const supabase = getAdminClient();
-        let { data, error, count } = await supabase
-            .from("orders")
-            .select(
-                "id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, pickup_approved_at, created_at, order_items(id, name, classification, configuration, price_cents)",
-                { count: "exact" }
-            )
-            .order("created_at", { ascending: false })
-            .range((page - 1) * pageSize, page * pageSize - 1);
+        let data;
+        let error;
+        let count;
         let schemaWarning = null;
-        if (error && hasMissingOptionalOrderColumns(error)) {
-            console.warn(
-                "Admin orders query is using the base schema; apply the receipt and delivery approval migrations."
-            );
-            schemaWarning =
-                "Some order details and receipt status are unavailable until the latest Supabase receipt, delivery, and pickup migrations are applied.";
+        for (const [setIndex, columns] of ADMIN_ORDER_COLUMN_SETS.entries()) {
             ({ data, error, count } = await supabase
                 .from("orders")
-                .select(
-                    "id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, created_at, order_items(id, name, classification, configuration, price_cents)",
-                    { count: "exact" }
-                )
+                .select(columns, { count: "exact" })
                 .order("created_at", { ascending: false })
                 .range((page - 1) * pageSize, page * pageSize - 1));
+            const isLastFallback = setIndex === ADMIN_ORDER_COLUMN_SETS.length - 1;
+            if (!error || !hasMissingOptionalOrderColumns(error) || isLastFallback) break;
+            console.warn("Admin orders query is falling back to an older schema; apply the latest migrations.");
+            schemaWarning =
+                "Some order details (receipts, approvals, or cash collection) are unavailable until the latest Supabase migrations are applied.";
         }
         if (error && isMissingOrdersTable(error)) {
             return response.status(503).json({
@@ -364,6 +378,9 @@ async function listAdminOrders(request, response, next) {
                 deliveryReportedAt: order.delivery_reported_at,
                 deliveryApprovedAt: order.delivery_approved_at,
                 pickupApprovedAt: order.pickup_approved_at,
+                paymentMethod: order.payment_method || DEFAULT_PAYMENT_METHOD,
+                // Omitted (undefined) when the cash migration isn't applied, so the dashboard hides the button.
+                cashCollectedAt: "cash_collected_at" in order ? order.cash_collected_at : undefined,
                 createdAt: order.created_at,
                 items: order.order_items
             }))
@@ -443,6 +460,38 @@ async function approvePickup(request, response, next) {
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
         response.json({ order: { id: data.id, status: data.status, pickupApprovedAt: data.pickup_approved_at } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Records that the customer paid cash. Idempotent and race-safe: the update only
+// matches while cash_collected_at is still null, so two admins clicking at once
+// produce one record and one 409, never a double entry.
+async function markCashCollected(request, response, next) {
+    try {
+        const supabase = getAdminClient();
+        const { data: order, error: readError } = await supabase
+            .from("orders")
+            .select("id, payment_method, cash_collected_at")
+            .eq("id", request.params.orderId)
+            .maybeSingle();
+        if (readError) throw readError;
+        if (!order) return response.status(404).json({ error: "Order not found." });
+        if (!canMarkCashCollected(order)) {
+            return response.status(409).json({ error: "Cash has already been recorded as collected for this order." });
+        }
+        const collectedAt = new Date().toISOString();
+        const { data, error } = await supabase
+            .from("orders")
+            .update({ cash_collected_at: collectedAt, cash_collected_by: request.user.id, updated_at: collectedAt })
+            .eq("id", order.id)
+            .is("cash_collected_at", null)
+            .select("id, cash_collected_at")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        response.json({ order: { id: data.id, cashCollectedAt: data.cash_collected_at } });
     } catch (error) {
         next(error);
     }
@@ -583,6 +632,7 @@ module.exports = {
     listAdminOrders,
     approveDelivery,
     approvePickup,
+    markCashCollected,
     retryAdminReceipt,
     downloadAdminReceipt,
     viewAdminReceiptImage,
