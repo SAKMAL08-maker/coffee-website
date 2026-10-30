@@ -372,15 +372,20 @@
                 : getDrinkName(composition);
         const metrics = getMetrics(composition);
         const existingIndex = state.cartItems.findIndex((item) => item.id === editingCartItemId);
+        // Which shared recipe this drink came from (kept when editing). The server pays a
+        // royalty only if the final drink still exactly matches the published recipe.
+        const recipeSlug = activeSharedRecipe?.slug || state.cartItems[existingIndex]?.recipeSlug;
         const item = {
             id: editingCartItemId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
-            name,
+            name: activeSharedRecipe?.name || name,
             state: getDrinkConfiguration(),
-            metrics
+            metrics,
+            ...(recipeSlug ? { recipeSlug } : {})
         };
         if (existingIndex >= 0) state.cartItems[existingIndex] = item;
         else state.cartItems.push(item);
         editingCartItemId = null;
+        clearSharedRecipe();
         resetEditor();
         setNotice(existingIndex >= 0 ? `${name} updated in your basket.` : `${name} added to your basket.`);
     }
@@ -694,6 +699,104 @@
         }
     }
 
+    // ---- Community recipes (network calls in communityRecipes.js) ----
+    let activeSharedRecipe = null;
+
+    function clearSharedRecipe() {
+        activeSharedRecipe = null;
+        $("#shared-recipe-banner").hidden = true;
+        window.CoffeeLabRecipes.clearSharedRecipeSlug();
+    }
+
+    async function loadSharedRecipeFromLink() {
+        const slug = window.CoffeeLabRecipes.readSharedRecipeSlug();
+        if (!slug) return;
+        try {
+            const recipe = await window.CoffeeLabRecipes.fetchSharedRecipe(slug);
+            activeSharedRecipe = recipe;
+            applyRecipe({ ...recipe.configuration });
+            $("#shared-recipe-title").textContent = `Shared recipe: ${recipe.name}`;
+            $("#shared-recipe-creator").textContent = recipe.creatorUsername ? `by ${recipe.creatorUsername}` : "";
+            $("#shared-recipe-banner").hidden = false;
+        } catch {
+            window.CoffeeLabRecipes.clearSharedRecipeSlug();
+            setNotice("That shared recipe link is no longer available.");
+        }
+    }
+
+    // Built with textContent (never innerHTML): recipe names are user-written.
+    function renderMyPublishedRecipes(recipes) {
+        const list = $("#my-published-recipes");
+        list.replaceChildren(
+            ...recipes.map((recipe) => {
+                const row = document.createElement("li");
+                const link = document.createElement("a");
+                link.href = recipe.shareUrl;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = recipe.name;
+                const unpublishButton = document.createElement("button");
+                unpublishButton.type = "button";
+                unpublishButton.className = "button";
+                unpublishButton.textContent = "Unpublish";
+                unpublishButton.addEventListener("click", async () => {
+                    unpublishButton.disabled = true;
+                    try {
+                        await window.CoffeeLabRecipes.unpublishRecipe(recipe.slug);
+                        renderRoyaltySummary(await window.CoffeeLabRecipes.fetchMyRecipes());
+                    } catch (error) {
+                        $("#recipe-royalty-summary").textContent = `Could not unpublish: ${error.message}`;
+                        unpublishButton.disabled = false;
+                    }
+                });
+                row.append(link, " ", unpublishButton);
+                return row;
+            })
+        );
+    }
+
+    function renderRoyaltySummary({ royalties, recipes }) {
+        renderMyPublishedRecipes(recipes);
+        $("#recipe-royalty-summary").textContent = recipes.length
+            ? `${recipes.length} published recipe${recipes.length === 1 ? "" : "s"} · ${royalties.earnedPoints} points earned · ${royalties.pendingPoints} pending (awarded once the buyer pays) · ${royalties.pointsPerDrink} points per drink.`
+            : `Earn ${royalties.pointsPerDrink} points every time someone else orders and pays for your recipe.`;
+    }
+
+    async function openPublishRecipeDialog() {
+        $("#publish-recipe-name").value = getDrinkName(getComposition()).slice(0, 48);
+        $("#published-recipe-result").hidden = true;
+        $("#publish-recipe-submit").disabled = false;
+        $("#recipe-royalty-summary").textContent = "";
+        $("#my-published-recipes").replaceChildren();
+        $("#publish-recipe-dialog").showModal();
+        try {
+            renderRoyaltySummary(await window.CoffeeLabRecipes.fetchMyRecipes());
+        } catch {
+            $("#recipe-royalty-summary").textContent = "Could not load your royalty points right now.";
+        }
+    }
+
+    async function publishCurrentRecipe(event) {
+        event.preventDefault();
+        const submitButton = $("#publish-recipe-submit");
+        submitButton.disabled = true;
+        try {
+            const recipe = await window.CoffeeLabRecipes.publishRecipe(
+                $("#publish-recipe-name").value.trim(),
+                getDrinkConfiguration()
+            );
+            $("#published-recipe-qr").src = recipe.qrCodeUrl;
+            $("#published-recipe-link").href = recipe.shareUrl;
+            $("#published-recipe-link").textContent = recipe.shareUrl;
+            $("#published-recipe-result").hidden = false;
+            setNotice(`"${recipe.name}" is published. Share the link or QR code.`);
+            renderRoyaltySummary(await window.CoffeeLabRecipes.fetchMyRecipes());
+        } catch (error) {
+            $("#recipe-royalty-summary").textContent = `Could not publish: ${error.message}`;
+            submitButton.disabled = false;
+        }
+    }
+
     function applyRecipe(recipe, selectedClassic = "") {
         const { name, ...configuration } = recipe;
         Object.assign(state, JSON.parse(JSON.stringify(configuration)));
@@ -851,6 +954,13 @@
         render();
     });
     $("#add-to-cart-button").addEventListener("click", addCurrentDrinkToCart);
+    $("#order-shared-recipe-button").addEventListener("click", () => {
+        addCurrentDrinkToCart();
+        openCart();
+    });
+    $("#publish-recipe-button").addEventListener("click", openPublishRecipeDialog);
+    $("#publish-recipe-form").addEventListener("submit", publishCurrentRecipe);
+    $("#close-publish-recipe").addEventListener("click", () => $("#publish-recipe-dialog").close());
     $("#open-cart-button").addEventListener("click", openCart);
     $("#close-cart-button").addEventListener("click", closeCart);
     $("#drawer-backdrop").addEventListener("click", closeCart);
@@ -880,7 +990,8 @@
                 body: JSON.stringify({
                     items: state.cartItems.map((item) => ({
                         name: item.name,
-                        configuration: item.state
+                        configuration: item.state,
+                        ...(item.recipeSlug ? { recipeSlug: item.recipeSlug } : {})
                     })),
                     fulfillmentMethod: state.fulfillmentMethod,
                     ...(state.fulfillmentMethod === "delivery" ? { deliveryAddress: state.deliveryAddress } : {}),
@@ -1031,4 +1142,5 @@
     });
     showPreview(activePreview);
     render();
+    loadSharedRecipeFromLink();
 })();

@@ -31,7 +31,8 @@ const PRICING_RULES = Object.freeze({
 });
 
 const FULFILLMENT_METHODS = Object.freeze(["delivery", "pickup"]);
-const ALLOWED_ITEM_FIELDS = Object.freeze(["name", "configuration"]);
+// recipeSlug never affects price; it only attributes a community-recipe royalty (communityRecipeService).
+const ALLOWED_ITEM_FIELDS = Object.freeze(["name", "configuration", "recipeSlug"]);
 
 function createBadRequest(message) {
     return Object.assign(new Error(message), { statusCode: 400 });

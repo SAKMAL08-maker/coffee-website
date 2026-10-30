@@ -31,5 +31,7 @@ module.exports = {
     // Staff advance a handful of orders per minute; this only stops scripted abuse.
     orderStatusLimiter: createLimiter(60 * 1000, 30),
     // Recording a payment is a sensitive admin write; a busy shift needs well under this.
-    cashCollectionLimiter: createLimiter(60 * 1000, 20)
+    cashCollectionLimiter: createLimiter(60 * 1000, 20),
+    // Public recipe pages and QR codes: generous for real visitors, blocks slug scraping.
+    recipeReadLimiter: createLimiter(60 * 1000, 60)
 };

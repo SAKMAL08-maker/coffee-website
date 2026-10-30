@@ -24,6 +24,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.doesNotMatch(html, /<style[\s>]/i);
         assert.doesNotMatch(html, /<script>([\s\S]*?)<\/script>/i);
         assert.doesNotMatch(html, /Share recipe|Export recipe card|Save to my bar/i);
+        // Community recipes (Phase 5) are server-backed and named differently from the removed client-only sharing.
+        assert.match(html, /id="publish-recipe-button"/);
+        assert.match(html, /src="\/js\/communityRecipes\.js"/);
         assert.match(html, /id="creation-view-toggle"/);
         assert.match(html, /id="summary-view"[^>]*hidden/);
         assert.match(html, /id="summary-view-toggle"/);

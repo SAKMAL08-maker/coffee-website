@@ -98,10 +98,15 @@ const namedConfigurationBody = z
 
 const quoteBody = z.object({ configuration }).strict();
 
+// Public community-recipe slug (see services/communityRecipeService.js).
+const recipeSlug = z.string().regex(/^[A-Za-z0-9]{10}$/);
+
 const orderItem = z
     .object({
         name: z.string().trim().min(1).max(80).optional(),
-        configuration
+        configuration,
+        // Optional: which shared recipe this drink came from. The server decides any royalty.
+        recipeSlug: recipeSlug.optional()
     })
     .strict();
 
@@ -172,6 +177,9 @@ const schemas = {
     quote: { body: quoteBody, query: emptyQuery, params: emptyParams },
     checkout: { body: checkoutBody, query: emptyQuery, params: emptyParams },
     orderQuote: { body: orderQuoteBody, query: emptyQuery, params: emptyParams },
+    publishRecipe: { body: namedConfigurationBody, query: emptyQuery, params: emptyParams },
+    publicRecipe: { body: emptyBody, query: emptyQuery, params: z.object({ slug: recipeSlug }).strict() },
+    myRecipes: { body: emptyBody, query: emptyQuery, params: emptyParams },
     tracking: {
         params: z.object({ trackingCode: z.string().regex(/^[a-f0-9]{48}$/) }).strict(),
         query: emptyQuery
