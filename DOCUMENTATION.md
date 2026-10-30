@@ -24,15 +24,15 @@ Express application (server.js)
 
 Source code is maintained in GitHub (`SAKMAL08-maker/coffee-website`). The Express application is deployed to Render. Render hosts the application; Supabase and Backblaze remain external managed services.
 
-| Layer | Location | Responsibility |
-|---|---|---|
-| User interface | `index.html`, `public/privacy.html`, `public/css/styles.css` | Semantic page structure, privacy policy page, responsive styling, controls, dialogs, and customer/admin views. |
-| Browser state and behavior | `public/js/state.js`, `pricing.js`, `app.js`, `auth.js`, `admin.js`, `theme.js` | Drink configuration, live rendering, checkout and order-history interactions, login/MFA UI, admin order actions, and theme state. |
-| HTTP/API setup | `server.js` | Express setup, static assets, security headers, same-origin protection, routes, generic error responses, and server startup. |
-| API boundaries | `routes/`, `schemas/`, `middleware/` | Endpoint wiring, Zod request validation, authentication/authorization, rate limiting, and same-origin checks. |
-| Application logic | `controllers/`, `services/` | Drink calculations, order pricing and fulfillment transitions, credential/session handling, TOTP enrollment policy, and receipt generation/storage. |
-| Persistence and integrations | `config/supabase.js`, `supabase/migrations/`, `services/b2ReceiptStorage.js` | Supabase PostgreSQL and Auth integration, schema changes, and private B2 receipt uploads/downloads through signed URLs. |
-| Hosting and source control | Render; GitHub repository | Render runs the Node.js service. GitHub stores source code and its history. |
+| Layer                        | Location                                                                        | Responsibility                                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| User interface               | `index.html`, `public/privacy.html`, `public/css/styles.css`                    | Semantic page structure, privacy policy page, responsive styling, controls, dialogs, and customer/admin views.                                      |
+| Browser state and behavior   | `public/js/state.js`, `pricing.js`, `app.js`, `auth.js`, `admin.js`, `theme.js` | Drink configuration, live rendering, checkout and order-history interactions, login/MFA UI, admin order actions, and theme state.                   |
+| HTTP/API setup               | `server.js`                                                                     | Express setup, static assets, security headers, same-origin protection, routes, generic error responses, and server startup.                        |
+| API boundaries               | `routes/`, `schemas/`, `middleware/`                                            | Endpoint wiring, Zod request validation, authentication/authorization, rate limiting, and same-origin checks.                                       |
+| Application logic            | `controllers/`, `services/`                                                     | Drink calculations, order pricing and fulfillment transitions, credential/session handling, TOTP enrollment policy, and receipt generation/storage. |
+| Persistence and integrations | `config/supabase.js`, `supabase/migrations/`, `services/b2ReceiptStorage.js`    | Supabase PostgreSQL and Auth integration, schema changes, and private B2 receipt uploads/downloads through signed URLs.                             |
+| Hosting and source control   | Render; GitHub repository                                                       | Render runs the Node.js service. GitHub stores source code and its history.                                                                         |
 
 ### Application and order flow
 
@@ -69,15 +69,15 @@ flowchart TD
 
 The initial product blueprint called for a split drink preview/customization interface, configurable ingredients and preparation, drink classification and nutrition estimates, customer ordering, and an administrative dashboard. The implementation follows that direction using a single responsive web application rather than React, Vue, or Tailwind.
 
-| Planned area | Current implementation |
-|---|---|
-| Interactive drink creation | Base, caffeine mode, shot/extraction profile, volume, hot/iced/blended state, ice, milk, foam, syrups, sweeteners, and toppings are represented in browser state and rendered in the cup preview. |
-| Live drink feedback | The frontend displays ingredient layers, a recipe classification, a composition legend, and estimated caffeine, calories, and sugar. Matching recipe ratios use rules in the frontend and server coffee service. Nutrition values are estimates, not laboratory or medical values. |
-| Classics and units | Classic recipes and metric/imperial display are supported in the customizer. |
-| Customer ordering | Cart and checkout support delivery and pickup, server-calculated pricing, tracking, and customer order history. |
-| Admin workflow | The dashboard lists paginated orders, refreshes automatically, supports receipt actions, and lets administrators verify delivery or pickup readiness. |
-| Digital receipts | PDF and SVG receipt files are generated and stored in the Backblaze B2 object container using server-side credentials; signed URLs support downloads and previews. |
-| Share/export design ideas | The current HTML/API tests explicitly expect the old “share recipe,” “export recipe card,” and “save to my bar” UI to be absent. Although saved-coffee routes and services exist, a corresponding current customer interface was not found. These should be treated as deferred or backend-only features, not shipped user-facing capabilities. |
+| Planned area               | Current implementation                                                                                                                                                                                                                                                                                                                          |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Interactive drink creation | Base, caffeine mode, shot/extraction profile, volume, hot/iced/blended state, ice, milk, foam, syrups, sweeteners, and toppings are represented in browser state and rendered in the cup preview.                                                                                                                                               |
+| Live drink feedback        | The frontend displays ingredient layers, a recipe classification, a composition legend, and estimated caffeine, calories, and sugar. Matching recipe ratios use rules in the frontend and server coffee service. Nutrition values are estimates, not laboratory or medical values.                                                              |
+| Classics and units         | Classic recipes and metric/imperial display are supported in the customizer.                                                                                                                                                                                                                                                                    |
+| Customer ordering          | Cart and checkout support delivery and pickup, server-calculated pricing, tracking, and customer order history.                                                                                                                                                                                                                                 |
+| Admin workflow             | The dashboard lists paginated orders, refreshes automatically, supports receipt actions, and lets administrators verify delivery or pickup readiness.                                                                                                                                                                                           |
+| Digital receipts           | PDF and SVG receipt files are generated and stored in the Backblaze B2 object container using server-side credentials; signed URLs support downloads and previews.                                                                                                                                                                              |
+| Share/export design ideas  | The current HTML/API tests explicitly expect the old “share recipe,” “export recipe card,” and “save to my bar” UI to be absent. Although saved-coffee routes and services exist, a corresponding current customer interface was not found. These should be treated as deferred or backend-only features, not shipped user-facing capabilities. |
 
 The original blueprint is available in the development conversation, not as a checked-in product requirements document. No independent formal plan or acceptance specification was found in the repository.
 
@@ -122,12 +122,12 @@ Relevant workflow endpoints are declared in `routes/orderRoutes.js`; the transit
 
 The repository does not contain a complete AI conversation-log archive. Git commit messages provide limited evidence of AI-assisted development; they are not a substitute for full prompts, tool traces, or a review record.
 
-| Evidence available in Git history | What it supports |
-|---|---|
-| Commit messages mention Copilot-assisted HTML organization, security review/implementation, and an admin-order loading/UI fix. | Copilot was used as a development aid on those tasks. |
-| A later commit describes fixing fragile admin initialization by starting the dashboard directly after authentication, while retaining polling and manual refresh. | A concrete debugging iteration addressed script/event ordering and initialization. |
-| Commits describe moving away from an incorrect Mongo/JWT direction toward Supabase, and later implementing admin authorization/TOTP. | The architecture evolved through implementation corrections rather than following a fixed framework scaffold. |
-| Earlier work has no checked-in AI transcripts. From October 30, 2026, Claude Code work is logged in `docs/ai-logs/` (see its README). | Claims about AI involvement before that date rest on commit messages only. |
+| Evidence available in Git history                                                                                                                                 | What it supports                                                                                              |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Commit messages mention Copilot-assisted HTML organization, security review/implementation, and an admin-order loading/UI fix.                                    | Copilot was used as a development aid on those tasks.                                                         |
+| A later commit describes fixing fragile admin initialization by starting the dashboard directly after authentication, while retaining polling and manual refresh. | A concrete debugging iteration addressed script/event ordering and initialization.                            |
+| Commits describe moving away from an incorrect Mongo/JWT direction toward Supabase, and later implementing admin authorization/TOTP.                              | The architecture evolved through implementation corrections rather than following a fixed framework scaffold. |
+| Earlier work has no checked-in AI transcripts. From October 30, 2026, Claude Code work is logged in `docs/ai-logs/` (see its README).                             | Claims about AI involvement before that date rest on commit messages only.                                    |
 
 Examples of problem-solving milestones visible in the project record include replacing fragile admin startup signaling, adding server-side order polling, moving order pricing to trusted server calculations, and building receipt generation against B2. The code and commit descriptions show the resulting changes; they do not establish how quickly an individual learned a concept or prove that AI output was correct without human review.
 
@@ -145,7 +145,7 @@ Examples of problem-solving milestones visible in the project record include rep
 
 There is **no frontend build step**: this is plain HTML, CSS, and browser JavaScript. The application is deployed on **Render** and its source repository is on **GitHub**. `npm start` runs `node server.js`; `npm test` runs Node’s built-in test runner.
 
-GitHub Actions (`.github/workflows/ci.yml`) runs `npm ci`, ESLint, `npm test`, and `npm audit --omit=dev` on every pull request and push to `main`. There is no deployment manifest (`render.yaml`); Render deployment settings are therefore managed outside the checked-in source (for example, in the Render service configuration/dashboard); the exact branch trigger, build command, health checks, and auto-deploy settings cannot be confirmed from this codebase. A typical Render Node service uses `npm install` or `npm ci` as its build command and `npm start` as its start command, but use the values configured for the actual service.
+GitHub Actions (`.github/workflows/ci.yml`) runs `npm ci`, ESLint, a Prettier check, `npm test`, and `npm audit --omit=dev` on every pull request and push to `main`. There is no deployment manifest (`render.yaml`); Render deployment settings are therefore managed outside the checked-in source (for example, in the Render service configuration/dashboard); the exact branch trigger, build command, health checks, and auto-deploy settings cannot be confirmed from this codebase. A typical Render Node service uses `npm install` or `npm ci` as its build command and `npm start` as its start command, but use the values configured for the actual service.
 
 Recommended safe release sequence (manual unless CI/CD is added):
 
@@ -162,19 +162,19 @@ This is a recommended procedure, **not a claim that automated CI/CD currently en
 
 ### Implemented controls
 
-| Area | Implementation |
-|---|---|
-| HTTP security | `server.js` uses Helmet, disables `X-Powered-By`, sets a restrictive Content Security Policy, and enables HSTS when `NODE_ENV=production`. |
-| Request origin | `middleware/originProtection.js` rejects cross-site API requests and mismatched `Origin` hosts. |
-| Validation | Zod schemas in `schemas/requestSchemas.js` validate API bodies, route parameters, and query parameters. Service logic also validates drink/order data. |
-| Authentication | Customer credentials use scrypt password hashes and opaque random session tokens; only token hashes are stored. Admin sign-in uses a linked Supabase Auth user. |
-| Admin MFA | Admin access requires an AAL2 Supabase session and a factor ID approved for that Coffee Lab admin. A bootstrap migration and owner-only script provide short-lived one-time initial enrollment authorization. Extra or mismatched factors cause access to fail closed. |
-| Cookies | Session and admin tokens are stored in `HttpOnly; SameSite=Lax` cookies; production cookies use `Secure`. Admin MFA-pending cookies expire quickly. |
-| Authorization | Customer, staff, and admin capabilities are checked on the server. Admin APIs use `requireAdmin`; customer order/receipt queries are constrained to the signed-in account. |
-| Rate limits | Separate limits cover login, MFA, checkout, order reads/actions, receipts, and other sensitive/high-frequency routes. |
-| Secrets | Supabase service-role and Backblaze B2 credentials are read from server environment variables; configure them in Render’s protected environment settings and never place them in frontend code or commit them. |
-| Receipts | Generated PDFs and receipt images are stored in the Backblaze B2 object container. Objects are private and accessed through short-lived signed URLs. Receipt endpoints check customer ownership or admin authorization before generating those URLs. |
-| Errors | The Express error handler returns generic JSON for unexpected server errors and records details in server logs. |
+| Area           | Implementation                                                                                                                                                                                                                                                         |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP security  | `server.js` uses Helmet, disables `X-Powered-By`, sets a restrictive Content Security Policy, and enables HSTS when `NODE_ENV=production`.                                                                                                                             |
+| Request origin | `middleware/originProtection.js` rejects cross-site API requests and mismatched `Origin` hosts.                                                                                                                                                                        |
+| Validation     | Zod schemas in `schemas/requestSchemas.js` validate API bodies, route parameters, and query parameters. Service logic also validates drink/order data.                                                                                                                 |
+| Authentication | Customer credentials use scrypt password hashes and opaque random session tokens; only token hashes are stored. Admin sign-in uses a linked Supabase Auth user.                                                                                                        |
+| Admin MFA      | Admin access requires an AAL2 Supabase session and a factor ID approved for that Coffee Lab admin. A bootstrap migration and owner-only script provide short-lived one-time initial enrollment authorization. Extra or mismatched factors cause access to fail closed. |
+| Cookies        | Session and admin tokens are stored in `HttpOnly; SameSite=Lax` cookies; production cookies use `Secure`. Admin MFA-pending cookies expire quickly.                                                                                                                    |
+| Authorization  | Customer, staff, and admin capabilities are checked on the server. Admin APIs use `requireAdmin`; customer order/receipt queries are constrained to the signed-in account.                                                                                             |
+| Rate limits    | Separate limits cover login, MFA, checkout, order reads/actions, receipts, and other sensitive/high-frequency routes.                                                                                                                                                  |
+| Secrets        | Supabase service-role and Backblaze B2 credentials are read from server environment variables; configure them in Render’s protected environment settings and never place them in frontend code or commit them.                                                         |
+| Receipts       | Generated PDFs and receipt images are stored in the Backblaze B2 object container. Objects are private and accessed through short-lived signed URLs. Receipt endpoints check customer ownership or admin authorization before generating those URLs.                   |
+| Errors         | The Express error handler returns generic JSON for unexpected server errors and records details in server logs.                                                                                                                                                        |
 
 ### Security limitations and operational requirements
 
@@ -263,7 +263,7 @@ test/            Node test-runner tests
 
 - Replace order polling with Supabase Realtime, server-sent events, or another push mechanism if polling load or update latency becomes material.
 - Use a shared rate-limit store before horizontally scaling the Express app.
-- Extend CI with migration validation and Prettier enforcement; add staged deployment and rollback automation.
+- Extend CI with migration validation; add staged deployment and rollback automation.
 - Add explicit operational documentation for Supabase migration tracking, B2 retention/lifecycle rules, backups, MFA recovery, and incident response.
 - Consolidate or contract-test shared pricing and recipe calculations if frontend and server rules begin to diverge.
 - Introduce typed API contracts or TypeScript if the application’s size and team concurrency increase.

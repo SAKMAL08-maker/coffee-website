@@ -1,10 +1,5 @@
 const { getAdminClient } = require("../config/supabase");
-const {
-    startAdminLogin,
-    createMfaSession,
-    enrollAdminTotp,
-    verifyAdminTotp
-} = require("../services/adminMfa");
+const { startAdminLogin, createMfaSession, enrollAdminTotp, verifyAdminTotp } = require("../services/adminMfa");
 const {
     createRecoveryCode,
     normalizeRecoveryCode,
@@ -53,11 +48,13 @@ function sessionExpiration(staySignedIn) {
 async function createSession(response, user, staySignedIn) {
     const token = createSessionToken();
     const expiresAt = sessionExpiration(staySignedIn);
-    const { error } = await getAdminClient().from("coffee_sessions").insert({
-        user_id: user.id,
-        token_hash: hashSessionToken(token),
-        expires_at: expiresAt
-    });
+    const { error } = await getAdminClient()
+        .from("coffee_sessions")
+        .insert({
+            user_id: user.id,
+            token_hash: hashSessionToken(token),
+            expires_at: expiresAt
+        });
     if (error) throw error;
     response.set("Set-Cookie", sessionCookie(token, staySignedIn));
 }
@@ -119,7 +116,9 @@ async function logIn(request, response, next) {
             });
         }
 
-        const storedPasswordHash = user?.password_hash || await (dummyPasswordHash ||= hashPassword("Coffee Lab invalid-account timing value"));
+        const storedPasswordHash =
+            user?.password_hash ||
+            (await (dummyPasswordHash ||= hashPassword("Coffee Lab invalid-account timing value")));
         const passwordMatches = await verifyPassword(request.body.password, storedPasswordHash);
         if (!user || !passwordMatches) {
             return response.status(401).json({ error: "Username or password is incorrect." });
@@ -154,7 +153,9 @@ async function verifyAdminMfa(request, response, next) {
             request.body.code
         );
         if (!result.valid) {
-            return response.status(401).json({ error: "That authenticator code is invalid or expired. Try the latest code." });
+            return response
+                .status(401)
+                .json({ error: "That authenticator code is invalid or expired. Try the latest code." });
         }
         setVerifiedAdminCookies(response, result.session);
         response.json({
@@ -190,10 +191,10 @@ async function logOut(request, response, next) {
                 .eq("token_hash", hashSessionToken(token));
             if (error) throw error;
         }
-        const accessToken = readCookie(request, ADMIN_ACCESS_COOKIE_NAME)
-            || readCookie(request, ADMIN_MFA_ACCESS_COOKIE_NAME);
-        const refreshToken = readCookie(request, ADMIN_REFRESH_COOKIE_NAME)
-            || readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME);
+        const accessToken =
+            readCookie(request, ADMIN_ACCESS_COOKIE_NAME) || readCookie(request, ADMIN_MFA_ACCESS_COOKIE_NAME);
+        const refreshToken =
+            readCookie(request, ADMIN_REFRESH_COOKIE_NAME) || readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME);
         if (accessToken && refreshToken) {
             const { authClient } = await createMfaSession(accessToken, refreshToken);
             const { error } = await authClient.auth.signOut({ scope: "local" });

@@ -33,8 +33,9 @@ async function bootstrapAdminMfa(username) {
         .eq("role", "admin");
     if (lockError) throw lockError;
 
-    const { data: factorData, error: factorError } = await supabase.auth.admin.mfa
-        .listFactors({ userId: account.supabase_auth_user_id });
+    const { data: factorData, error: factorError } = await supabase.auth.admin.mfa.listFactors({
+        userId: account.supabase_auth_user_id
+    });
     if (factorError) throw factorError;
     for (const factor of factorData.factors) {
         const { error } = await supabase.auth.admin.mfa.deleteFactor({

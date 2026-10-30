@@ -55,13 +55,17 @@ test("creates a readable PDF receipt from a saved order", async () => {
 test("accepts no B2 configuration but rejects partial or unsafe endpoints", () => {
     assert.equal(readStorageConfig({}), null);
     assert.throws(() => readStorageConfig({ B2_BUCKET_NAME: "r3c3ipts" }), /configuration is incomplete/);
-    assert.throws(() => readStorageConfig({
-        B2_BUCKET_NAME: "r3c3ipts",
-        B2_ENDPOINT: "http://s3.example.com",
-        B2_REGION: "us-west-004",
-        B2_KEY_ID: "key-id",
-        B2_APPLICATION_KEY: "application-key"
-    }), /HTTPS/);
+    assert.throws(
+        () =>
+            readStorageConfig({
+                B2_BUCKET_NAME: "r3c3ipts",
+                B2_ENDPOINT: "http://s3.example.com",
+                B2_REGION: "us-west-004",
+                B2_KEY_ID: "key-id",
+                B2_APPLICATION_KEY: "application-key"
+            }),
+        /HTTPS/
+    );
 
     const config = readStorageConfig({
         B2_BUCKET_NAME: "r3c3ipts",
