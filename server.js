@@ -38,12 +38,12 @@ const contentSecurityDirectives = {
 };
 if (process.env.NODE_ENV === "production") contentSecurityDirectives.upgradeInsecureRequests = [];
 
-app.use(helmet({
-    contentSecurityPolicy: { directives: contentSecurityDirectives },
-    hsts: process.env.NODE_ENV === "production"
-        ? { maxAge: 31_536_000, includeSubDomains: true }
-        : false
-}));
+app.use(
+    helmet({
+        contentSecurityPolicy: { directives: contentSecurityDirectives },
+        hsts: process.env.NODE_ENV === "production" ? { maxAge: 31_536_000, includeSubDomains: true } : false
+    })
+);
 app.use(express.json({ limit: "1mb" }));
 // Mounted outside /api on purpose: uptime pingers are cross-site callers, so the
 // same-origin guard below must not apply. It exposes no data, only up/down.

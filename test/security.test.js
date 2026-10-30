@@ -22,7 +22,7 @@ test("rate limiter returns a generic JSON response when the limit is exceeded", 
         assert.match(limitedResponse.headers.get("ratelimit"), /limit=1/i);
     } finally {
         await new Promise((resolve, reject) => {
-            server.close((error) => error ? reject(error) : resolve());
+            server.close((error) => (error ? reject(error) : resolve()));
         });
     }
 });

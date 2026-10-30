@@ -23,12 +23,96 @@ window.CoffeeLabState = (() => {
         stevia: { label: "Stevia", calories: 0, sugar: 0 }
     };
     const CLASSICS = {
-        latte: { name: "Classic Latte", base: "espresso", caffeineMode: "regular", volumeMl: 300, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 20, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
-        cappuccino: { name: "Cappuccino", base: "espresso", caffeineMode: "regular", volumeMl: 180, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 75, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
-        cortado: { name: "Cortado", base: "espresso", caffeineMode: "regular", volumeMl: 120, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 10, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
-        americano: { name: "Americano", base: "drip", caffeineMode: "regular", volumeMl: 240, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 0, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
-        flatWhite: { name: "Flat White", base: "espresso", caffeineMode: "regular", volumeMl: 180, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 15, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } },
-        macchiato: { name: "Macchiato", base: "espresso", caffeineMode: "regular", volumeMl: 90, shots: 2, extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole", foam: 85, syrups: { vanilla: 0, caramel: 0, chocolate: 0 }, sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false } }
+        latte: {
+            name: "Classic Latte",
+            base: "espresso",
+            caffeineMode: "regular",
+            volumeMl: 300,
+            shots: 2,
+            extraction: "standard",
+            temperature: "hot",
+            iceStyle: "cube",
+            milk: "whole",
+            foam: 20,
+            syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+            sweeteners: [],
+            toppings: { cinnamon: false, whippedCream: false, cocoa: false }
+        },
+        cappuccino: {
+            name: "Cappuccino",
+            base: "espresso",
+            caffeineMode: "regular",
+            volumeMl: 180,
+            shots: 2,
+            extraction: "standard",
+            temperature: "hot",
+            iceStyle: "cube",
+            milk: "whole",
+            foam: 75,
+            syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+            sweeteners: [],
+            toppings: { cinnamon: false, whippedCream: false, cocoa: false }
+        },
+        cortado: {
+            name: "Cortado",
+            base: "espresso",
+            caffeineMode: "regular",
+            volumeMl: 120,
+            shots: 2,
+            extraction: "standard",
+            temperature: "hot",
+            iceStyle: "cube",
+            milk: "whole",
+            foam: 10,
+            syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+            sweeteners: [],
+            toppings: { cinnamon: false, whippedCream: false, cocoa: false }
+        },
+        americano: {
+            name: "Americano",
+            base: "drip",
+            caffeineMode: "regular",
+            volumeMl: 240,
+            shots: 2,
+            extraction: "standard",
+            temperature: "hot",
+            iceStyle: "cube",
+            milk: "whole",
+            foam: 0,
+            syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+            sweeteners: [],
+            toppings: { cinnamon: false, whippedCream: false, cocoa: false }
+        },
+        flatWhite: {
+            name: "Flat White",
+            base: "espresso",
+            caffeineMode: "regular",
+            volumeMl: 180,
+            shots: 2,
+            extraction: "standard",
+            temperature: "hot",
+            iceStyle: "cube",
+            milk: "whole",
+            foam: 15,
+            syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+            sweeteners: [],
+            toppings: { cinnamon: false, whippedCream: false, cocoa: false }
+        },
+        macchiato: {
+            name: "Macchiato",
+            base: "espresso",
+            caffeineMode: "regular",
+            volumeMl: 90,
+            shots: 2,
+            extraction: "standard",
+            temperature: "hot",
+            iceStyle: "cube",
+            milk: "whole",
+            foam: 85,
+            syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+            sweeteners: [],
+            toppings: { cinnamon: false, whippedCream: false, cocoa: false }
+        }
     };
     const state = {
         base: "espresso",

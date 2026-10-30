@@ -87,7 +87,9 @@ async function authenticate(request, response, next) {
                 clearAdminCookies(response);
                 return response.status(401).json({ error: "Your administrator session has expired. Sign in again." });
             }
-            const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(sessionData.session.access_token);
+            const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(
+                sessionData.session.access_token
+            );
             if (claimsError && ![400, 401].includes(claimsError.status)) return next(claimsError);
             if (claimsError || claimsData?.claims?.aal !== "aal2") {
                 clearAdminCookies(response);
@@ -108,10 +110,14 @@ async function authenticate(request, response, next) {
             if (factorsError) throw factorsError;
             if (!isOnlyTrustedFactor(factors.all, user.admin_mfa_factor_id)) {
                 clearAdminCookies(response);
-                return response.status(403).json({ error: "The enrolled authenticator does not match the administrator-approved factor." });
+                return response
+                    .status(403)
+                    .json({ error: "The enrolled authenticator does not match the administrator-approved factor." });
             }
-            if (sessionData.session.access_token !== adminAccessToken
-                || sessionData.session.refresh_token !== adminRefreshToken) {
+            if (
+                sessionData.session.access_token !== adminAccessToken ||
+                sessionData.session.refresh_token !== adminRefreshToken
+            ) {
                 response.append("Set-Cookie", [
                     adminSessionCookie(ADMIN_ACCESS_COOKIE_NAME, sessionData.session.access_token),
                     adminSessionCookie(ADMIN_REFRESH_COOKIE_NAME, sessionData.session.refresh_token)
@@ -158,7 +164,9 @@ async function authenticate(request, response, next) {
         }
         if (user.role === "admin") {
             response.set("Set-Cookie", clearSessionCookie());
-            return response.status(401).json({ error: "Administrator accounts must sign in with Supabase multi-factor authentication." });
+            return response
+                .status(401)
+                .json({ error: "Administrator accounts must sign in with Supabase multi-factor authentication." });
         }
 
         request.user = user;

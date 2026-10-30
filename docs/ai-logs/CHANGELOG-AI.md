@@ -8,6 +8,7 @@ Append-only. Format and rules: [README.md](README.md).
 - **Branch:** `phase-0-repo-hygiene` · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/9
 
 **What changed**
+
 - Fast-forwarded `main` to `version_1.0` (no commits lost) and made `main` the default branch on GitHub, so pull requests target the current code.
 - Added `README.md` (overview, Mermaid architecture diagram, setup, scripts, environment variable table without values, free-tier notes), an MIT `LICENSE`, and `.gitattributes` (LF line endings).
 - Corrected stale statements in `AGENTS.md` and `.github/copilot-instructions.md` (they said `index.html`/`server.js` were empty and tests were placeholders) and in `DOCUMENTATION.md` (branch, clone steps, AI evidence).
@@ -19,6 +20,7 @@ Append-only. Format and rules: [README.md](README.md).
 **Why:** a reviewer or new teammate should be able to understand, install, and run the project from the README alone, and the instruction files that AI tools read must not contain false facts.
 
 **Human checks required**
+
 - [ ] The LICENSE names `SAKMAL08-maker` as copyright holder. Change it to your legal name if you prefer.
 - [ ] In Render → Settings → Build & Deploy, the deploy branch is `main`. If it still points at a `version_*` branch, merged PRs will not deploy.
 - [ ] Render's start command is still `npm start` and its build command still works without `pg` (expected: `npm install` or `npm ci`).
@@ -32,6 +34,7 @@ Append-only. Format and rules: [README.md](README.md).
 - **Branch:** `phase-1-ci-deploy-config` · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/10
 
 **What changed**
+
 - GitHub Actions CI (`.github/workflows/ci.yml`): `npm ci`, `npm run lint`, `npm test`, `npm audit --omit=dev` on every PR and push to `main`. Read-only permissions, no secrets.
 - ESLint 10 flat config (`eslint.config.js`) with `eslint:recommended`; Prettier 3 config matching the existing style. Prettier is **not** enforced in CI yet: it would reformat 39 existing files, which belongs in a separate format-only PR.
 - `GET /healthz` (route → controller → service) runs one `select id limit 1` on `coffee_users` with a 5 s timeout and returns `200 {"status":"ok"}` or `503 {"status":"unavailable"}`. Mounted outside `/api` so cross-site pingers are not blocked by the same-origin guard; rate-limited to 30/min; rejects query params via the existing Zod `empty` schema.
@@ -42,6 +45,7 @@ Append-only. Format and rules: [README.md](README.md).
 **Why:** every PR now gets an automatic pass/fail before the owner reviews it, and the free-tier services can be kept awake with an honest health check instead of a fake one.
 
 **Human checks required**
+
 - [ ] The CI check on the PR is green (first real run of the workflow).
 - [ ] After merge and deploy, `https://<your-app>.onrender.com/healthz` returns `{"status":"ok"}`.
 - [ ] Set up one external pinger on `/healthz` every 10–14 min (steps in the PR / runbook in Phase 2).

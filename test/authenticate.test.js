@@ -46,11 +46,15 @@ test("customer accounts cannot pass the staff authorization guard", () => {
         }
     };
 
-    requireStaff({ user: { role: "customer" } }, response, () => { continued = true; });
+    requireStaff({ user: { role: "customer" } }, response, () => {
+        continued = true;
+    });
     assert.equal(responseStatus, 403);
     assert.equal(continued, false);
 
-    requireStaff({ user: { role: "admin" } }, response, () => { continued = true; });
+    requireStaff({ user: { role: "admin" } }, response, () => {
+        continued = true;
+    });
     assert.equal(continued, true);
 });
 
@@ -68,8 +72,14 @@ test("only admin accounts can pass the administrator authorization guard", () =>
 
     requireAdmin({ user: { role: "staff" } }, response, () => outcomes.push("continued"));
     requireAdmin({ user: { role: "admin" } }, response, () => outcomes.push("continued"));
-    requireAdmin({ user: { role: "admin" }, authMethod: "coffee-session", aal: "aal1" }, response, () => outcomes.push("continued"));
-    requireAdmin({ user: { role: "admin" }, authMethod: "supabase-mfa", aal: "aal1" }, response, () => outcomes.push("continued"));
-    requireAdmin({ user: { role: "admin" }, authMethod: "supabase-mfa", aal: "aal2" }, response, () => outcomes.push("continued"));
+    requireAdmin({ user: { role: "admin" }, authMethod: "coffee-session", aal: "aal1" }, response, () =>
+        outcomes.push("continued")
+    );
+    requireAdmin({ user: { role: "admin" }, authMethod: "supabase-mfa", aal: "aal1" }, response, () =>
+        outcomes.push("continued")
+    );
+    requireAdmin({ user: { role: "admin" }, authMethod: "supabase-mfa", aal: "aal2" }, response, () =>
+        outcomes.push("continued")
+    );
     assert.deepEqual(outcomes, [403, 403, 403, 403, "continued"]);
 });

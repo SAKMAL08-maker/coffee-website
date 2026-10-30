@@ -6,10 +6,13 @@ function hashSetupToken(token) {
 }
 
 function hasValidSetupToken(account, token, now = Date.now()) {
-    if (!account.admin_mfa_setup_token_hash
-        || !account.admin_mfa_setup_token_expires_at
-        || !/^[a-f0-9]{64}$/i.test(account.admin_mfa_setup_token_hash)
-        || !token) return false;
+    if (
+        !account.admin_mfa_setup_token_hash ||
+        !account.admin_mfa_setup_token_expires_at ||
+        !/^[a-f0-9]{64}$/i.test(account.admin_mfa_setup_token_hash) ||
+        !token
+    )
+        return false;
     const expiresAt = Date.parse(account.admin_mfa_setup_token_expires_at);
     if (!Number.isFinite(expiresAt) || expiresAt <= now) return false;
     const actualHash = Buffer.from(hashSetupToken(token), "hex");
@@ -19,16 +22,16 @@ function hasValidSetupToken(account, token, now = Date.now()) {
 
 function hasActiveSetupAuthorization(account, now = Date.now()) {
     const expiresAt = Date.parse(account.admin_mfa_setup_token_expires_at);
-    return Boolean(account.admin_mfa_setup_token_hash)
-        && Number.isFinite(expiresAt)
-        && expiresAt > now;
+    return Boolean(account.admin_mfa_setup_token_hash) && Number.isFinite(expiresAt) && expiresAt > now;
 }
 
 function isOnlyTrustedFactor(factors, factorId, status = "verified") {
-    return factors.length === 1
-        && factors[0].id === factorId
-        && factors[0].factor_type === "totp"
-        && factors[0].status === status;
+    return (
+        factors.length === 1 &&
+        factors[0].id === factorId &&
+        factors[0].factor_type === "totp" &&
+        factors[0].status === status
+    );
 }
 
 function isInvalidPasswordError(error) {
@@ -38,14 +41,17 @@ function isInvalidPasswordError(error) {
 async function startAdminLogin(username, password) {
     const { data: account, error: accountError } = await getAdminClient()
         .from("coffee_users")
-        .select("id, username, role, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at")
+        .select(
+            "id, username, role, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at"
+        )
         .eq("username_key", username.trim().toLowerCase())
         .maybeSingle();
     if (accountError) throw accountError;
     if (!account || account.role !== "admin" || !account.supabase_auth_user_id) return null;
 
-    const { data: authUserResult, error: authUserError } = await getAdminClient()
-        .auth.admin.getUserById(account.supabase_auth_user_id);
+    const { data: authUserResult, error: authUserError } = await getAdminClient().auth.admin.getUserById(
+        account.supabase_auth_user_id
+    );
     if (authUserError) throw authUserError;
     if (!authUserResult.user?.email || !authUserResult.user.email_confirmed_at) return null;
 
@@ -75,8 +81,10 @@ async function startAdminLogin(username, password) {
         };
     }
     if (account.admin_mfa_pending_factor_id) {
-        if (!hasActiveSetupAuthorization(account)
-            || !isOnlyTrustedFactor(accountFactors, account.admin_mfa_pending_factor_id, "unverified")) {
+        if (
+            !hasActiveSetupAuthorization(account) ||
+            !isOnlyTrustedFactor(accountFactors, account.admin_mfa_pending_factor_id, "unverified")
+        ) {
             return { blocked: true, username: account.username };
         }
         return {
@@ -125,21 +133,34 @@ async function enrollAdminTotp(accessToken, refreshToken, setupToken) {
     if (claimsError) throw claimsError;
     const { data: account, error: accountError } = await getAdminClient()
         .from("coffee_users")
-        .select("id, role, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at")
+        .select(
+            "id, role, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at"
+        )
         .eq("supabase_auth_user_id", claimsData.claims.sub)
         .maybeSingle();
     if (accountError) throw accountError;
     if (!account || account.role !== "admin") {
         throw Object.assign(new Error("Administrator access is not permitted."), { statusCode: 403 });
     }
-    if (account.admin_mfa_factor_id || account.admin_mfa_pending_factor_id
-        || !hasValidSetupToken(account, setupToken)) {
-        throw Object.assign(new Error("A valid owner-issued setup authorization is required to enroll this administrator authenticator."), { statusCode: 403 });
+    if (
+        account.admin_mfa_factor_id ||
+        account.admin_mfa_pending_factor_id ||
+        !hasValidSetupToken(account, setupToken)
+    ) {
+        throw Object.assign(
+            new Error(
+                "A valid owner-issued setup authorization is required to enroll this administrator authenticator."
+            ),
+            { statusCode: 403 }
+        );
     }
     const { data: factors, error: factorsError } = await authClient.auth.mfa.listFactors();
     if (factorsError) throw factorsError;
     if (factors.all.length > 0) {
-        throw Object.assign(new Error("Unapproved authenticator factors exist. Contact the project owner to reset MFA setup."), { statusCode: 403 });
+        throw Object.assign(
+            new Error("Unapproved authenticator factors exist. Contact the project owner to reset MFA setup."),
+            { statusCode: 403 }
+        );
     }
     const { data, error } = await authClient.auth.mfa.enroll({
         factorType: "totp",
@@ -159,7 +180,12 @@ async function enrollAdminTotp(accessToken, refreshToken, setupToken) {
         .maybeSingle();
     if (pendingError) throw pendingError;
     if (!pending) {
-        throw Object.assign(new Error("Setup authorization expired or was already used. Contact the project owner to restart enrollment."), { statusCode: 403 });
+        throw Object.assign(
+            new Error(
+                "Setup authorization expired or was already used. Contact the project owner to restart enrollment."
+            ),
+            { statusCode: 403 }
+        );
     }
     return {
         factorId: data.id,
@@ -174,24 +200,31 @@ async function verifyAdminTotp(accessToken, refreshToken, factorId, code) {
     if (claimsError) throw claimsError;
     const { data: account, error: accountError } = await getAdminClient()
         .from("coffee_users")
-        .select("id, username, role, created_at, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at")
+        .select(
+            "id, username, role, created_at, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at"
+        )
         .eq("supabase_auth_user_id", claimsData.claims.sub)
         .maybeSingle();
     if (accountError) throw accountError;
     if (!account || account.role !== "admin") {
         throw Object.assign(new Error("Administrator access is not permitted."), { statusCode: 403 });
     }
-    const isBootstrap = !account.admin_mfa_factor_id
-        && account.admin_mfa_pending_factor_id === factorId
-        && hasActiveSetupAuthorization(account);
+    const isBootstrap =
+        !account.admin_mfa_factor_id &&
+        account.admin_mfa_pending_factor_id === factorId &&
+        hasActiveSetupAuthorization(account);
     if (!isBootstrap && account.admin_mfa_factor_id !== factorId) {
-        throw Object.assign(new Error("This authenticator is not approved for administrator access."), { statusCode: 403 });
+        throw Object.assign(new Error("This authenticator is not approved for administrator access."), {
+            statusCode: 403
+        });
     }
     const { data: factorData, error: factorError } = await authClient.auth.mfa.listFactors();
     if (factorError) throw factorError;
     const expectedStatus = isBootstrap ? "unverified" : "verified";
     if (!isOnlyTrustedFactor(factorData.all, factorId, expectedStatus)) {
-        throw Object.assign(new Error("The authenticator factor is invalid. Start sign-in again."), { statusCode: 400 });
+        throw Object.assign(new Error("The authenticator factor is invalid. Start sign-in again."), {
+            statusCode: 400
+        });
     }
 
     const { data: challenge, error: challengeError } = await authClient.auth.mfa.challenge({ factorId });
@@ -235,7 +268,10 @@ async function verifyAdminTotp(accessToken, refreshToken, factorId, code) {
             .maybeSingle();
         if (approvalError) throw approvalError;
         if (!approved) {
-            throw Object.assign(new Error("Administrator enrollment authorization expired. Contact the project owner."), { statusCode: 403 });
+            throw Object.assign(
+                new Error("Administrator enrollment authorization expired. Contact the project owner."),
+                { statusCode: 403 }
+            );
         }
     }
     return { valid: true, session: verified, user: account };

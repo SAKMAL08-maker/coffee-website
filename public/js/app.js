@@ -8,8 +8,12 @@
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => [...document.querySelectorAll(selector)];
     const elements = {
-        volume: $("#volume-range"), shots: $("#shot-range"), foam: $("#foam-range"),
-        liquid: $("#liquid"), classification: $("#drink-classification"), legend: $("#ingredient-legend"),
+        volume: $("#volume-range"),
+        shots: $("#shot-range"),
+        foam: $("#foam-range"),
+        liquid: $("#liquid"),
+        classification: $("#drink-classification"),
+        legend: $("#ingredient-legend"),
         notice: $("#app-notice")
     };
 
@@ -28,9 +32,12 @@
         const shotMl = { ristretto: 22, standard: 30, lungo: 40 }[state.extraction] || 30;
         const baseMl = state.base === "espresso" ? state.shots * shotMl : 0;
         const syrupMl = Object.entries(state.syrups).reduce((sum, [key, count]) => sum + count * SYRUPS[key].ml, 0);
-        const milkTotal = state.base === "espresso"
-            ? Math.max(0, state.volumeMl - baseMl - syrupMl)
-            : state.base === "matcha" ? Math.max(0, state.volumeMl - syrupMl) * 0.3 : 0;
+        const milkTotal =
+            state.base === "espresso"
+                ? Math.max(0, state.volumeMl - baseMl - syrupMl)
+                : state.base === "matcha"
+                  ? Math.max(0, state.volumeMl - syrupMl) * 0.3
+                  : 0;
         const foamMl = milkTotal * (state.foam / 100) * 0.6;
         const milkMl = milkTotal - foamMl;
         const otherBaseMl = state.base === "espresso" ? 0 : Math.max(0, state.volumeMl - syrupMl - milkTotal);
@@ -38,7 +45,10 @@
     }
 
     function getDrinkName(composition) {
-        const hasExtras = Object.values(state.syrups).some(Boolean) || state.sweeteners.length || Object.values(state.toppings).some(Boolean);
+        const hasExtras =
+            Object.values(state.syrups).some(Boolean) ||
+            state.sweeteners.length ||
+            Object.values(state.toppings).some(Boolean);
         if (state.base === "drip" && state.temperature === "hot" && !hasExtras) return "Americano";
         if (state.base !== "espresso") return "Custom Concoction";
         if (state.temperature !== "hot" || hasExtras) return "Custom Concoction";
@@ -58,10 +68,11 @@
     function getMetrics(composition) {
         const base = BASES[state.base];
         const caffeineFactor = state.caffeineMode === "decaf" ? 0.05 : state.caffeineMode === "half" ? 0.5 : 1;
-        const caffeine = state.base === "espresso" ? base.caffeine * state.shots : base.caffeine * state.volumeMl / 240;
+        const caffeine =
+            state.base === "espresso" ? base.caffeine * state.shots : (base.caffeine * state.volumeMl) / 240;
         const milk = MILKS[state.milk];
-        let calories = base.calories + composition.milkMl * milk.calories / 100;
-        let sugar = composition.milkMl * milk.sugar / 100;
+        let calories = base.calories + (composition.milkMl * milk.calories) / 100;
+        let sugar = (composition.milkMl * milk.sugar) / 100;
         Object.entries(state.syrups).forEach(([key, count]) => {
             calories += SYRUPS[key].calories * count;
             sugar += SYRUPS[key].sugar * count;
@@ -70,12 +81,19 @@
             calories += SWEETENERS[key].calories;
             sugar += SWEETENERS[key].sugar;
         });
-        if (state.toppings.whippedCream) { calories += 50; sugar += 3; }
-        return { caffeine: Math.round(caffeine * caffeineFactor), calories: Math.round(calories), sugar: round(sugar, 1) };
+        if (state.toppings.whippedCream) {
+            calories += 50;
+            sugar += 3;
+        }
+        return {
+            caffeine: Math.round(caffeine * caffeineFactor),
+            calories: Math.round(calories),
+            sugar: round(sugar, 1)
+        };
     }
 
     function renderLayers(composition) {
-        const liquidHeight = Math.min(100, state.volumeMl / 480 * 100);
+        const liquidHeight = Math.min(100, (state.volumeMl / 480) * 100);
         elements.liquid.style.height = `${liquidHeight}%`;
         const total = Math.max(state.volumeMl, 1);
         const layers = [
@@ -88,30 +106,53 @@
         ];
         layers.forEach(([selector, volume]) => {
             const layer = $(selector);
-            layer.style.height = `${volume / total * 100}%`;
+            layer.style.height = `${(volume / total) * 100}%`;
         });
         $("#ice-layer").hidden = state.temperature === "hot";
         $("#cup-capacity").textContent = displayVolume(state.volumeMl);
         $("#cup").setAttribute("aria-label", `${getDrinkName(composition)}, ${displayVolume(state.volumeMl)} drink`);
-        $("#temperature-caption").textContent = state.temperature === "hot"
-            ? `Served warm · approximately ${state.metric ? "65°C" : "149°F"}`
-            : state.temperature === "iced" ? `Served chilled · ${state.iceStyle.replace(/^./, (letter) => letter.toUpperCase())} ice` : "Blended smooth with ice";
-        $("#drink-summary").textContent = `${BASES[state.base].label} · ${displayVolume(state.volumeMl)} · ${state.temperature}`;
+        $("#temperature-caption").textContent =
+            state.temperature === "hot"
+                ? `Served warm · approximately ${state.metric ? "65°C" : "149°F"}`
+                : state.temperature === "iced"
+                  ? `Served chilled · ${state.iceStyle.replace(/^./, (letter) => letter.toUpperCase())} ice`
+                  : "Blended smooth with ice";
+        $("#drink-summary").textContent =
+            `${BASES[state.base].label} · ${displayVolume(state.volumeMl)} · ${state.temperature}`;
     }
 
     function renderLegend(composition) {
         const rows = [];
-        const add = (label, amount, color) => { if (amount > 0.4) rows.push(`<tr><td><span class="legend-color" style="--swatch:${color}"></span>${label}</td><td>${displayVolume(amount)}</td></tr>`); };
+        const add = (label, amount, color) => {
+            if (amount > 0.4)
+                rows.push(
+                    `<tr><td><span class="legend-color" style="--swatch:${color}"></span>${label}</td><td>${displayVolume(amount)}</td></tr>`
+                );
+        };
         if (state.base === "espresso") add(`${state.extraction} espresso`, composition.baseMl, "#3b2314");
         else add(BASES[state.base].label, composition.otherBaseMl, state.base === "matcha" ? "#819263" : "#70472e");
         add(`${MILKS[state.milk].label} · steamed`, composition.milkMl, "#f1e6d5");
         add("Milk foam", composition.foamMl, "#fff");
         Object.entries(state.syrups).forEach(([key, count]) => {
-            if (count) add(`${SYRUPS[key].label} · ${count} pump${count === 1 ? "" : "s"}`, count * SYRUPS[key].ml, key === "chocolate" ? "#2b1a10" : "#c68a4c");
+            if (count)
+                add(
+                    `${SYRUPS[key].label} · ${count} pump${count === 1 ? "" : "s"}`,
+                    count * SYRUPS[key].ml,
+                    key === "chocolate" ? "#2b1a10" : "#c68a4c"
+                );
         });
-        state.sweeteners.forEach((key) => rows.push(`<tr><td><span class="legend-color" style="--swatch:#d9b872"></span>${SWEETENERS[key].label}</td><td>1 serving</td></tr>`));
-        if (state.toppings.whippedCream) rows.push(`<tr><td><span class="legend-color" style="--swatch:#fff"></span>Whipped cream</td><td>1 swirl</td></tr>`);
-        elements.legend.innerHTML = rows.length ? rows.join("") : "<tr><td>Choose ingredients to begin</td><td>—</td></tr>";
+        state.sweeteners.forEach((key) =>
+            rows.push(
+                `<tr><td><span class="legend-color" style="--swatch:#d9b872"></span>${SWEETENERS[key].label}</td><td>1 serving</td></tr>`
+            )
+        );
+        if (state.toppings.whippedCream)
+            rows.push(
+                `<tr><td><span class="legend-color" style="--swatch:#fff"></span>Whipped cream</td><td>1 swirl</td></tr>`
+            );
+        elements.legend.innerHTML = rows.length
+            ? rows.join("")
+            : "<tr><td>Choose ingredients to begin</td><td>—</td></tr>";
     }
 
     function render() {
@@ -133,10 +174,15 @@
         });
         $$(".segment, .option-card").forEach((button) => {
             const group = button.closest("[data-choice-group]");
-            if (group) button.setAttribute("aria-pressed", String(state[group.dataset.choiceGroup] === button.dataset.value));
+            if (group)
+                button.setAttribute("aria-pressed", String(state[group.dataset.choiceGroup] === button.dataset.value));
         });
-        $$(".chip").forEach((button) => button.setAttribute("aria-pressed", String(state.sweeteners.includes(button.dataset.value))));
-        $$(".topping-switch").forEach((button) => button.setAttribute("aria-checked", String(state.toppings[button.dataset.topping])));
+        $$(".chip").forEach((button) =>
+            button.setAttribute("aria-pressed", String(state.sweeteners.includes(button.dataset.value)))
+        );
+        $$(".topping-switch").forEach((button) =>
+            button.setAttribute("aria-checked", String(state.toppings[button.dataset.topping]))
+        );
         $("#extraction-field").hidden = state.base !== "espresso";
         $("#ice-field").hidden = state.temperature === "hot";
         $("#unit-toggle").setAttribute("aria-checked", String(state.metric));
@@ -162,7 +208,9 @@
         $("#order-total").textContent = money(pricing.total);
         $("#custom-tip-input").hidden = state.tipPercent !== "custom";
         $("#custom-tip-input").value = state.customTipPercent;
-        $$(".tip-button").forEach((button) => button.setAttribute("aria-pressed", String(String(state.tipPercent) === button.dataset.tip)));
+        $$(".tip-button").forEach((button) =>
+            button.setAttribute("aria-pressed", String(String(state.tipPercent) === button.dataset.tip))
+        );
         $("#add-to-cart-button").textContent = editingCartItemId ? "↻ Update order item" : "＋ Add to order basket";
         renderCart();
         elements.volume.value = state.volumeMl;
@@ -173,7 +221,9 @@
     function setNotice(message) {
         elements.notice.textContent = message;
         window.clearTimeout(setNotice.timer);
-        setNotice.timer = window.setTimeout(() => { elements.notice.textContent = ""; }, 4500);
+        setNotice.timer = window.setTimeout(() => {
+            elements.notice.textContent = "";
+        }, 4500);
     }
 
     function showPreview(view, moveFocus = false) {
@@ -267,9 +317,10 @@
     function addCurrentDrinkToCart() {
         const composition = getComposition();
         const pricing = getDrinkPrice(state);
-        const name = getDrinkName(composition) === "Custom Concoction"
-            ? `Custom ${BASES[state.base].label} drink`
-            : getDrinkName(composition);
+        const name =
+            getDrinkName(composition) === "Custom Concoction"
+                ? `Custom ${BASES[state.base].label} drink`
+                : getDrinkName(composition);
         const metrics = getMetrics(composition);
         const existingIndex = state.cartItems.findIndex((item) => item.id === editingCartItemId);
         const item = {
@@ -288,10 +339,18 @@
 
     function resetEditor() {
         Object.assign(state, {
-            base: "espresso", caffeineMode: "regular", volumeMl: 240, shots: 2,
-            extraction: "standard", temperature: "hot", iceStyle: "cube", milk: "whole",
-            foam: 25, syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
-            sweeteners: [], toppings: { cinnamon: false, whippedCream: false, cocoa: false }
+            base: "espresso",
+            caffeineMode: "regular",
+            volumeMl: 240,
+            shots: 2,
+            extraction: "standard",
+            temperature: "hot",
+            iceStyle: "cube",
+            milk: "whole",
+            foam: 25,
+            syrups: { vanilla: 0, caramel: 0, chocolate: 0 },
+            sweeteners: [],
+            toppings: { cinnamon: false, whippedCream: false, cocoa: false }
         });
         editingCartItemId = null;
         $("#classics-select").value = "";
@@ -314,8 +373,11 @@
         drawer.removeAttribute("open");
         drawer.setAttribute("aria-hidden", "true");
         $("#drawer-backdrop").classList.remove("visible");
-        window.setTimeout(() => { $("#drawer-backdrop").hidden = true; }, 280);
-        if (restoreFocus && drawerReturnFocus && typeof drawerReturnFocus.focus === "function") drawerReturnFocus.focus();
+        window.setTimeout(() => {
+            $("#drawer-backdrop").hidden = true;
+        }, 280);
+        if (restoreFocus && drawerReturnFocus && typeof drawerReturnFocus.focus === "function")
+            drawerReturnFocus.focus();
     }
 
     function updateCheckoutSummary() {
@@ -378,7 +440,8 @@
         if (!orders.length) {
             const empty = document.createElement("p");
             empty.className = "order-history-empty";
-            empty.textContent = "You have no past orders yet. Your orders will appear here after you place them while signed in.";
+            empty.textContent =
+                "You have no past orders yet. Your orders will appear here after you place them while signed in.";
             list.append(empty);
             return;
         }
@@ -417,7 +480,8 @@
             detailsButton.dataset.orderStatus = order.status;
             detailsButton.dataset.fulfillmentMethod = order.fulfillmentMethod;
             detailsButton.dataset.receiptStatus = order.receiptStatus;
-            detailsButton.textContent = order.receiptStatus === "available" ? "View status and receipt" : "View order status";
+            detailsButton.textContent =
+                order.receiptStatus === "available" ? "View status and receipt" : "View order status";
             card.append(heading, summary, items, detailsButton);
             list.append(card);
         });
@@ -437,7 +501,8 @@
                 throw new Error(`The server returned an unreadable response (${response.status}).`);
             }
             if (!response.ok) {
-                if (response.status === 401) throw new Error("Your session expired. Sign in again to view order history.");
+                if (response.status === 401)
+                    throw new Error("Your session expired. Sign in again to view order history.");
                 throw new Error(result.error || `Could not load orders (${response.status}).`);
             }
             if (!Array.isArray(result.orders)) throw new Error("The server returned an invalid order history.");
@@ -461,23 +526,36 @@
         const completionLabel = isDelivery ? "Delivered" : "Ready for pickup";
         $("#tracking-eyebrow").textContent = isDelivery ? "Your coffee is on its way" : "Pickup order";
         $("#tracking-eta").textContent = isComplete
-            ? isDelivery ? "Your delivery has been verified by Coffee Lab." : "Your order is ready for pickup."
-            : isDelivery ? "We’ll update this page once delivery is verified." : "We’ll update this page once your order is ready for pickup.";
-        $("#fulfillment-progress-card").setAttribute("aria-label", isDelivery ? "Delivery confirmation" : "Pickup confirmation");
+            ? isDelivery
+                ? "Your delivery has been verified by Coffee Lab."
+                : "Your order is ready for pickup."
+            : isDelivery
+              ? "We’ll update this page once delivery is verified."
+              : "We’ll update this page once your order is ready for pickup.";
+        $("#fulfillment-progress-card").setAttribute(
+            "aria-label",
+            isDelivery ? "Delivery confirmation" : "Pickup confirmation"
+        );
         $("#fulfillment-progress").classList.toggle("is-complete", isComplete);
         $("#fulfillment-progress-icon").textContent = isComplete ? "✓" : "•";
-        $("#fulfillment-progress-label").textContent = isComplete ? completionLabel : isDelivery ? "Not yet delivered" : "Not yet ready for pickup";
+        $("#fulfillment-progress-label").textContent = isComplete
+            ? completionLabel
+            : isDelivery
+              ? "Not yet delivered"
+              : "Not yet ready for pickup";
         $("#report-delivered-button").hidden = !isDelivery || isComplete || order.deliveryReported;
         $("#report-delivered-button").disabled = Boolean(order.deliveryReportPending);
         $("#tracking-status-message").textContent = isComplete
-            ? isDelivery ? "Your delivery was approved by an administrator." : "An administrator verified that your order is ready for pickup."
+            ? isDelivery
+                ? "Your delivery was approved by an administrator."
+                : "An administrator verified that your order is ready for pickup."
             : order.deliveryReportError
-                ? `Could not report delivery: ${order.deliveryReportError}`
-            : order.deliveryReported
+              ? `Could not report delivery: ${order.deliveryReportError}`
+              : order.deliveryReported
                 ? "Thanks for letting us know. Your delivery report is waiting for administrator verification."
                 : isDelivery
-                    ? "The green checkmark appears after an administrator verifies your delivery."
-                    : "The green checkmark appears after an administrator verifies that your order is ready for pickup.";
+                  ? "The green checkmark appears after an administrator verifies your delivery."
+                  : "The green checkmark appears after an administrator verifies that your order is ready for pickup.";
         const receiptStatus = order.receiptStatus || "unavailable";
         const receiptMessages = {
             pending: "Your digital receipt is ready to generate.",
@@ -506,9 +584,8 @@
         $("#customizer-page").hidden = true;
         $("#order-history-page").hidden = true;
         $("#tracking-page").hidden = false;
-        $("#back-to-customizer-button").textContent = historyReturnView === "history"
-            ? "Back to order history"
-            : "Back to coffee lab";
+        $("#back-to-customizer-button").textContent =
+            historyReturnView === "history" ? "Back to order history" : "Back to coffee lab";
         renderTracking();
         $("#tracking-title").focus();
         window.clearInterval(trackingPollTimer);
@@ -543,7 +620,11 @@
             const response = await fetch(`/api/orders/track/${encodeURIComponent(state.orderStatus.trackingCode)}`);
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Tracking request failed (${response.status}).`);
-            if (!["Received", "Crafting", "Out for Delivery", "Arrived", "Delivered", "Ready for Pickup"].includes(result.order.status)) {
+            if (
+                !["Received", "Crafting", "Out for Delivery", "Arrived", "Delivered", "Ready for Pickup"].includes(
+                    result.order.status
+                )
+            ) {
                 throw new Error("The server returned an unknown order status.");
             }
             state.orderStatus.status = result.order.status;
@@ -576,11 +657,16 @@
     $$(".tab").forEach((tab, index, tabs) => {
         tab.addEventListener("click", () => setTab(tab.id));
         tab.addEventListener("keydown", (event) => {
-            const nextIndex = event.key === "ArrowRight" ? (index + 1) % tabs.length
-                : event.key === "ArrowLeft" ? (index - 1 + tabs.length) % tabs.length
-                    : event.key === "Home" ? 0
-                        : event.key === "End" ? tabs.length - 1
-                            : -1;
+            const nextIndex =
+                event.key === "ArrowRight"
+                    ? (index + 1) % tabs.length
+                    : event.key === "ArrowLeft"
+                      ? (index - 1 + tabs.length) % tabs.length
+                      : event.key === "Home"
+                        ? 0
+                        : event.key === "End"
+                          ? tabs.length - 1
+                          : -1;
             if (nextIndex < 0) return;
             event.preventDefault();
             setTab(tabs[nextIndex].id, true);
@@ -646,7 +732,10 @@
         });
     });
 
-    $("#unit-toggle").addEventListener("click", () => { state.metric = !state.metric; render(); });
+    $("#unit-toggle").addEventListener("click", () => {
+        state.metric = !state.metric;
+        render();
+    });
     $("#creation-view-toggle").addEventListener("click", () => {
         showPreview("summary", true);
     });
@@ -679,20 +768,26 @@
             setNotice("Location access is not available in this browser.");
             return;
         }
-        navigator.geolocation.getCurrentPosition((position) => {
-            const { latitude, longitude } = position.coords;
-            state.deliveryAddress = `Pinned location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-            $("#delivery-address").value = state.deliveryAddress;
-            setNotice("Location pinned. Add a street address or delivery instructions if needed.");
-        }, (error) => {
-            setNotice(`Could not get your location: ${error.message}`);
-        }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                state.deliveryAddress = `Pinned location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+                $("#delivery-address").value = state.deliveryAddress;
+                setNotice("Location pinned. Add a street address or delivery instructions if needed.");
+            },
+            (error) => {
+                setNotice(`Could not get your location: ${error.message}`);
+            },
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
     });
-    $$(".tip-button").forEach((button) => button.addEventListener("click", () => {
-        state.tipPercent = button.dataset.tip === "custom" ? "custom" : Number(button.dataset.tip);
-        render();
-        if (state.tipPercent === "custom") $("#custom-tip-input").focus();
-    }));
+    $$(".tip-button").forEach((button) =>
+        button.addEventListener("click", () => {
+            state.tipPercent = button.dataset.tip === "custom" ? "custom" : Number(button.dataset.tip);
+            render();
+            if (state.tipPercent === "custom") $("#custom-tip-input").focus();
+        })
+    );
     $("#custom-tip-input").addEventListener("input", (event) => {
         const amount = Number(event.target.value);
         state.customTipPercent = Number.isFinite(amount) ? Math.max(0, Math.min(100, amount)) : 0;
@@ -814,14 +909,16 @@
             $("#receipt-message").textContent = `Could not prepare your receipt: ${error.message}`;
         } finally {
             button.disabled = false;
-            button.textContent = state.orderStatus.receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
+            button.textContent =
+                state.orderStatus.receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
         }
     });
     $("#receipt-preview-image").addEventListener("error", () => {
         const image = $("#receipt-preview-image");
         image.hidden = true;
         image.removeAttribute("src");
-        $("#receipt-message").textContent = "The receipt image could not be loaded. Please try refreshing or generating the receipt again.";
+        $("#receipt-message").textContent =
+            "The receipt image could not be loaded. Please try refreshing or generating the receipt again.";
     });
     $("#back-to-customizer-button").addEventListener("click", () => {
         window.clearInterval(trackingPollTimer);
@@ -854,14 +951,22 @@
     $("#surprise-button").addEventListener("click", () => {
         const pick = (values) => values[Math.floor(Math.random() * values.length)];
         Object.assign(state, {
-            base: pick(Object.keys(BASES)), caffeineMode: pick(["regular", "decaf", "half"]),
-            volumeMl: pick([150, 180, 210, 240, 300, 360, 420]), shots: pick([1, 2, 2, 3, 4]),
-            extraction: pick(["ristretto", "standard", "lungo"]), temperature: pick(["hot", "iced", "blended"]),
-            iceStyle: pick(["cube", "coffee", "crushed"]), milk: pick(Object.keys(MILKS)),
+            base: pick(Object.keys(BASES)),
+            caffeineMode: pick(["regular", "decaf", "half"]),
+            volumeMl: pick([150, 180, 210, 240, 300, 360, 420]),
+            shots: pick([1, 2, 2, 3, 4]),
+            extraction: pick(["ristretto", "standard", "lungo"]),
+            temperature: pick(["hot", "iced", "blended"]),
+            iceStyle: pick(["cube", "coffee", "crushed"]),
+            milk: pick(Object.keys(MILKS)),
             foam: pick([0, 15, 30, 50, 70, 90]),
-            syrups: { vanilla: Math.floor(Math.random() * 3), caramel: Math.floor(Math.random() * 3), chocolate: Math.floor(Math.random() * 3) },
-            sweeteners: Math.random() > .6 ? [pick(Object.keys(SWEETENERS))] : [],
-            toppings: { cinnamon: Math.random() > .75, whippedCream: Math.random() > .8, cocoa: Math.random() > .8 }
+            syrups: {
+                vanilla: Math.floor(Math.random() * 3),
+                caramel: Math.floor(Math.random() * 3),
+                chocolate: Math.floor(Math.random() * 3)
+            },
+            sweeteners: Math.random() > 0.6 ? [pick(Object.keys(SWEETENERS))] : [],
+            toppings: { cinnamon: Math.random() > 0.75, whippedCream: Math.random() > 0.8, cocoa: Math.random() > 0.8 }
         });
         $("#classics-select").value = "";
         render();
