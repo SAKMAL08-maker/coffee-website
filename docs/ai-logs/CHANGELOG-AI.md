@@ -199,7 +199,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Phase 5b · Caffeine guardian
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `phase-5b-caffeine-guardian` (stacked on `phase-5-community-recipes` / PR #16)
+- **Branch:** `phase-5b-caffeine-guardian` (stacked on `phase-5-community-recipes` / PR #16) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/17
 - **Owner's choice:** caffeine guardian over origin-traceable beans.
 
 **What changed**
