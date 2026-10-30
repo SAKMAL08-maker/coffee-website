@@ -8,6 +8,7 @@ const { assertSupabaseConfig } = require("./config/supabase");
 const userRoutes = require("./routes/userRoutes");
 const coffeeRoutes = require("./routes/coffeeRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const healthRoutes = require("./routes/healthRoutes");
 const { verifySameOrigin } = require("./middleware/originProtection");
 
 const app = express();
@@ -44,6 +45,9 @@ app.use(helmet({
         : false
 }));
 app.use(express.json({ limit: "1mb" }));
+// Mounted outside /api on purpose: uptime pingers are cross-site callers, so the
+// same-origin guard below must not apply. It exposes no data, only up/down.
+app.use("/healthz", healthRoutes);
 app.use(express.static(path.join(__dirname, "public"), { dotfiles: "deny", index: false }));
 app.use("/api", verifySameOrigin);
 
