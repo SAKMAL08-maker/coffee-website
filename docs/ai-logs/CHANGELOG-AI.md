@@ -169,7 +169,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Phase 5 · Community recipes with royalties
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `phase-5-community-recipes` (stacked on `phase-4-cash-handling`)
+- **Branch:** `phase-5-community-recipes` (stacked on `phase-4-cash-handling`) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/15
 
 **What changed**
 
