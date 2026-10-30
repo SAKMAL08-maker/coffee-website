@@ -51,3 +51,27 @@ Append-only. Format and rules: [README.md](README.md).
 - [ ] Set up one external pinger on `/healthz` every 10–14 min (steps in the PR / runbook in Phase 2).
 - [ ] Do **not** set Render's own "Health Check Path" to `/healthz`: Render probes often, so every probe would query Supabase, and a brief database outage would make Render restart a healthy app.
 - [ ] Render free-tier numbers (750 instance hours/month, ~15 min spin-down) still match Render's pricing page.
+
+## 2026-10-30 · Format-only PR · Prettier across the codebase
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `chore-format-codebase`
+
+**What changed**
+
+- Ran `npm run format` over the whole repo in one isolated commit (`1ae29ff`), listed in `.git-blame-ignore-revs` so `git blame` skips it.
+- YAML files use 2-space indentation via a Prettier override.
+- CI now runs `npm run format:check`.
+
+**Why:** Phase 3 refactors pricing; doing the reformat first keeps that diff about logic only.
+
+**How "no behavior change" was verified**
+
+- JavaScript: token streams of all 28 changed JS files compared before/after with ESLint's tokenizer. Identical except optional parentheses and numeric spelling (`.6` → `0.6`).
+- HTML/CSS: identical after removing whitespace, except self-closing void tags (`<input />`), lowercase `<!doctype html>`, and 94 leading zeros in CSS (`.5` → `0.5`).
+- `npm run lint` clean, `npm test` 24/24.
+
+**Human checks required**
+
+- [ ] Merge this PR with **"Create a merge commit"**, not squash or rebase. Squash/rebase changes the commit hash and `.git-blame-ignore-revs` would point at nothing.
+- [ ] After deploy, click through the customizer, cart, checkout, and admin dashboard once. HTML whitespace changes are designed to be safe, but a visual glance confirms it.

@@ -53,9 +53,9 @@ cp .env.example .env      # PowerShell: Copy-Item .env.example .env
 | `npm start`                               | Runs `node server.js` (the same command Render uses).                                                                                                                                                                                                         |
 | `npm test`                                | Runs the Node.js built-in test runner over `test/`. The tests exercise validation, auth rejections, pricing, receipt generation, and the health check without network calls, and pass with no `.env`. They do not prove your live Supabase or B2 setup works. |
 | `npm run lint`                            | ESLint (bug-finding rules) over all JavaScript.                                                                                                                                                                                                               |
-| `npm run format:check` / `npm run format` | Prettier check / rewrite. Not enforced in CI yet; the existing code predates the config.                                                                                                                                                                      |
+| `npm run format:check` / `npm run format` | Prettier check / rewrite. CI fails on unformatted files; run `npm run format` before committing.                                                                                                                                                              |
 
-Every pull request runs `npm ci`, lint, tests, and `npm audit --omit=dev` in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+Every pull request runs `npm ci`, lint, a Prettier format check, tests, and `npm audit --omit=dev` in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Health check
 
