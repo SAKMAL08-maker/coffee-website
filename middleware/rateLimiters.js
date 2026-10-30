@@ -25,5 +25,9 @@ module.exports = {
     receiptLimiter: createLimiter(60 * 1000, 10),
     deliveryReportLimiter: createLimiter(60 * 60 * 1000, 5),
     adminOrderLimiter: createLimiter(60 * 1000, 30),
-    healthLimiter: createLimiter(60 * 1000, 30)
+    healthLimiter: createLimiter(60 * 1000, 30),
+    // The browser re-quotes (debounced) as ingredients change, so this is looser than checkout.
+    orderQuoteLimiter: createLimiter(60 * 1000, 120),
+    // Staff advance a handful of orders per minute; this only stops scripted abuse.
+    orderStatusLimiter: createLimiter(60 * 1000, 30)
 };

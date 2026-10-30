@@ -22,7 +22,11 @@
         return Math.round(value * factor) / factor;
     }
 
-    const { money, getDrinkPrice, getPricing, getCartSubtotal, getEstimatedEta } = window.CoffeeLabPricing;
+    const { money, moneyFromCents, getEstimatedEta } = window.CoffeeLabPricing;
+    const { createQuoteScheduler } = window.CoffeeLabQuotes;
+    const PRICE_PLACEHOLDER = "—";
+    // The last server quote for the cart; null while a new one is loading.
+    let latestCartQuote = null;
 
     function displayVolume(ml) {
         return state.metric ? `${Math.round(ml)} ml` : `${round(ml / 29.5735, 1)} oz`;
@@ -155,11 +159,62 @@
             : "<tr><td>Choose ingredients to begin</td><td>—</td></tr>";
     }
 
+    function getSelectedTipPercent() {
+        return state.tipPercent === "custom" ? state.customTipPercent : state.tipPercent;
+    }
+
+    // Item names don't affect price, so they're left out; identical carts then share a cached quote.
+    function buildQuoteRequest(configurations) {
+        return {
+            items: configurations.map((configuration) => ({ configuration })),
+            fulfillmentMethod: state.fulfillmentMethod,
+            tipPercent: getSelectedTipPercent()
+        };
+    }
+
+    function notifyQuoteFailure() {
+        setNotice("Prices couldn't be updated right now. Your order total is still calculated at checkout.");
+    }
+
+    // Live price panel for the drink being customized. Previous numbers stay on
+    // screen until the new quote arrives, so values change without flickering.
+    function renderDrinkQuote(quote) {
+        const drink = quote?.items[0];
+        const showCents = (cents) => (quote ? moneyFromCents(cents) : PRICE_PLACEHOLDER);
+        $("#drink-price").textContent = drink ? moneyFromCents(drink.basePriceCents) : PRICE_PLACEHOLDER;
+        $("#modifier-price").textContent = drink ? moneyFromCents(drink.modifiersCents) : PRICE_PLACEHOLDER;
+        $("#delivery-fee").textContent = showCents(quote?.pricing.deliveryFeeCents);
+        $("#service-fee").textContent = showCents(quote?.pricing.serviceFeeCents);
+        $("#tax-fee").textContent = showCents(quote?.pricing.taxCents);
+        $("#tip-fee").textContent = showCents(quote?.pricing.tipCents);
+        $("#order-total").textContent = showCents(quote?.pricing.totalCents);
+    }
+
+    function renderCartQuote(quote) {
+        latestCartQuote = quote;
+        const emptyCartTotal = state.cartItems.length ? PRICE_PLACEHOLDER : money(0);
+        const totalText = quote ? moneyFromCents(quote.pricing.totalCents) : emptyCartTotal;
+        $("#cart-total").textContent = totalText;
+        $("#fab-total").textContent = totalText;
+        $$(".cart-item-price").forEach((priceElement, index) => {
+            const item = quote?.items[index];
+            priceElement.textContent = item ? moneyFromCents(item.priceCents) : PRICE_PLACEHOLDER;
+        });
+        renderCheckoutSummaryText();
+    }
+
+    const scheduleDrinkQuote = createQuoteScheduler(renderDrinkQuote, () => {
+        renderDrinkQuote(null);
+        notifyQuoteFailure();
+    });
+    const scheduleCartQuote = createQuoteScheduler(renderCartQuote, () => {
+        renderCartQuote(null);
+        notifyQuoteFailure();
+    });
+
     function render() {
         const composition = getComposition();
         const metrics = getMetrics(composition);
-        const drinkPrice = getDrinkPrice(state);
-        const pricing = getPricing(state, drinkPrice.subtotal);
         renderLayers(composition);
         renderLegend(composition);
         elements.classification.textContent = getDrinkName(composition);
@@ -197,15 +252,9 @@
         $("#delivery-address-wrap").hidden = state.fulfillmentMethod !== "delivery";
         $("#delivery-address").value = state.deliveryAddress;
         $("#eta-text").textContent = getEstimatedEta(state);
-        $("#drink-price").textContent = money(drinkPrice.basePrice);
-        $("#modifier-price").textContent = money(drinkPrice.modifiers);
         $("#delivery-fee-label").textContent = state.fulfillmentMethod === "delivery" ? "Delivery fee" : "Pickup";
-        $("#delivery-fee").textContent = money(pricing.delivery);
-        $("#service-fee").textContent = money(pricing.service);
-        $("#tax-fee").textContent = money(pricing.tax);
-        $("#tip-percent").textContent = round(pricing.tipRate, 0);
-        $("#tip-fee").textContent = money(pricing.tip);
-        $("#order-total").textContent = money(pricing.total);
+        $("#tip-percent").textContent = round(getSelectedTipPercent(), 0);
+        scheduleDrinkQuote(buildQuoteRequest([getDrinkConfiguration()]));
         $("#custom-tip-input").hidden = state.tipPercent !== "custom";
         $("#custom-tip-input").value = state.customTipPercent;
         $$(".tip-button").forEach((button) =>
@@ -243,16 +292,15 @@
         $("#drawer-count").textContent = `(${count})`;
         $("#checkout-fab").hidden = count === 0;
         $("#checkout-button").disabled = count === 0;
-        const subtotal = getCartSubtotal(state);
-        const pricing = getPricing(state, subtotal);
-        $("#cart-total").textContent = money(pricing.total);
-        $("#fab-total").textContent = money(pricing.total);
+        // Forget the old quote: the cart may have changed. A cached quote refills it instantly below.
+        latestCartQuote = null;
 
         if (!count) {
             const empty = document.createElement("p");
             empty.className = "field-help";
             empty.textContent = "Your basket is empty. Add a custom drink to get started.";
             container.appendChild(empty);
+            scheduleCartQuote(null);
             return;
         }
 
@@ -267,7 +315,7 @@
             details.append(title, description);
             const price = document.createElement("strong");
             price.className = "cart-item-price";
-            price.textContent = money(item.price);
+            price.textContent = PRICE_PLACEHOLDER;
             const actions = document.createElement("div");
             actions.className = "cart-item-actions";
             const edit = document.createElement("button");
@@ -295,6 +343,8 @@
             row.append(details, price, actions);
             container.appendChild(row);
         });
+        // Runs after the rows exist so the quote can fill each .cart-item-price in order.
+        scheduleCartQuote(buildQuoteRequest(state.cartItems.map((item) => item.state)));
     }
 
     function getDrinkConfiguration() {
@@ -316,7 +366,6 @@
 
     function addCurrentDrinkToCart() {
         const composition = getComposition();
-        const pricing = getDrinkPrice(state);
         const name =
             getDrinkName(composition) === "Custom Concoction"
                 ? `Custom ${BASES[state.base].label} drink`
@@ -327,8 +376,7 @@
             id: editingCartItemId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
             name,
             state: getDrinkConfiguration(),
-            metrics,
-            price: pricing.subtotal
+            metrics
         };
         if (existingIndex >= 0) state.cartItems[existingIndex] = item;
         else state.cartItems.push(item);
@@ -380,11 +428,18 @@
             drawerReturnFocus.focus();
     }
 
+    // Text only, so a quote arriving while the dialog is open never touches the form fields.
+    function renderCheckoutSummaryText() {
+        const count = state.cartItems.length;
+        const pricesText = latestCartQuote
+            ? `${moneyFromCents(latestCartQuote.pricing.subtotalCents)} drinks subtotal · total ${moneyFromCents(latestCartQuote.pricing.totalCents)}`
+            : "calculating total…";
+        $("#checkout-summary").textContent =
+            `${count} drink${count === 1 ? "" : "s"} · ${pricesText} · ${getEstimatedEta(state, count)}`;
+    }
+
     function updateCheckoutSummary() {
-        const subtotal = getCartSubtotal(state);
-        const pricing = getPricing(state, subtotal);
-        const summary = $("#checkout-summary");
-        summary.textContent = `${state.cartItems.length} drink${state.cartItems.length === 1 ? "" : "s"} · ${money(subtotal)} drinks subtotal · estimated total ${money(pricing.total)} · ${getEstimatedEta(state, state.cartItems.length)}`;
+        renderCheckoutSummaryText();
         const delivery = state.fulfillmentMethod === "delivery";
         $("#checkout-address-field").hidden = !delivery;
         $("#checkout-address").required = delivery;

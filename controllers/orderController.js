@@ -1,6 +1,12 @@
 const crypto = require("crypto");
 const { getAdminClient } = require("../config/supabase");
-const { normalizeConfiguration, classifyDrink, calculateNutrition } = require("../services/coffeeService");
+const { calculateOrderPricing, createOrderQuote: createOrderQuoteService } = require("../services/pricingService");
+const {
+    isKnownStatus,
+    canStaffAdvance,
+    canApproveFulfillment,
+    getApprovalStatus
+} = require("../services/orderStatusMachine");
 const {
     createOrderReceipt,
     getReceiptDownloadUrl,
@@ -12,77 +18,20 @@ const {
     deleteStoredReceipt
 } = require("../services/receiptService");
 
-const SERVICE_FEE_BASIS_POINTS = 800;
-const TAX_BASIS_POINTS = 1200;
-const DELIVERY_FEE_CENTS = 4900;
-const ORDER_STATUSES = ["Received", "Crafting", "Out for Delivery", "Arrived"];
-
 function badRequest(message) {
     return Object.assign(new Error(message), { statusCode: 400 });
 }
 
-function roundBasisPoints(amountCents, basisPoints) {
-    return Math.round((amountCents * basisPoints) / 10000);
-}
-
-function calculateDrinkPriceCents(configuration) {
-    const baseCents = 25000 + Math.max(0, Math.ceil((configuration.volumeMl - 240) / 120)) * 2800;
-    const extraShotCents = Math.max(0, configuration.shots - 2) * 5500;
-    const milkModifierCents = configuration.milk === "oat" ? 3900 : configuration.milk === "almond" ? 2800 : 0;
-    const syrupModifierCents = Object.values(configuration.syrups).reduce((total, pumps) => total + pumps * 2500, 0);
-    return baseCents + extraShotCents + milkModifierCents + syrupModifierCents;
-}
-
-function calculateOrderPricing(items, fulfillmentMethod, tipPercent = 15) {
-    if (!Array.isArray(items) || items.length < 1 || items.length > 20) {
-        throw badRequest("An order must contain between 1 and 20 drinks.");
+// Prices a cart without saving anything, so the browser can display exactly
+// what checkout will charge. All math lives in services/pricingService.js.
+async function createOrderQuote(request, response, next) {
+    try {
+        const { items, fulfillmentMethod, tipPercent } = request.body;
+        response.set("Cache-Control", "no-store");
+        response.json(createOrderQuoteService(items, fulfillmentMethod, tipPercent));
+    } catch (error) {
+        next(error);
     }
-    if (!["delivery", "pickup"].includes(fulfillmentMethod)) {
-        throw badRequest("fulfillmentMethod must be delivery or pickup.");
-    }
-    if (typeof tipPercent !== "number" || !Number.isFinite(tipPercent) || tipPercent < 0 || tipPercent > 100) {
-        throw badRequest("tipPercent must be a number from 0 to 100.");
-    }
-
-    const lineItems = items.map((item, index) => {
-        if (!item || typeof item !== "object" || Array.isArray(item)) {
-            throw badRequest(`items[${index}] must be an object.`);
-        }
-        if (Object.keys(item).some((key) => !["name", "configuration"].includes(key))) {
-            throw badRequest(`items[${index}] contains an unsupported field.`);
-        }
-        const configuration = normalizeConfiguration(item.configuration);
-        const name =
-            typeof item.name === "string" && item.name.trim()
-                ? item.name.trim().slice(0, 80)
-                : classifyDrink(configuration);
-        return {
-            name,
-            configuration,
-            classification: classifyDrink(configuration),
-            nutrition: calculateNutrition(configuration),
-            price_cents: calculateDrinkPriceCents(configuration)
-        };
-    });
-
-    const subtotalCents = lineItems.reduce((total, item) => total + item.price_cents, 0);
-    const deliveryFeeCents = fulfillmentMethod === "delivery" ? DELIVERY_FEE_CENTS : 0;
-    const serviceFeeCents = roundBasisPoints(subtotalCents, SERVICE_FEE_BASIS_POINTS);
-    const taxCents = roundBasisPoints(subtotalCents, TAX_BASIS_POINTS);
-    const tipCents = Math.round((subtotalCents * tipPercent) / 100);
-
-    return {
-        lineItems,
-        pricing: {
-            subtotal_cents: subtotalCents,
-            delivery_fee_cents: deliveryFeeCents,
-            service_fee_cents: serviceFeeCents,
-            tax_cents: taxCents,
-            tip_percent: tipPercent,
-            tip_cents: tipCents,
-            total_cents: subtotalCents + deliveryFeeCents + serviceFeeCents + taxCents + tipCents
-        }
-    };
 }
 
 function validateCoordinates(coordinates) {
@@ -437,14 +386,14 @@ async function approveDelivery(request, response, next) {
         if (order.fulfillment_method !== "delivery") {
             return response.status(409).json({ error: "Only delivery orders can be approved as delivered." });
         }
-        if (order.status === "Delivered" || order.delivery_approved_at) {
+        if (!canApproveFulfillment("delivery", order.status) || order.delivery_approved_at) {
             return response.status(409).json({ error: "This order is already approved as delivered." });
         }
         const approvedAt = new Date().toISOString();
         const { data, error } = await supabase
             .from("orders")
             .update({
-                status: "Delivered",
+                status: getApprovalStatus("delivery"),
                 delivery_approved_at: approvedAt,
                 delivery_approved_by: request.user.id,
                 updated_at: approvedAt
@@ -474,14 +423,14 @@ async function approvePickup(request, response, next) {
         if (order.fulfillment_method !== "pickup") {
             return response.status(409).json({ error: "Only pickup orders can be approved as ready for pickup." });
         }
-        if (order.status === "Ready for Pickup" || order.pickup_approved_at) {
+        if (!canApproveFulfillment("pickup", order.status) || order.pickup_approved_at) {
             return response.status(409).json({ error: "This order is already approved as ready for pickup." });
         }
         const approvedAt = new Date().toISOString();
         const { data, error } = await supabase
             .from("orders")
             .update({
-                status: "Ready for Pickup",
+                status: getApprovalStatus("pickup"),
                 pickup_approved_at: approvedAt,
                 pickup_approved_by: request.user.id,
                 updated_at: approvedAt
@@ -571,17 +520,18 @@ async function advanceOrderStatus(request, response, next) {
             throw badRequest("Request must contain only the next status.");
         }
         const { status } = request.body;
-        const statusIndex = ORDER_STATUSES.indexOf(status);
-        if (statusIndex < 0) throw badRequest("Unsupported order status.");
+        if (!isKnownStatus(status)) throw badRequest("Unsupported order status.");
         const supabase = getAdminClient();
         const { data: currentOrder, error: readError } = await supabase
             .from("orders")
-            .select("id, status, tracking_code")
+            .select("id, status, tracking_code, fulfillment_method")
             .eq("id", request.params.orderId)
             .maybeSingle();
         if (readError) throw readError;
         if (!currentOrder) return response.status(404).json({ error: "Order not found." });
-        if (statusIndex !== ORDER_STATUSES.indexOf(currentOrder.status) + 1) {
+        // The state machine decides; e.g. pickup orders can't go "Out for Delivery",
+        // and final (admin-approved) orders can't move at all.
+        if (!canStaffAdvance(currentOrder.fulfillment_method, currentOrder.status, status)) {
             return response.status(409).json({ error: "Order status can only advance one stage at a time." });
         }
         const { data, error } = await supabase
@@ -625,7 +575,7 @@ async function listMyOrders(request, response, next) {
 }
 
 module.exports = {
-    calculateOrderPricing,
+    createOrderQuote,
     checkout,
     trackOrder,
     reportDelivery,
