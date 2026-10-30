@@ -224,7 +224,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Fix · Caffeine guardian visibility and basket
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `fix-caffeine-guardian-visibility`
+- **Branch:** `fix-caffeine-guardian-visibility` · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/19
 
 **What the owner found:** after three 3-shot drinks, no half-caf offer appeared and there was no "No caffeine after" control.
 
