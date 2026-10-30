@@ -29,5 +29,7 @@ module.exports = {
     // The browser re-quotes (debounced) as ingredients change, so this is looser than checkout.
     orderQuoteLimiter: createLimiter(60 * 1000, 120),
     // Staff advance a handful of orders per minute; this only stops scripted abuse.
-    orderStatusLimiter: createLimiter(60 * 1000, 30)
+    orderStatusLimiter: createLimiter(60 * 1000, 30),
+    // Recording a payment is a sensitive admin write; a busy shift needs well under this.
+    cashCollectionLimiter: createLimiter(60 * 1000, 20)
 };

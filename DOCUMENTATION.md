@@ -186,7 +186,7 @@ This is a recommended procedure, **not a claim that automated CI/CD currently en
 - Service-role access is highly privileged. Keep it on the server, restrict secret access, and rotate immediately if exposed.
 - CI runs `npm audit --omit=dev` on every pull request. There is still no centralized security monitoring or backup/restore validation. Review Render service logs and Supabase/Backblaze provider logs during deployment and incident response.
 - `NODE_ENV=production` enables secure-cookie, HSTS, and CSP upgrade behavior. Production deployment must use HTTPS and set this variable correctly.
-- No payment processor is configured in the inspected source; order totals are calculated, but payment collection/settlement should not be assumed.
+- Payment is **cash only**, on pickup or delivery (`services/paymentService.js`). Checkout and receipts say so; admins record collection with "Mark cash collected" (`PATCH /api/orders/:orderId/admin/cash-collected`, which stores who and when). No online payment processor is configured.
 
 ## 7. Team Collaboration & Developer Onboarding
 
