@@ -42,6 +42,13 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="creation-view-toggle"/);
         assert.match(html, /id="summary-view"[^>]*hidden/);
         assert.match(html, /id="summary-view-toggle"/);
+        // Terms of Use sits beside every Privacy Policy link, and both pages name the contact email.
+        assert.equal(html.match(/href="\/terms\.html"/g)?.length, html.match(/href="\/privacy\.html"/g)?.length);
+        for (const page of ["/terms.html", "/privacy.html"]) {
+            const legal = await fetch(`${baseUrl}${page}`);
+            assert.equal(legal.status, 200);
+            assert.match(await legal.text(), /mailto:coffeelab08@gmail\.com/);
+        }
         assert.match(html, /id="auth-page"/);
         assert.match(html, /id="signup-form"/);
         assert.match(html, /id="login-form"/);
