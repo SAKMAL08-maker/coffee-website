@@ -715,35 +715,73 @@
         };
     }
 
+    /** "15:00" → "3:00 PM", for display only. */
+    function formatCutoffForDisplay(cutoffTime) {
+        const [hours, minutes] = cutoffTime.split(":").map(Number);
+        return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${hours < 12 ? "AM" : "PM"}`;
+    }
+
+    // One short sentence, never a paragraph.
     function describeCaffeineReasons(result) {
-        const reasons = [];
-        if (result.reasons.includes("over-daily-limit")) {
-            reasons.push(`this drink takes you to ${result.projectedMg} mg today (guide: ${result.dailyLimitMg} mg)`);
-        }
-        if (result.reasons.includes("past-cutoff")) reasons.push(`it is past your ${result.cutoffTime} cutoff`);
-        return reasons.join(", and ");
+        const overLimit = result.reasons.includes("over-daily-limit");
+        const pastCutoff = result.reasons.includes("past-cutoff");
+        const cutoff = pastCutoff ? formatCutoffForDisplay(result.cutoffTime) : "";
+        if (overLimit && pastCutoff) return `Over the ${result.dailyLimitMg} mg guide and past your ${cutoff} cutoff.`;
+        if (overLimit) return `That's over the ${result.dailyLimitMg} mg daily guide.`;
+        return `It's past your ${cutoff} cutoff.`;
+    }
+
+    function renderCaffeineMeter(result) {
+        // Scale to whichever is larger, so going over the guide visibly overflows its marker.
+        const scaleMg = Math.max(result.dailyLimitMg, result.projectedMg);
+        const percentOf = (mg) => `${(mg / scaleMg) * 100}%`;
+        $("#caffeine-meter-ordered").style.width = percentOf(result.todayMg);
+        $("#caffeine-meter-basket").style.width = percentOf(result.basketMg);
+        $("#caffeine-meter-drink").style.width = percentOf(result.drinkMg);
+        $("#caffeine-meter-limit").style.left = percentOf(result.dailyLimitMg);
+        $("#caffeine-meter").setAttribute(
+            "aria-label",
+            `${result.projectedMg} of ${result.dailyLimitMg} milligrams of caffeine today, including this drink`
+        );
     }
 
     function renderCaffeineGuardian(result) {
         $("#caffeine-guardian").hidden = false;
-        $("#caffeine-today").textContent =
-            `Today: ${result.todayMg} mg ordered · ${result.basketMg} mg in basket · this drink ${result.drinkMg} mg · daily guide ${result.dailyLimitMg} mg`;
+        const total = $("#caffeine-total");
+        total.textContent = `${result.projectedMg} / ${result.dailyLimitMg} mg`;
+        total.dataset.over = String(result.projectedMg > result.dailyLimitMg);
+        renderCaffeineMeter(result);
+
+        // Only mention parts that exist; each part's dot matches its meter colour.
+        const parts = [];
+        if (result.todayMg) parts.push(["ordered", `${result.todayMg} mg ordered`]);
+        if (result.basketMg) parts.push(["basket", `${result.basketMg} mg in basket`]);
+        parts.push(["drink", result.drinkMg ? `${result.drinkMg} mg this drink` : "this drink is caffeine-free"]);
+        $("#caffeine-breakdown").replaceChildren(
+            ...parts.map(([key, text]) => {
+                const part = document.createElement("span");
+                part.className = `caffeine-key-${key}`;
+                part.textContent = text;
+                return part;
+            })
+        );
+
+        $("#caffeine-cutoff-toggle").textContent = result.cutoffTime
+            ? `⏰ After ${formatCutoffForDisplay(result.cutoffTime)}`
+            : "⏰ Cutoff";
         const cutoffInput = $("#caffeine-cutoff-input");
         if (document.activeElement !== cutoffInput) cutoffInput.value = result.cutoffTime || "";
+        $("#clear-caffeine-cutoff").hidden = !result.cutoffTime;
 
         const warning = $("#caffeine-warning");
         warning.hidden = !result.reasons.length;
         if (!result.reasons.length) return;
-        const reasonText = describeCaffeineReasons(result);
         const halfCafButton = $("#half-caf-button");
-        if (result.suggestion) {
-            $("#caffeine-warning-text").textContent = `Heads up: ${reasonText}.`;
-            halfCafButton.textContent = `Make it half-caf (${result.suggestion.drinkMg} mg, saves ${result.suggestion.savesMg} mg)`;
-            halfCafButton.hidden = false;
-        } else {
-            $("#caffeine-warning-text").textContent = `Heads up: ${reasonText}. Decaf keeps it to a trace.`;
-            halfCafButton.hidden = true;
-        }
+        $("#caffeine-warning-text").textContent = result.suggestion
+            ? describeCaffeineReasons(result)
+            : `${describeCaffeineReasons(result)} Decaf keeps it to a trace.`;
+        halfCafButton.hidden = !result.suggestion;
+        if (result.suggestion) halfCafButton.textContent = `Switch to half-caf · ${result.suggestion.drinkMg} mg`;
     }
 
     function applyHalfCaf() {
@@ -752,10 +790,12 @@
         setNotice("Switched to half-caf.");
     }
 
-    async function saveCaffeineCutoff() {
+    async function saveCaffeineCutoff(cutoffTime) {
         try {
-            const cutoffTime = await window.CoffeeLabCaffeine.saveCutoffTime($("#caffeine-cutoff-input").value || null);
-            setNotice(cutoffTime ? `Caffeine cutoff set to ${cutoffTime}.` : "Caffeine cutoff cleared.");
+            const savedCutoff = await window.CoffeeLabCaffeine.saveCutoffTime(cutoffTime);
+            setNotice(
+                savedCutoff ? `No caffeine after ${formatCutoffForDisplay(savedCutoff)}.` : "Caffeine cutoff cleared."
+            );
             caffeineChecker.checkNow(getCaffeineCheckRequest());
         } catch (error) {
             setNotice(error.message);
@@ -1023,12 +1063,28 @@
     });
     $("#publish-recipe-button").addEventListener("click", openPublishRecipeDialog);
     $("#half-caf-button").addEventListener("click", applyHalfCaf);
-    $("#caffeine-cutoff-input").addEventListener("change", saveCaffeineCutoff);
-    document.addEventListener("coffeelab:signed-in", (event) => {
-        isCaffeineGuardianActive = event.detail.role !== "admin";
+    $("#caffeine-cutoff-input").addEventListener("change", (event) => saveCaffeineCutoff(event.target.value || null));
+    function setCaffeineCutoffPanelOpen(isOpen) {
+        $("#caffeine-cutoff-panel").hidden = !isOpen;
+        $("#caffeine-cutoff-toggle").setAttribute("aria-expanded", String(isOpen));
+        if (isOpen) $("#caffeine-cutoff-input").focus();
+    }
+    $("#caffeine-cutoff-toggle").addEventListener("click", () =>
+        setCaffeineCutoffPanelOpen($("#caffeine-cutoff-panel").hidden)
+    );
+    $("#clear-caffeine-cutoff").addEventListener("click", () => {
+        $("#caffeine-cutoff-input").value = "";
+        setCaffeineCutoffPanelOpen(false);
+        saveCaffeineCutoff(null);
+    });
+    function startCaffeineGuardian(role) {
+        isCaffeineGuardianActive = role !== "admin";
         $("#caffeine-guardian").hidden = true;
         if (isCaffeineGuardianActive) caffeineChecker.checkNow(getCaffeineCheckRequest());
-    });
+    }
+    document.addEventListener("coffeelab:signed-in", (event) => startCaffeineGuardian(event.detail.role));
+    // auth.js loads first; if the session check already finished, its event fired before we listened.
+    if (window.CoffeeLabSession) startCaffeineGuardian(window.CoffeeLabSession.role);
     $("#publish-recipe-form").addEventListener("submit", publishCurrentRecipe);
     $("#close-publish-recipe").addEventListener("click", () => $("#publish-recipe-dialog").close());
     $("#open-cart-button").addEventListener("click", openCart);

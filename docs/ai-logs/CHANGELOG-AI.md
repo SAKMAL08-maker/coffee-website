@@ -241,3 +241,19 @@ Append-only. Format and rules: [README.md](README.md).
 - 3 more caffeine tests, including "three 3-shots trigger the half-caf offer".
 
 **Lesson:** the unit tests proved the logic but not that the UI was visible. The manual checklist caught it, and there is now a structural test for it.
+
+## 2026-10-30 · Polish · Caffeine guardian UI
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `caffeine-guardian-polish`
+- **Owner's request:** "looks a bit clunky… sleek, user friendly, and non overwhelming".
+
+**What changed (UI only; no API or database change)**
+
+- The panel became one slim card matching the page's cards: "☕ Caffeine today", a `576 / 400 mg` total, and a thin meter (ordered · basket · striped "this drink") with a marker at the guide.
+- The run-on sentence was replaced by a short breakdown that hides zero parts and doubles as the meter's legend (coloured dots).
+- The warning only appears when relevant: one short sentence plus a pill **Switch to half-caf · 96 mg**.
+- The cutoff is tucked behind a small **⏰ Cutoff** pill (it reads "⏰ After 3:00 PM" when set) and opens inline, so it never covers the button. The disclaimer moved in there.
+- **Bug found while previewing:** if the session check finished before `app.js` loaded, the "signed in" event was missed and the panel never appeared. `auth.js` now also records `window.CoffeeLabSession`, and `app.js` checks it on start.
+
+**How it was checked:** screenshots of the real page and scripts in headless Edge with a stubbed `fetch` (light and dark; calm, over the guide, and cutoff-open states). Not checked: a real phone. The 400 px preview showed the whole page overflowing horizontally, but that also happens on `main` before this change.

@@ -2387,31 +2387,177 @@ dialog::backdrop {
     border-bottom: 1px solid var(--line);
 }
 
-/* Caffeine guardian: today's total, personal cutoff, one-tap half-caf. */
+/* Caffeine guardian: one slim card. A thin meter carries the numbers; the warning
+   and the cutoff picker only take space when they matter. */
 .caffeine-guardian {
-    margin: 12px 0;
-    padding: 12px 14px;
+    margin: 18px 0 4px;
+    padding: 14px 18px;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: 20px;
+    background: var(--paper);
+    box-shadow: var(--shadow);
     color: var(--ink);
 }
 .caffeine-guardian-header {
     display: flex;
     flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: center;
+}
+.caffeine-guardian-title {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+.caffeine-total {
+    margin-left: auto;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+.caffeine-total[data-over="true"] {
+    color: var(--accent);
+}
+.caffeine-cutoff-toggle {
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.caffeine-cutoff-toggle:hover,
+.caffeine-cutoff-toggle[aria-expanded="true"] {
+    border-color: var(--coffee);
+    color: var(--coffee);
+}
+.caffeine-cutoff-panel {
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
-    justify-content: space-between;
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--cream);
+    font-size: 0.8rem;
+    font-weight: 600;
 }
-.caffeine-guardian h3 {
+.caffeine-cutoff-panel input {
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--cream);
+    color: var(--ink);
+    font: inherit;
+}
+.caffeine-cutoff-panel .field-help {
     margin: 0;
-    font-size: 1rem;
+    flex-basis: 100%;
 }
-.caffeine-guardian p {
-    margin: 8px 0 0;
+.caffeine-link-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+}
+.caffeine-meter {
+    position: relative;
+    display: flex;
+    height: 8px;
+    margin-top: 10px;
+    border-radius: 999px;
+    background: var(--line);
+    overflow: hidden;
+}
+.caffeine-meter span {
+    width: 0;
+    transition: width 0.3s ease;
+}
+.caffeine-meter-ordered {
+    background: var(--coffee);
+}
+.caffeine-meter-basket {
+    background: color-mix(in srgb, var(--coffee) 55%, var(--line));
+}
+/* Striped = not ordered yet; keeps "this drink" distinct from "ordered" in both themes. */
+.caffeine-meter-drink {
+    background: repeating-linear-gradient(
+        -45deg,
+        var(--accent) 0 4px,
+        color-mix(in srgb, var(--accent) 55%, var(--paper)) 4px 8px
+    );
+}
+.caffeine-meter .caffeine-meter-limit {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--paper);
+    transition: left 0.3s ease;
+}
+.caffeine-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 14px;
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+/* Each breakdown item doubles as the meter's legend. */
+.caffeine-breakdown span::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: 50%;
+    vertical-align: 0;
+}
+.caffeine-breakdown .caffeine-key-ordered::before {
+    background: var(--coffee);
+}
+.caffeine-breakdown .caffeine-key-basket::before {
+    background: color-mix(in srgb, var(--coffee) 55%, var(--line));
+}
+.caffeine-breakdown .caffeine-key-drink::before {
+    background: var(--accent);
 }
 .caffeine-warning {
-    margin-top: 8px;
-    padding: 10px 12px;
-    border-left: 4px solid var(--accent);
-    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding: 8px 8px 8px 14px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    font-size: 0.82rem;
+}
+.caffeine-warning p {
+    margin: 0;
+}
+.caffeine-halfcaf-button {
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--coffee);
+    color: var(--paper);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.caffeine-halfcaf-button:hover {
+    filter: brightness(1.1);
+}
+@media (prefers-reduced-motion: reduce) {
+    .caffeine-meter span {
+        transition: none;
+    }
 }

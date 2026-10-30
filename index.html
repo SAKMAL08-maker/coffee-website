@@ -812,20 +812,39 @@
                     aria-labelledby="caffeine-guardian-title"
                 >
                     <div class="caffeine-guardian-header">
-                        <h3 id="caffeine-guardian-title">Caffeine guardian</h3>
-                        <label for="caffeine-cutoff-input"
-                            >No caffeine after <input id="caffeine-cutoff-input" type="time" step="900"
-                        /></label>
+                        <h3 class="caffeine-guardian-title" id="caffeine-guardian-title">☕ Caffeine today</h3>
+                        <strong class="caffeine-total" id="caffeine-total"></strong>
+                        <button
+                            class="caffeine-cutoff-toggle"
+                            id="caffeine-cutoff-toggle"
+                            type="button"
+                            aria-expanded="false"
+                            aria-controls="caffeine-cutoff-panel"
+                        >
+                            ⏰ Cutoff
+                        </button>
                     </div>
-                    <p id="caffeine-today" aria-live="polite"></p>
+                    <!-- Opens inline (pushes content down) so it never covers the half-caf button. -->
+                    <div class="caffeine-cutoff-panel" id="caffeine-cutoff-panel" hidden>
+                        <label for="caffeine-cutoff-input">No caffeine after</label>
+                        <input id="caffeine-cutoff-input" type="time" step="900" />
+                        <button class="caffeine-link-button" id="clear-caffeine-cutoff" type="button">Clear</button>
+                        <p class="field-help">
+                            Philippine time. Counts today's orders, your basket, and this drink. Guidance only, not
+                            medical advice.
+                        </p>
+                    </div>
+                    <div class="caffeine-meter" id="caffeine-meter" role="img">
+                        <span class="caffeine-meter-ordered" id="caffeine-meter-ordered"></span
+                        ><span class="caffeine-meter-basket" id="caffeine-meter-basket"></span
+                        ><span class="caffeine-meter-drink" id="caffeine-meter-drink"></span>
+                        <span class="caffeine-meter-limit" id="caffeine-meter-limit" aria-hidden="true"></span>
+                    </div>
+                    <p class="caffeine-breakdown" id="caffeine-breakdown"></p>
                     <div class="caffeine-warning" id="caffeine-warning" role="status" hidden>
                         <p id="caffeine-warning-text"></p>
-                        <button class="button button-primary" id="half-caf-button" type="button"></button>
+                        <button class="caffeine-halfcaf-button" id="half-caf-button" type="button"></button>
                     </div>
-                    <p class="field-help">
-                        Counts drinks ordered today (Philippine time), your basket, and this drink. Guidance only, not
-                        medical advice.
-                    </p>
                 </section>
                 <footer class="actions-footer">
                     <p class="field-help">Crafted to your taste.</p>
