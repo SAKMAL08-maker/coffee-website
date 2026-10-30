@@ -9,6 +9,7 @@ const userRoutes = require("./routes/userRoutes");
 const coffeeRoutes = require("./routes/coffeeRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const recipeRoutes = require("./routes/recipeRoutes");
+const caffeineRoutes = require("./routes/caffeineRoutes");
 const healthRoutes = require("./routes/healthRoutes");
 const { verifySameOrigin } = require("./middleware/originProtection");
 
@@ -66,6 +67,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/coffees", coffeeRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/recipes", recipeRoutes);
+app.use("/api/caffeine", caffeineRoutes);
 
 app.use((request, response) => {
     response.status(404).json({ error: "Not found." });

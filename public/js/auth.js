@@ -35,6 +35,8 @@
         $("#surprise-button").hidden = isAdmin;
         $("#signed-in-user").textContent = `Hi, ${user.username}`;
         if (isAdmin) window.CoffeeLabAdmin?.startForUser(user);
+        // Lets customer-only features (e.g. the caffeine guardian) start once signed in.
+        document.dispatchEvent(new CustomEvent("coffeelab:signed-in", { detail: { role: user.role } }));
     }
 
     async function readResponse(response) {
