@@ -188,17 +188,20 @@
                         <h2 id="admin-mfa-title">Administrator verification</h2>
                         <p id="admin-mfa-description" class="field-help"></p>
                         <div id="admin-mfa-setup" hidden>
-                            <p class="field-help">
-                                Enter the one-time setup authorization issued by your trusted project owner. A password
-                                alone cannot register an authenticator.
-                            </p>
-                            <label for="admin-mfa-bootstrap-token">One-time setup authorization</label>
-                            <input
-                                id="admin-mfa-bootstrap-token"
-                                type="password"
-                                autocomplete="off"
-                                spellcheck="false"
-                            />
+                            <!-- Hidden when the owner approved this admin in the admin page. -->
+                            <div id="admin-mfa-key-fields">
+                                <p class="field-help">
+                                    Enter the one-time setup authorization issued by your trusted project owner. A
+                                    password alone cannot register an authenticator.
+                                </p>
+                                <label for="admin-mfa-bootstrap-token">One-time setup authorization</label>
+                                <input
+                                    id="admin-mfa-bootstrap-token"
+                                    type="password"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                />
+                            </div>
                             <button class="button auth-submit" id="admin-mfa-enroll" type="button">
                                 Authorize authenticator setup
                             </button>
@@ -952,6 +955,18 @@
                     <div class="admin-chart" id="admin-chart" role="tabpanel"></div>
                     <p class="field-help" id="admin-dashboard-status" role="status"></p>
                 </section>
+                <details class="admin-access" id="admin-access">
+                    <summary>
+                        <span class="admin-access-title">Admin access</span>
+                        <span class="admin-access-badge" id="admin-access-badge" hidden></span>
+                    </summary>
+                    <p class="field-help">
+                        Approve a new admin here instead of running the setup script. They then sign in and scan a QR
+                        code with their authenticator app, with no setup key to type. An approval lasts 24 hours.
+                    </p>
+                    <ul class="admin-access-list" id="admin-access-list"></ul>
+                    <p class="notice" id="admin-access-message" role="status" aria-live="polite"></p>
+                </details>
                 <h2 class="admin-orders-title">Orders</h2>
                 <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
                 <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
@@ -1046,6 +1061,7 @@
 
         <script src="/js/admin.js" defer></script>
         <script src="/js/adminDashboard.js" defer></script>
+        <script src="/js/adminAccess.js" defer></script>
         <script src="/js/auth.js" defer></script>
         <script src="/js/state.js" defer></script>
         <script src="/js/pricing.js" defer></script>

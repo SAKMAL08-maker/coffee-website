@@ -130,12 +130,32 @@ test("serves the customizer and validates quote and checkout API requests", asyn
             body: JSON.stringify({ bootstrapToken: "a".repeat(32) })
         });
         assert.equal(unauthenticatedAdminMfaEnroll.status, 401);
+        // No key is allowed (an admin approved in the admin page), but a session is still required.
         const missingAdminMfaBootstrapToken = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: "{}"
         });
-        assert.equal(missingAdminMfaBootstrapToken.status, 400);
+        assert.equal(missingAdminMfaBootstrapToken.status, 401);
+        const shortAdminMfaBootstrapToken = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ bootstrapToken: "short" })
+        });
+        assert.equal(shortAdminMfaBootstrapToken.status, 400);
+        assert.equal((await fetch(`${baseUrl}/api/admin/accounts`)).status, 401);
+        const unauthenticatedApproval = await fetch(`${baseUrl}/api/admin/accounts/arthur_admin/approve-setup`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{}"
+        });
+        assert.equal(unauthenticatedApproval.status, 401);
+        const invalidApproval = await fetch(`${baseUrl}/api/admin/accounts/bad name!/approve-setup`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{}"
+        });
+        assert.equal(invalidApproval.status, 400);
         const unauthenticatedAdminMfaVerify = await fetch(`${baseUrl}/api/users/admin/mfa/verify`, {
             method: "POST",
             headers: { "content-type": "application/json" },
