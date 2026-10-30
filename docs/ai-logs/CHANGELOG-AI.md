@@ -107,7 +107,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Phase 3 · Pricing and order-status refactor
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `phase-3-pricing-refactor` (stacked on `phase-2-collaboration-docs`)
+- **Branch:** `phase-3-pricing-refactor` (stacked on `phase-2-collaboration-docs`) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/13
 
 **What changed**
 
