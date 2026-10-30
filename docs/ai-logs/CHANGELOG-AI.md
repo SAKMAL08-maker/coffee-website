@@ -245,7 +245,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Polish · Caffeine guardian UI
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `caffeine-guardian-polish`
+- **Branch:** `caffeine-guardian-polish` · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/20
 - **Owner's request:** "looks a bit clunky… sleek, user friendly, and non overwhelming".
 
 **What changed (UI only; no API or database change)**
