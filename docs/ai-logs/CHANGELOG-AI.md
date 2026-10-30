@@ -5,7 +5,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Phase 0 · Repo hygiene
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `phase-0-repo-hygiene`
+- **Branch:** `phase-0-repo-hygiene` · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/9
 
 **What changed**
 - Fast-forwarded `main` to `version_1.0` (no commits lost) and made `main` the default branch on GitHub, so pull requests target the current code.
