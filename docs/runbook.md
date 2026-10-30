@@ -1,0 +1,112 @@
+# Operations runbook
+
+Step-by-step procedures for running Coffee Lab in production. First-time setup (Supabase project, admin linking, B2 bucket) is in [instructions/guide.md](../instructions/guide.md).
+
+**Where things live**
+
+| What                  | Where                                                                   |
+| --------------------- | ----------------------------------------------------------------------- |
+| App hosting           | Render web service (free plan), auto-deploys the `main` branch          |
+| Database + admin auth | Supabase project (free plan)                                            |
+| Receipt files         | Backblaze B2 private bucket                                             |
+| Secrets               | Render → service → **Environment**; local `.env` (never committed)      |
+| Health                | `GET /healthz` → `200 {"status":"ok"}` / `503 {"status":"unavailable"}` |
+
+---
+
+## 1. Deploy
+
+Deploys happen when a PR is merged into `main`.
+
+1. **Before merging:** if the PR has migrations, apply them in Supabase (**SQL Editor**) in the order the PR lists. They are additive, so the currently running app keeps working.
+2. Merge the PR with **"Create a merge commit"**.
+3. Render → service → **Events**: wait for "Deploy live" for the merge commit (usually a few minutes). If it fails, open the deploy log; the old version keeps serving.
+4. **Verify:**
+    - `https://<your-app>.onrender.com/healthz` returns `{"status":"ok"}`
+    - Home page loads; place one pickup order; open its receipt
+    - Admin login with TOTP reaches the dashboard
+5. Note anything unusual in the PR as a comment.
+
+If Render isn't deploying merges, check **Settings → Build & Deploy**: branch must be `main` and auto-deploy on.
+
+## 2. Roll back
+
+Pick the smallest rollback that fixes the problem.
+
+**App code (most common):**
+
+1. Render → **Events** → find the last good deploy → **Rollback**. This redeploys that exact build within minutes.
+2. Render may switch auto-deploy off after a rollback. Check **Settings** and turn it back on once `main` is fixed.
+3. Fix `main` properly: on GitHub, open the bad PR → **Revert** → merge the revert PR. Now `main` matches what's running.
+
+**Database:**
+
+- Migrations are additive, so rolling back the **app** never requires rolling back the database: old code ignores new columns.
+- Do **not** drop columns or tables in a hurry. If a migration itself is wrong, write a new corrective migration and apply it like any other.
+- Free Supabase projects have limited backup options. Before any risky manual SQL, export the affected tables first (Table Editor → export CSV, or `supabase db dump` with the Supabase CLI).
+
+## 3. Rotate keys
+
+Rotate immediately if a key may have leaked (pasted in chat, committed, shown on screen, laptop lost), and otherwise on a regular schedule.
+
+### Supabase server key (`SUPABASE_SERVICE_ROLE_KEY`)
+
+Legacy `service_role` keys can't be rotated individually; use the newer secret keys (`sb_secret_…`).
+
+1. Supabase → **Project Settings → API Keys** → create a new **secret key**.
+2. Render → **Environment** → set `SUPABASE_SERVICE_ROLE_KEY` to it → **Save** (triggers a redeploy). Update your local `.env` too.
+3. Verify: `/healthz` OK, a customer can log in and order, **admin TOTP login works** (admin login uses this key).
+4. Only after step 3 passes: delete/disable the old secret key (or the legacy keys) in Supabase.
+
+### Backblaze B2 key (`B2_KEY_ID`, `B2_APPLICATION_KEY`)
+
+1. Backblaze → **Application Keys** → **Add a New Application Key**, restricted to the receipts bucket.
+2. Update both variables in Render (and `.env`) → save → redeploy.
+3. Verify: open a receipt preview and download on a recent order.
+4. Delete the old application key in Backblaze.
+
+### Customer sessions (log everyone out)
+
+If session tokens may be compromised, run in the Supabase SQL Editor:
+
+```sql
+delete from public.coffee_sessions;
+```
+
+Every customer will need to sign in again. Passwords are unaffected.
+
+### Admin authenticator (lost phone or suspected compromise)
+
+Follow [guide.md §6](../instructions/guide.md#6-owner-authorized-first-totp-enrollment): run `node scripts/admin-mfa-bootstrap.js <admin-username> --confirm-reset` locally. It deletes the admin's existing factors and prints a 30-minute setup authorization for re-enrollment. Also change that admin's Supabase Auth password (Supabase → **Authentication → Users**).
+
+## 4. Keep-alive (free tiers)
+
+Free Render services sleep after ~15 minutes idle (first request then takes ~30–60 s), and free Supabase projects pause after about a week without database activity. `/healthz` runs a real one-row query, so one external ping prevents both.
+
+**Set up (once), with UptimeRobot (free) or cron-job.org:**
+
+1. Create an **HTTP(s)** monitor for `https://<your-app>.onrender.com/healthz`.
+2. Interval: **every 10–14 minutes** (must be under 15).
+3. Alert contact: your email, so you hear about real outages (`503` = database problem; timeout = Render problem).
+
+**Rules:**
+
+- Ping **one** service only. A service awake 24/7 uses ~744 of Render's 750 free instance hours per month.
+- Do **not** set Render's own _Health Check Path_ to `/healthz`: Render probes far more often, and every probe would query Supabase.
+- `/healthz` is rate-limited to 30 requests/minute; a pinger uses about 1 per 10 minutes.
+
+**If the monitor alerts:**
+
+| Symptom                    | Likely cause                        | Check                                                                 |
+| -------------------------- | ----------------------------------- | --------------------------------------------------------------------- |
+| `503 unavailable`          | Supabase down, paused, or key wrong | Supabase dashboard status; Render logs for "Health check failed"      |
+| Timeout / connection error | Render service down or deploying    | Render **Events** and **Logs**                                        |
+| `404 Not found`            | Running code older than `/healthz`  | Render deploy branch is `main`; latest deploy succeeded               |
+| `429`                      | Rate limit hit by other traffic     | Usually harmless; if persistent, see `TRUST_PROXY_HOPS` in the README |
+
+## 5. Incident checklist
+
+1. **Contain:** rotate the affected key (§3) or roll back (§2).
+2. **Verify:** `/healthz`, a test order, admin login.
+3. **Record:** open a GitHub issue describing what happened, when, impact, and the fix, with no secrets or customer data in it.
+4. **Prevent:** add a test, a check, or a runbook step so it can't recur silently.
