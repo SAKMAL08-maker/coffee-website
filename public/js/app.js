@@ -22,7 +22,11 @@
         return Math.round(value * factor) / factor;
     }
 
-    const { money, getDrinkPrice, getPricing, getCartSubtotal, getEstimatedEta } = window.CoffeeLabPricing;
+    const { money, moneyFromCents, getEstimatedEta } = window.CoffeeLabPricing;
+    const { createQuoteScheduler } = window.CoffeeLabQuotes;
+    const PRICE_PLACEHOLDER = "—";
+    // The last server quote for the cart; null while a new one is loading.
+    let latestCartQuote = null;
 
     function displayVolume(ml) {
         return state.metric ? `${Math.round(ml)} ml` : `${round(ml / 29.5735, 1)} oz`;
@@ -155,11 +159,62 @@
             : "<tr><td>Choose ingredients to begin</td><td>—</td></tr>";
     }
 
+    function getSelectedTipPercent() {
+        return state.tipPercent === "custom" ? state.customTipPercent : state.tipPercent;
+    }
+
+    // Item names don't affect price, so they're left out; identical carts then share a cached quote.
+    function buildQuoteRequest(configurations) {
+        return {
+            items: configurations.map((configuration) => ({ configuration })),
+            fulfillmentMethod: state.fulfillmentMethod,
+            tipPercent: getSelectedTipPercent()
+        };
+    }
+
+    function notifyQuoteFailure() {
+        setNotice("Prices couldn't be updated right now. Your order total is still calculated at checkout.");
+    }
+
+    // Live price panel for the drink being customized. Previous numbers stay on
+    // screen until the new quote arrives, so values change without flickering.
+    function renderDrinkQuote(quote) {
+        const drink = quote?.items[0];
+        const showCents = (cents) => (quote ? moneyFromCents(cents) : PRICE_PLACEHOLDER);
+        $("#drink-price").textContent = drink ? moneyFromCents(drink.basePriceCents) : PRICE_PLACEHOLDER;
+        $("#modifier-price").textContent = drink ? moneyFromCents(drink.modifiersCents) : PRICE_PLACEHOLDER;
+        $("#delivery-fee").textContent = showCents(quote?.pricing.deliveryFeeCents);
+        $("#service-fee").textContent = showCents(quote?.pricing.serviceFeeCents);
+        $("#tax-fee").textContent = showCents(quote?.pricing.taxCents);
+        $("#tip-fee").textContent = showCents(quote?.pricing.tipCents);
+        $("#order-total").textContent = showCents(quote?.pricing.totalCents);
+    }
+
+    function renderCartQuote(quote) {
+        latestCartQuote = quote;
+        const emptyCartTotal = state.cartItems.length ? PRICE_PLACEHOLDER : money(0);
+        const totalText = quote ? moneyFromCents(quote.pricing.totalCents) : emptyCartTotal;
+        $("#cart-total").textContent = totalText;
+        $("#fab-total").textContent = totalText;
+        $$(".cart-item-price").forEach((priceElement, index) => {
+            const item = quote?.items[index];
+            priceElement.textContent = item ? moneyFromCents(item.priceCents) : PRICE_PLACEHOLDER;
+        });
+        renderCheckoutSummaryText();
+    }
+
+    const scheduleDrinkQuote = createQuoteScheduler(renderDrinkQuote, () => {
+        renderDrinkQuote(null);
+        notifyQuoteFailure();
+    });
+    const scheduleCartQuote = createQuoteScheduler(renderCartQuote, () => {
+        renderCartQuote(null);
+        notifyQuoteFailure();
+    });
+
     function render() {
         const composition = getComposition();
         const metrics = getMetrics(composition);
-        const drinkPrice = getDrinkPrice(state);
-        const pricing = getPricing(state, drinkPrice.subtotal);
         renderLayers(composition);
         renderLegend(composition);
         elements.classification.textContent = getDrinkName(composition);
@@ -197,15 +252,9 @@
         $("#delivery-address-wrap").hidden = state.fulfillmentMethod !== "delivery";
         $("#delivery-address").value = state.deliveryAddress;
         $("#eta-text").textContent = getEstimatedEta(state);
-        $("#drink-price").textContent = money(drinkPrice.basePrice);
-        $("#modifier-price").textContent = money(drinkPrice.modifiers);
         $("#delivery-fee-label").textContent = state.fulfillmentMethod === "delivery" ? "Delivery fee" : "Pickup";
-        $("#delivery-fee").textContent = money(pricing.delivery);
-        $("#service-fee").textContent = money(pricing.service);
-        $("#tax-fee").textContent = money(pricing.tax);
-        $("#tip-percent").textContent = round(pricing.tipRate, 0);
-        $("#tip-fee").textContent = money(pricing.tip);
-        $("#order-total").textContent = money(pricing.total);
+        $("#tip-percent").textContent = round(getSelectedTipPercent(), 0);
+        scheduleDrinkQuote(buildQuoteRequest([getDrinkConfiguration()]));
         $("#custom-tip-input").hidden = state.tipPercent !== "custom";
         $("#custom-tip-input").value = state.customTipPercent;
         $$(".tip-button").forEach((button) =>
@@ -243,16 +292,15 @@
         $("#drawer-count").textContent = `(${count})`;
         $("#checkout-fab").hidden = count === 0;
         $("#checkout-button").disabled = count === 0;
-        const subtotal = getCartSubtotal(state);
-        const pricing = getPricing(state, subtotal);
-        $("#cart-total").textContent = money(pricing.total);
-        $("#fab-total").textContent = money(pricing.total);
+        // Forget the old quote: the cart may have changed. A cached quote refills it instantly below.
+        latestCartQuote = null;
 
         if (!count) {
             const empty = document.createElement("p");
             empty.className = "field-help";
             empty.textContent = "Your basket is empty. Add a custom drink to get started.";
             container.appendChild(empty);
+            scheduleCartQuote(null);
             return;
         }
 
@@ -267,7 +315,7 @@
             details.append(title, description);
             const price = document.createElement("strong");
             price.className = "cart-item-price";
-            price.textContent = money(item.price);
+            price.textContent = PRICE_PLACEHOLDER;
             const actions = document.createElement("div");
             actions.className = "cart-item-actions";
             const edit = document.createElement("button");
@@ -295,6 +343,8 @@
             row.append(details, price, actions);
             container.appendChild(row);
         });
+        // Runs after the rows exist so the quote can fill each .cart-item-price in order.
+        scheduleCartQuote(buildQuoteRequest(state.cartItems.map((item) => item.state)));
     }
 
     function getDrinkConfiguration() {
@@ -316,23 +366,26 @@
 
     function addCurrentDrinkToCart() {
         const composition = getComposition();
-        const pricing = getDrinkPrice(state);
         const name =
             getDrinkName(composition) === "Custom Concoction"
                 ? `Custom ${BASES[state.base].label} drink`
                 : getDrinkName(composition);
         const metrics = getMetrics(composition);
         const existingIndex = state.cartItems.findIndex((item) => item.id === editingCartItemId);
+        // Which shared recipe this drink came from (kept when editing). The server pays a
+        // royalty only if the final drink still exactly matches the published recipe.
+        const recipeSlug = activeSharedRecipe?.slug || state.cartItems[existingIndex]?.recipeSlug;
         const item = {
             id: editingCartItemId || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`),
-            name,
+            name: activeSharedRecipe?.name || name,
             state: getDrinkConfiguration(),
             metrics,
-            price: pricing.subtotal
+            ...(recipeSlug ? { recipeSlug } : {})
         };
         if (existingIndex >= 0) state.cartItems[existingIndex] = item;
         else state.cartItems.push(item);
         editingCartItemId = null;
+        clearSharedRecipe();
         resetEditor();
         setNotice(existingIndex >= 0 ? `${name} updated in your basket.` : `${name} added to your basket.`);
     }
@@ -380,11 +433,20 @@
             drawerReturnFocus.focus();
     }
 
+    // Text only, so a quote arriving while the dialog is open never touches the form fields.
+    function renderCheckoutSummaryText() {
+        const count = state.cartItems.length;
+        const pricesText = latestCartQuote
+            ? `${moneyFromCents(latestCartQuote.pricing.subtotalCents)} drinks subtotal · total ${moneyFromCents(latestCartQuote.pricing.totalCents)}`
+            : "calculating total…";
+        $("#checkout-summary").textContent =
+            `${count} drink${count === 1 ? "" : "s"} · ${pricesText} · ${getEstimatedEta(state, count)}`;
+        // Wording comes from the server (services/paymentService.js) so it matches the receipt.
+        $("#checkout-payment-note").textContent = latestCartQuote?.paymentInstruction || "";
+    }
+
     function updateCheckoutSummary() {
-        const subtotal = getCartSubtotal(state);
-        const pricing = getPricing(state, subtotal);
-        const summary = $("#checkout-summary");
-        summary.textContent = `${state.cartItems.length} drink${state.cartItems.length === 1 ? "" : "s"} · ${money(subtotal)} drinks subtotal · estimated total ${money(pricing.total)} · ${getEstimatedEta(state, state.cartItems.length)}`;
+        renderCheckoutSummaryText();
         const delivery = state.fulfillmentMethod === "delivery";
         $("#checkout-address-field").hidden = !delivery;
         $("#checkout-address").required = delivery;
@@ -637,6 +699,104 @@
         }
     }
 
+    // ---- Community recipes (network calls in communityRecipes.js) ----
+    let activeSharedRecipe = null;
+
+    function clearSharedRecipe() {
+        activeSharedRecipe = null;
+        $("#shared-recipe-banner").hidden = true;
+        window.CoffeeLabRecipes.clearSharedRecipeSlug();
+    }
+
+    async function loadSharedRecipeFromLink() {
+        const slug = window.CoffeeLabRecipes.readSharedRecipeSlug();
+        if (!slug) return;
+        try {
+            const recipe = await window.CoffeeLabRecipes.fetchSharedRecipe(slug);
+            activeSharedRecipe = recipe;
+            applyRecipe({ ...recipe.configuration });
+            $("#shared-recipe-title").textContent = `Shared recipe: ${recipe.name}`;
+            $("#shared-recipe-creator").textContent = recipe.creatorUsername ? `by ${recipe.creatorUsername}` : "";
+            $("#shared-recipe-banner").hidden = false;
+        } catch {
+            window.CoffeeLabRecipes.clearSharedRecipeSlug();
+            setNotice("That shared recipe link is no longer available.");
+        }
+    }
+
+    // Built with textContent (never innerHTML): recipe names are user-written.
+    function renderMyPublishedRecipes(recipes) {
+        const list = $("#my-published-recipes");
+        list.replaceChildren(
+            ...recipes.map((recipe) => {
+                const row = document.createElement("li");
+                const link = document.createElement("a");
+                link.href = recipe.shareUrl;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = recipe.name;
+                const unpublishButton = document.createElement("button");
+                unpublishButton.type = "button";
+                unpublishButton.className = "button";
+                unpublishButton.textContent = "Unpublish";
+                unpublishButton.addEventListener("click", async () => {
+                    unpublishButton.disabled = true;
+                    try {
+                        await window.CoffeeLabRecipes.unpublishRecipe(recipe.slug);
+                        renderRoyaltySummary(await window.CoffeeLabRecipes.fetchMyRecipes());
+                    } catch (error) {
+                        $("#recipe-royalty-summary").textContent = `Could not unpublish: ${error.message}`;
+                        unpublishButton.disabled = false;
+                    }
+                });
+                row.append(link, " ", unpublishButton);
+                return row;
+            })
+        );
+    }
+
+    function renderRoyaltySummary({ royalties, recipes }) {
+        renderMyPublishedRecipes(recipes);
+        $("#recipe-royalty-summary").textContent = recipes.length
+            ? `${recipes.length} published recipe${recipes.length === 1 ? "" : "s"} · ${royalties.earnedPoints} points earned · ${royalties.pendingPoints} pending (awarded once the buyer pays) · ${royalties.pointsPerDrink} points per drink.`
+            : `Earn ${royalties.pointsPerDrink} points every time someone else orders and pays for your recipe.`;
+    }
+
+    async function openPublishRecipeDialog() {
+        $("#publish-recipe-name").value = getDrinkName(getComposition()).slice(0, 48);
+        $("#published-recipe-result").hidden = true;
+        $("#publish-recipe-submit").disabled = false;
+        $("#recipe-royalty-summary").textContent = "";
+        $("#my-published-recipes").replaceChildren();
+        $("#publish-recipe-dialog").showModal();
+        try {
+            renderRoyaltySummary(await window.CoffeeLabRecipes.fetchMyRecipes());
+        } catch {
+            $("#recipe-royalty-summary").textContent = "Could not load your royalty points right now.";
+        }
+    }
+
+    async function publishCurrentRecipe(event) {
+        event.preventDefault();
+        const submitButton = $("#publish-recipe-submit");
+        submitButton.disabled = true;
+        try {
+            const recipe = await window.CoffeeLabRecipes.publishRecipe(
+                $("#publish-recipe-name").value.trim(),
+                getDrinkConfiguration()
+            );
+            $("#published-recipe-qr").src = recipe.qrCodeUrl;
+            $("#published-recipe-link").href = recipe.shareUrl;
+            $("#published-recipe-link").textContent = recipe.shareUrl;
+            $("#published-recipe-result").hidden = false;
+            setNotice(`"${recipe.name}" is published. Share the link or QR code.`);
+            renderRoyaltySummary(await window.CoffeeLabRecipes.fetchMyRecipes());
+        } catch (error) {
+            $("#recipe-royalty-summary").textContent = `Could not publish: ${error.message}`;
+            submitButton.disabled = false;
+        }
+    }
+
     function applyRecipe(recipe, selectedClassic = "") {
         const { name, ...configuration } = recipe;
         Object.assign(state, JSON.parse(JSON.stringify(configuration)));
@@ -794,6 +954,13 @@
         render();
     });
     $("#add-to-cart-button").addEventListener("click", addCurrentDrinkToCart);
+    $("#order-shared-recipe-button").addEventListener("click", () => {
+        addCurrentDrinkToCart();
+        openCart();
+    });
+    $("#publish-recipe-button").addEventListener("click", openPublishRecipeDialog);
+    $("#publish-recipe-form").addEventListener("submit", publishCurrentRecipe);
+    $("#close-publish-recipe").addEventListener("click", () => $("#publish-recipe-dialog").close());
     $("#open-cart-button").addEventListener("click", openCart);
     $("#close-cart-button").addEventListener("click", closeCart);
     $("#drawer-backdrop").addEventListener("click", closeCart);
@@ -823,7 +990,8 @@
                 body: JSON.stringify({
                     items: state.cartItems.map((item) => ({
                         name: item.name,
-                        configuration: item.state
+                        configuration: item.state,
+                        ...(item.recipeSlug ? { recipeSlug: item.recipeSlug } : {})
                     })),
                     fulfillmentMethod: state.fulfillmentMethod,
                     ...(state.fulfillmentMethod === "delivery" ? { deliveryAddress: state.deliveryAddress } : {}),
@@ -974,4 +1142,5 @@
     });
     showPreview(activePreview);
     render();
+    loadSharedRecipeFromLink();
 })();

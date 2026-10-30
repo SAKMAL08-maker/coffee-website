@@ -10,10 +10,10 @@ Each phase is one branch and one pull request, reviewed and merged by the owner.
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | 0     | Repo hygiene: README, LICENSE, line endings, accurate docs, AI-log folder                                                                    | ✅ Merged (#9)       |
 | 1     | CI (lint, format, test, audit), `/healthz` keep-alive, PR/issue templates                                                                    | ✅ Merged (#10, #11) |
-| 2     | Collaboration docs: CONTRIBUTING, ADRs, runbook, this plan, AI-USAGE                                                                         | 🔄 In review         |
-| 3     | Refactor: `services/pricingService.js` (integer cents), order-status state machine, rate limit on status updates, browser uses server quotes | Planned              |
-| 4     | Cash handling: `payment_method`, cash-collected tracking, admin "mark cash collected"                                                        | Planned              |
-| 5     | **Community recipes with royalties**: shareable recipe link/QR, "order this recipe", creator earns loyalty points                            | Planned              |
+| 2     | Collaboration docs: CONTRIBUTING, ADRs, runbook, this plan, AI-USAGE                                                                         | 🔄 In review (#12)   |
+| 3     | Refactor: `services/pricingService.js` (integer cents), order-status state machine, rate limit on status updates, browser uses server quotes | 🔄 In review         |
+| 4     | Cash handling: `payment_method`, cash-collected tracking, admin "mark cash collected"                                                        | 🔄 In review         |
+| 5     | **Community recipes with royalties**: shareable recipe link/QR, "order this recipe", creator earns loyalty points                            | 🔄 In review         |
 | 5b    | Then, owner's choice: caffeine guardian (daily caffeine total, cutoff time, half-caf nudge) **or** origin-traceable beans                    | Decide after 5       |
 | 6     | _(Optional)_ Data-driven menu: prices in database tables with cache, admin price editing, safe fallback                                      | Only if requested    |
 
@@ -41,7 +41,7 @@ Each phase is one branch and one pull request, reviewed and merged by the owner.
 
 **Costs today.** Near zero: Render, Supabase, and Backblaze free tiers, plus a domain if added. The first paid step would be Render's starter plan (no sleep) when real traffic arrives.
 
-**Key risks.** Payments are cash-only (Phase 4 records it; no online payment yet); free-tier limits; data-privacy obligations under the Philippine Data Privacy Act (privacy notice already added).
+**Key risks.** Payments are cash-only (collection tracked since Phase 4; no online payment yet); free-tier limits; data-privacy obligations under the Philippine Data Privacy Act (privacy notice already added).
 
 **Success metrics.** Orders per week, repeat-order rate, share of orders from community recipes, remade-drink rate reported by staff.
 

@@ -1,4 +1,5 @@
 const PDFDocument = require("pdfkit");
+const { describePaymentInstruction } = require("./paymentService");
 
 function formatMoney(cents) {
     return `PHP ${(cents / 100).toFixed(2)}`;
@@ -26,6 +27,7 @@ function createReceiptPdf(order) {
             .text(`Order: CL-${orderNumber}`)
             .text(`Date: ${new Date(order.created_at).toLocaleString("en-PH", { timeZone: "UTC" })}`)
             .text(`Fulfillment: ${order.fulfillment_method === "pickup" ? "Pickup" : "Delivery"}`)
+            .text(`Payment: ${describePaymentInstruction(order.fulfillment_method, order.payment_method)}`)
             .text(`Customer: ${String(customer.name || "Coffee Lab customer").slice(0, 80)}`);
 
         if (order.fulfillment_method === "delivery" && order.delivery_address) {
@@ -52,7 +54,7 @@ function createReceiptPdf(order) {
             .moveDown(0.3)
             .font("Helvetica-Bold")
             .fontSize(13)
-            .text(`Total: ${formatMoney(pricing.total_cents || 0)}`);
+            .text(`Total due: ${formatMoney(pricing.total_cents || 0)}`);
         document.moveDown(2).font("Helvetica").fontSize(9).text("Thank you for ordering from Coffee Lab.");
 
         document.end();
