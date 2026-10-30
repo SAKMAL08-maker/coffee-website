@@ -188,8 +188,12 @@ Before release:
 
 ```powershell
 npm ci
+npm run lint
+npm run format:check
 npm test
 ```
+
+CI runs the same checks on every pull request. Deploy, rollback, and key-rotation steps are in [docs/runbook.md](../docs/runbook.md).
 
 Then verify in staging before production:
 
