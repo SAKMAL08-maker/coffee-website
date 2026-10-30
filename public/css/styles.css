@@ -2386,3 +2386,32 @@ dialog::backdrop {
     padding: 6px 0;
     border-bottom: 1px solid var(--line);
 }
+
+/* Caffeine guardian: today's total, personal cutoff, one-tap half-caf. */
+.caffeine-guardian {
+    margin: 12px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    color: var(--ink);
+}
+.caffeine-guardian-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+.caffeine-guardian h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+.caffeine-guardian p {
+    margin: 8px 0 0;
+}
+.caffeine-warning {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+}

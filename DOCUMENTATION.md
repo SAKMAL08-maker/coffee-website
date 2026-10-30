@@ -106,6 +106,13 @@ Nutrition, recipe labels, service fees, taxes, and other displayed calculations 
 - **Royalties** (`services/communityRecipeService.js`, decided only on the server): the creator earns `ROYALTY_POINTS_PER_DRINK` (10) points per drink when the ordered configuration exactly matches the published one and the buyer is not the creator. Points are stored on the order item inside the same `create_coffee_order` transaction, so they cannot be counted twice, and count as **earned** only after the order's cash is collected (`recipe_royalty_summary`). `GET /api/recipes/mine` shows earned and pending points.
 - **Unpublish:** the publish dialog lists the creator's recipes with an **Unpublish** button (`DELETE /api/recipes/:slug`, owner-only; others get 404). The coffee row is kept, so points already earned stay with the creator.
 
+### Caffeine guardian
+
+- Signed-in customers see a panel under the drink metrics: caffeine **ordered today**, this drink's caffeine, and a daily guide of 400 mg (common guidance for healthy adults; shown as guidance, not medical advice).
+- **Cutoff time:** "No caffeine after" (`PUT /api/caffeine/settings`, stored in `coffee_users.caffeine_cutoff_time`; empty clears it).
+- **Half-caf nudge:** when a regular-caffeine drink would go over the guide or is built after the cutoff, the panel offers **Make it half-caf** with the exact milligrams saved. One tap switches the drink.
+- Decided on the server (`services/caffeineGuardianService.js`, `POST /api/caffeine/check`) from the same nutrition function checkout stores on each order item. "Today" and the cutoff use **Asia/Manila** time regardless of the server's clock. The browser can't supply its own total.
+
 ### Admin and staff capabilities
 
 - **Staff authorization:** Staff and administrators can use the order-status endpoint for the allowed preparation states.

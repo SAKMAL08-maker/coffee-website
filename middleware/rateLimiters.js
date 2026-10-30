@@ -33,5 +33,7 @@ module.exports = {
     // Recording a payment is a sensitive admin write; a busy shift needs well under this.
     cashCollectionLimiter: createLimiter(60 * 1000, 20),
     // Public recipe pages and QR codes: generous for real visitors, blocks slug scraping.
-    recipeReadLimiter: createLimiter(60 * 1000, 60)
+    recipeReadLimiter: createLimiter(60 * 1000, 60),
+    // Re-checked (debounced) as the customer edits a drink, like price quotes.
+    caffeineCheckLimiter: createLimiter(60 * 1000, 120)
 };
