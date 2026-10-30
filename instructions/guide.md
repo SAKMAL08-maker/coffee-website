@@ -6,12 +6,12 @@ This guide covers local development, the Render deployment, Supabase database/au
 
 ## 1. Services and responsibilities
 
-| Service | Purpose |
-|---|---|
-| GitHub — `SAKMAL08-maker/coffee-website` | Source repository and Git history. |
-| Render | Hosts and runs the Node.js/Express application. |
-| Supabase | PostgreSQL database and Supabase Auth identities/MFA. |
-| Backblaze B2 | Private object storage for generated order receipt PDFs and preview images. |
+| Service                                  | Purpose                                                                     |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| GitHub — `SAKMAL08-maker/coffee-website` | Source repository and Git history.                                          |
+| Render                                   | Hosts and runs the Node.js/Express application.                             |
+| Supabase                                 | PostgreSQL database and Supabase Auth identities/MFA.                       |
+| Backblaze B2                             | Private object storage for generated order receipt PDFs and preview images. |
 
 The browser calls the Express API. Supabase service-role and B2 credentials are used by the server only; they must not be put into frontend JavaScript.
 
@@ -115,9 +115,9 @@ In the Render service connected to the GitHub repository:
 3. Use `npm ci` as the install/build command where appropriate; there is no separate frontend compilation.
 4. Add secrets through Render’s protected environment settings, not through committed files.
 5. Set at minimum:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `NODE_ENV=production`
+    - `SUPABASE_URL`
+    - `SUPABASE_SERVICE_ROLE_KEY`
+    - `NODE_ENV=production`
 6. Set the complete `B2_*` variable group to enable receipt storage.
 7. Confirm HTTPS is enabled and verify the deployment’s proxy arrangement before setting `TRUST_PROXY_HOPS`.
 8. Confirm whether auto-deploy is enabled and which branch triggers it. This configuration is managed in Render and is not defined by repository files.
@@ -132,8 +132,8 @@ Admin authentication uses a Supabase Auth identity linked to an existing Coffee 
 1. Apply the required database migrations, including migrations `20261030000000` and `20261031000000`.
 2. In Supabase Dashboard, open **Authentication → Users** and create the admin’s Auth user with an email and a strong password. Confirm the email.
 3. Open `supabase/admin-account-setup.sql`, replace:
-   - `REPLACE_WITH_ADMIN_EMAIL` with the new Auth user email.
-   - `REPLACE_WITH_EXISTING_USERNAME` with the intended existing Coffee Lab username.
+    - `REPLACE_WITH_ADMIN_EMAIL` with the new Auth user email.
+    - `REPLACE_WITH_EXISTING_USERNAME` with the intended existing Coffee Lab username.
 4. Run the SQL in the same Supabase project. Check that the returned row is the intended Coffee Lab account, has `role = admin`, and has a non-null `supabase_auth_user_id`.
 5. Confirm that the Render service uses this same Supabase project.
 
@@ -205,14 +205,14 @@ Monitor Render, Supabase, and Backblaze logs after deployment. Keep a rollback p
 
 ## 9. Troubleshooting
 
-| Symptom | Checks |
-|---|---|
-| `public.profiles` is `null` | Verify the base migration was applied successfully to the Supabase project configured in Render. |
-| Admin password is rejected | Check that the Coffee Lab username exists, is `admin`, links to the intended confirmed Auth user, and that the password is the Supabase Auth password. |
-| “Authenticator setup is not authorized” | Confirm migration `20261031000000` and the updated app are deployed, rerun the owner bootstrap for the intended username, and use the newly issued token before expiry. |
-| Authenticator factor is not approved | Ask the project owner to verify the account’s Auth factors and perform the controlled bootstrap reset if appropriate. The bootstrap removes all factors for that user. |
-| Receipt unavailable | Check the full B2 configuration in the running environment, bucket/key permissions, Supabase receipt migrations, and Render server logs. |
-| Orders do not load | Check that required Supabase migrations exist, `SUPABASE_URL` and the service-role key match, and Render logs show no query/schema errors. |
-| Secure-cookie/session issues in production | Confirm `NODE_ENV=production`, HTTPS termination, cookie behavior, and trusted proxy configuration. |
+| Symptom                                    | Checks                                                                                                                                                                  |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `public.profiles` is `null`                | Verify the base migration was applied successfully to the Supabase project configured in Render.                                                                        |
+| Admin password is rejected                 | Check that the Coffee Lab username exists, is `admin`, links to the intended confirmed Auth user, and that the password is the Supabase Auth password.                  |
+| “Authenticator setup is not authorized”    | Confirm migration `20261031000000` and the updated app are deployed, rerun the owner bootstrap for the intended username, and use the newly issued token before expiry. |
+| Authenticator factor is not approved       | Ask the project owner to verify the account’s Auth factors and perform the controlled bootstrap reset if appropriate. The bootstrap removes all factors for that user.  |
+| Receipt unavailable                        | Check the full B2 configuration in the running environment, bucket/key permissions, Supabase receipt migrations, and Render server logs.                                |
+| Orders do not load                         | Check that required Supabase migrations exist, `SUPABASE_URL` and the service-role key match, and Render logs show no query/schema errors.                              |
+| Secure-cookie/session issues in production | Confirm `NODE_ENV=production`, HTTPS termination, cookie behavior, and trusted proxy configuration.                                                                     |
 
 When requesting assistance, share only sanitized error messages. Remove email addresses, customer/order personal data, tokens, setup secrets, and all credential values.

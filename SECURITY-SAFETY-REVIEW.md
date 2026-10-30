@@ -7,21 +7,21 @@
 
 The focused repository security review identified **no confirmed exploitable vulnerabilities** in the reviewed worktree. The automated checks completed for this review also passed:
 
-| Check | Result |
-|---|---|
-| Focused security review | No confirmed vulnerabilities reported |
-| `npm test` | 21 passed, 0 failed |
-| Production dependency audit (`npm audit --omit=dev --audit-level=moderate`) | 0 vulnerabilities |
-| JavaScript syntax checks | 34 application/test JavaScript files passed |
-| `git diff --check` | Passed |
+| Check                                                                       | Result                                      |
+| --------------------------------------------------------------------------- | ------------------------------------------- |
+| Focused security review                                                     | No confirmed vulnerabilities reported       |
+| `npm test`                                                                  | 21 passed, 0 failed                         |
+| Production dependency audit (`npm audit --omit=dev --audit-level=moderate`) | 0 vulnerabilities                           |
+| JavaScript syntax checks                                                    | 34 application/test JavaScript files passed |
+| `git diff --check`                                                          | Passed                                      |
 
 This is a source-code review, not a certification of the live Render service or its Supabase and Backblaze configuration. Production configuration and provider-side state require separate verification.
 
 ## Findings
 
-| # | Severity | File | Lines | Vulnerability | Confidence |
-|---|----------|------|-------|---------------|------------|
-| — | — | — | — | No confirmed vulnerabilities identified in the reviewed repository state. | — |
+| #   | Severity | File | Lines | Vulnerability                                                             | Confidence |
+| --- | -------- | ---- | ----- | ------------------------------------------------------------------------- | ---------- |
+| —   | —        | —    | —     | No confirmed vulnerabilities identified in the reviewed repository state. | —          |
 
 ### Checks requiring access to production services
 
@@ -50,20 +50,20 @@ The following settings cannot be proven from this repository and should be check
 
 ## Review against `.github/copilot-instructions.md`
 
-| Instruction area | Assessment | Evidence / notes |
-|---|---|---|
-| CommonJS and existing stack | **Followed** | Server and backend modules use CommonJS; frontend remains plain HTML/CSS/JavaScript. |
-| Modular separation | **Mostly followed** | Routes, controllers, middleware, schemas, and services are separate. Some browser behavior remains in larger JavaScript files, but the app is divided into purpose-specific scripts. |
-| Environment-based secrets and `.env` ignore | **Followed in source** | Supabase and B2 credentials are read from environment variables; `.gitignore` excludes `.env`. Live Render secret configuration still needs confirmation. |
-| Helmet and secure headers | **Followed** | Helmet, CSP, HSTS in production, and removal of the Express fingerprint are configured. Production flags must be verified in Render. |
-| Input validation | **Followed** | Zod schemas and service/controller validation are present. |
-| Rate limiting | **Followed, with scaling caveat** | Limiters cover authentication, MFA, checkout, receipts, and other routes; default storage is process-local. |
-| Central error handling | **Followed** | Express has a centralized handler with generic API responses and server-side diagnostic logging. |
-| Injection defense | **No issue identified in focused review** | Supabase client query builders and parameterized RPC calls are used in the reviewed paths. |
-| Dynamic interactive UI | **Followed** | Customizer state updates the drink visualization, classification, estimated nutrition, and pricing. |
-| Explicit “level-based” workflow | **Not fully implemented** | The UI groups controls and updates dynamically, but the repository does not implement a distinct sequential level/progression workflow. |
-| Type safety | **Partially addressed** | The project uses JavaScript with runtime Zod validation, not TypeScript or a static type-check step. |
-| Progressive, focused changes | **Followed for this review** | The audit was carried out against the existing worktree and recorded in this report; unrelated application code was not rewritten. |
+| Instruction area                            | Assessment                                | Evidence / notes                                                                                                                                                                     |
+| ------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CommonJS and existing stack                 | **Followed**                              | Server and backend modules use CommonJS; frontend remains plain HTML/CSS/JavaScript.                                                                                                 |
+| Modular separation                          | **Mostly followed**                       | Routes, controllers, middleware, schemas, and services are separate. Some browser behavior remains in larger JavaScript files, but the app is divided into purpose-specific scripts. |
+| Environment-based secrets and `.env` ignore | **Followed in source**                    | Supabase and B2 credentials are read from environment variables; `.gitignore` excludes `.env`. Live Render secret configuration still needs confirmation.                            |
+| Helmet and secure headers                   | **Followed**                              | Helmet, CSP, HSTS in production, and removal of the Express fingerprint are configured. Production flags must be verified in Render.                                                 |
+| Input validation                            | **Followed**                              | Zod schemas and service/controller validation are present.                                                                                                                           |
+| Rate limiting                               | **Followed, with scaling caveat**         | Limiters cover authentication, MFA, checkout, receipts, and other routes; default storage is process-local.                                                                          |
+| Central error handling                      | **Followed**                              | Express has a centralized handler with generic API responses and server-side diagnostic logging.                                                                                     |
+| Injection defense                           | **No issue identified in focused review** | Supabase client query builders and parameterized RPC calls are used in the reviewed paths.                                                                                           |
+| Dynamic interactive UI                      | **Followed**                              | Customizer state updates the drink visualization, classification, estimated nutrition, and pricing.                                                                                  |
+| Explicit “level-based” workflow             | **Not fully implemented**                 | The UI groups controls and updates dynamically, but the repository does not implement a distinct sequential level/progression workflow.                                              |
+| Type safety                                 | **Partially addressed**                   | The project uses JavaScript with runtime Zod validation, not TypeScript or a static type-check step.                                                                                 |
+| Progressive, focused changes                | **Followed for this review**              | The audit was carried out against the existing worktree and recorded in this report; unrelated application code was not rewritten.                                                   |
 
 ### Stale repository guidance
 

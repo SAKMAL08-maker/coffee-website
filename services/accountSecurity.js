@@ -29,8 +29,12 @@ async function hashPassword(password) {
 
 async function verifyPassword(password, encodedHash) {
     const [algorithm, cost, blockSize, parallelization, saltText, keyText] = encodedHash.split("$");
-    if (algorithm !== "scrypt" || Number(cost) !== SCRYPT_OPTIONS.N
-        || Number(blockSize) !== SCRYPT_OPTIONS.r || Number(parallelization) !== SCRYPT_OPTIONS.p) {
+    if (
+        algorithm !== "scrypt" ||
+        Number(cost) !== SCRYPT_OPTIONS.N ||
+        Number(blockSize) !== SCRYPT_OPTIONS.r ||
+        Number(parallelization) !== SCRYPT_OPTIONS.p
+    ) {
         throw new Error("Stored password hash uses an unsupported format.");
     }
     const salt = Buffer.from(saltText, "base64url");

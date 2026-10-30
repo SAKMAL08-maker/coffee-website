@@ -48,14 +48,14 @@ cp .env.example .env      # PowerShell: Copy-Item .env.example .env
 
 ## Scripts
 
-| Command | What it does |
-|---|---|
-| `npm start` | Runs `node server.js` (the same command Render uses). |
-| `npm test` | Runs the Node.js built-in test runner over `test/`. The tests exercise validation, auth rejections, pricing, receipt generation, and the health check without network calls, and pass with no `.env`. They do not prove your live Supabase or B2 setup works. |
-| `npm run lint` | ESLint (bug-finding rules) over all JavaScript. |
-| `npm run format:check` / `npm run format` | Prettier check / rewrite. Not enforced in CI yet; the existing code predates the config. |
+| Command                                   | What it does                                                                                                                                                                                                                                                  |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm start`                               | Runs `node server.js` (the same command Render uses).                                                                                                                                                                                                         |
+| `npm test`                                | Runs the Node.js built-in test runner over `test/`. The tests exercise validation, auth rejections, pricing, receipt generation, and the health check without network calls, and pass with no `.env`. They do not prove your live Supabase or B2 setup works. |
+| `npm run lint`                            | ESLint (bug-finding rules) over all JavaScript.                                                                                                                                                                                                               |
+| `npm run format:check` / `npm run format` | Prettier check / rewrite. CI fails on unformatted files; run `npm run format` before committing.                                                                                                                                                              |
 
-Every pull request runs `npm ci`, lint, tests, and `npm audit --omit=dev` in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+Every pull request runs `npm ci`, lint, a Prettier format check, tests, and `npm audit --omit=dev` in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Health check
 
@@ -65,18 +65,18 @@ Every pull request runs `npm ci`, lint, tests, and `npm audit --omit=dev` in Git
 
 Set these in `.env` locally and in the Render dashboard (**Environment** tab) in production. The values below are descriptions, not real values.
 
-| Variable | Required | Description |
-|---|---|---|
-| `SUPABASE_URL` | Yes | Your Supabase project URL, e.g. `https://<project-ref>.supabase.co`. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only Supabase key: a secret key (`sb_secret_…`) or the legacy `service_role` key. It bypasses row-level security, so it must never reach the browser. |
-| `NODE_ENV` | Production | Set to `production` on Render to enable Secure cookies, HSTS, and HTTPS upgrades. |
-| `PORT` | No | Port to listen on (default `3000`). Render sets this automatically. |
-| `B2_BUCKET_NAME` | For receipts | Name of the private B2 bucket. |
-| `B2_ENDPOINT` | For receipts | S3-compatible endpoint, e.g. `https://s3.<region>.backblazeb2.com`. |
-| `B2_REGION` | For receipts | B2 region, e.g. `us-west-004`. |
-| `B2_KEY_ID` | For receipts | Bucket-scoped application key ID. |
-| `B2_APPLICATION_KEY` | For receipts | Bucket-scoped application key. |
-| `TRUST_PROXY_HOPS` | No | Number of trusted reverse proxies (for correct client IPs in rate limiting). Leave empty unless you know your proxy setup. |
+| Variable                    | Required     | Description                                                                                                                                                  |
+| --------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SUPABASE_URL`              | Yes          | Your Supabase project URL, e.g. `https://<project-ref>.supabase.co`.                                                                                         |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes          | Server-only Supabase key: a secret key (`sb_secret_…`) or the legacy `service_role` key. It bypasses row-level security, so it must never reach the browser. |
+| `NODE_ENV`                  | Production   | Set to `production` on Render to enable Secure cookies, HSTS, and HTTPS upgrades.                                                                            |
+| `PORT`                      | No           | Port to listen on (default `3000`). Render sets this automatically.                                                                                          |
+| `B2_BUCKET_NAME`            | For receipts | Name of the private B2 bucket.                                                                                                                               |
+| `B2_ENDPOINT`               | For receipts | S3-compatible endpoint, e.g. `https://s3.<region>.backblazeb2.com`.                                                                                          |
+| `B2_REGION`                 | For receipts | B2 region, e.g. `us-west-004`.                                                                                                                               |
+| `B2_KEY_ID`                 | For receipts | Bucket-scoped application key ID.                                                                                                                            |
+| `B2_APPLICATION_KEY`        | For receipts | Bucket-scoped application key.                                                                                                                               |
+| `TRUST_PROXY_HOPS`          | No           | Number of trusted reverse proxies (for correct client IPs in rate limiting). Leave empty unless you know your proxy setup.                                   |
 
 The `B2_*` variables are all-or-nothing: set all five or none. Without them, orders still work but receipts are marked unavailable.
 

@@ -11,10 +11,7 @@ const {
 } = require("./b2ReceiptStorage");
 
 async function updateReceiptStatus(supabase, orderId, values) {
-    const { error } = await supabase
-        .from("orders")
-        .update(values)
-        .eq("id", orderId);
+    const { error } = await supabase.from("orders").update(values).eq("id", orderId);
     if (error) throw error;
 }
 
@@ -22,7 +19,9 @@ async function createOrderReceipt(orderId) {
     const supabase = getAdminClient();
     const { data: order, error } = await supabase
         .from("orders")
-        .select("id, customer, fulfillment_method, delivery_address, pricing, created_at, order_items(name, classification, price_cents)")
+        .select(
+            "id, customer, fulfillment_method, delivery_address, pricing, created_at, order_items(name, classification, price_cents)"
+        )
         .eq("id", orderId)
         .maybeSingle();
     if (error) throw error;
@@ -127,7 +126,9 @@ async function getReceiptImageUrl(orderId) {
     const supabase = getAdminClient();
     const { data: order, error } = await supabase
         .from("orders")
-        .select("id, receipt_status, receipt_object_key, receipt_image_object_key, customer, fulfillment_method, delivery_address, pricing, created_at, order_items(name, classification, price_cents)")
+        .select(
+            "id, receipt_status, receipt_object_key, receipt_image_object_key, customer, fulfillment_method, delivery_address, pricing, created_at, order_items(name, classification, price_cents)"
+        )
         .eq("id", orderId)
         .maybeSingle();
     if (error) throw error;
