@@ -10,7 +10,8 @@ const {
     deliveryReportLimiter,
     adminOrderLimiter,
     orderQuoteLimiter,
-    orderStatusLimiter
+    orderStatusLimiter,
+    cashCollectionLimiter
 } = require("../middleware/rateLimiters");
 
 const router = express.Router();
@@ -104,6 +105,15 @@ router.patch(
     authenticate,
     requireAdmin,
     orderController.approvePickup
+);
+// Admin records that the customer paid cash at pickup or delivery.
+router.patch(
+    "/:orderId/admin/cash-collected",
+    cashCollectionLimiter,
+    validateRequest(schemas.cashCollection),
+    authenticate,
+    requireAdmin,
+    orderController.markCashCollected
 );
 router.delete(
     "/:orderId/admin",

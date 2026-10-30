@@ -1,3 +1,5 @@
+const { describePaymentInstruction } = require("./paymentService");
+
 function escapeXml(value) {
     return String(value)
         .replace(/&/g, "&amp;")
@@ -71,9 +73,10 @@ function createReceiptImage(order) {
     });
 
     const totalY = y + 15;
-    const footerY = totalY + 118;
+    const footerY = totalY + 131;
     const height = footerY + 72;
     const fulfillment = order.fulfillment_method === "pickup" ? "Pickup" : "Delivery";
+    const paymentInstruction = describePaymentInstruction(order.fulfillment_method, order.payment_method);
     const customerName = truncate(customer.name || "Coffee Lab customer", 64);
     const address =
         order.fulfillment_method === "delivery" && order.delivery_address
@@ -106,9 +109,10 @@ function createReceiptImage(order) {
             <text x="828" y="414" class="section" text-anchor="end">AMOUNT</text>
             ${lines.join("\n")}
             <path d="M72 ${totalY}H828" class="rule"/>
-            <text x="72" y="${totalY + 52}" class="grand-label">TOTAL PAID</text>
+            <text x="72" y="${totalY + 52}" class="grand-label">TOTAL DUE</text>
+            <text x="72" y="${totalY + 76}" class="meta">${escapeXml(paymentInstruction)}</text>
             <text x="828" y="${totalY + 58}" class="grand-value" text-anchor="end">${escapeXml(formatMoney(pricing.total_cents))}</text>
-            <path d="M72 ${totalY + 83}H828" class="rule"/>
+            <path d="M72 ${totalY + 96}H828" class="rule"/>
             <text x="450" y="${footerY}" class="footer" text-anchor="middle">Thank you for choosing Coffee Lab.</text>
         </svg>`,
         "utf8"

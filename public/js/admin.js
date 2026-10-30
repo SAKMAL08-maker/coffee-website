@@ -99,6 +99,17 @@
         }
         card.append(fulfillmentState);
 
+        const paymentState = document.createElement("p");
+        paymentState.className = "admin-delivery-state";
+        const isCashOrder = (order.paymentMethod || "cash") === "cash";
+        if (isCashOrder && order.cashCollectedAt) {
+            paymentState.textContent = `Cash collected ${new Date(order.cashCollectedAt).toLocaleString()}.`;
+        } else if (isCashOrder) {
+            paymentState.textContent = `Cash payment due on ${order.fulfillmentMethod === "pickup" ? "pickup" : "delivery"}.`;
+            paymentState.dataset.pending = "true";
+        }
+        if (paymentState.textContent) card.append(paymentState);
+
         const receiptArea = document.createElement("div");
         receiptArea.className = "admin-receipt-row";
         const receiptStatus = document.createElement("span");
@@ -154,6 +165,15 @@
             approveButton.dataset.adminAction = "approve-pickup";
             approveButton.textContent = "Verify ready for pickup";
             actions.append(approveButton);
+        }
+        // Hidden when the server can't report collection yet (cash migration not applied).
+        if (isCashOrder && "cashCollectedAt" in order && !order.cashCollectedAt) {
+            const cashButton = document.createElement("button");
+            cashButton.type = "button";
+            cashButton.className = "button button-primary";
+            cashButton.dataset.adminAction = "cash-collected";
+            cashButton.textContent = "Mark cash collected";
+            actions.append(cashButton);
         }
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
@@ -259,6 +279,46 @@
         startAutomaticRefresh();
     }
 
+    // One entry per order button. Adding an admin action means adding an entry
+    // here and a button in createOrderCard; performOrderAction stays unchanged.
+    const ADMIN_ORDER_ACTIONS = {
+        approve: {
+            path: "/admin/approve-delivery",
+            method: "PATCH",
+            description: "approve delivery",
+            successMessage: () => "Order approved as delivered."
+        },
+        "approve-pickup": {
+            path: "/admin/approve-pickup",
+            method: "PATCH",
+            description: "verify pickup readiness",
+            successMessage: () => "Order verified as ready for pickup."
+        },
+        "cash-collected": {
+            path: "/admin/cash-collected",
+            method: "PATCH",
+            description: "record cash collection",
+            successMessage: () => "Cash payment recorded as collected."
+        },
+        "generate-receipt": {
+            path: "/admin/receipt/retry",
+            method: "POST",
+            description: "generate receipt",
+            successMessage: (result) =>
+                result.receiptStatus === "available"
+                    ? "Receipt generated and saved to Backblaze."
+                    : result.receiptStatus === "failed"
+                      ? "Receipt generation or upload failed. Check the server logs and B2 application-key permissions."
+                      : "B2 storage is not configured on this server. Add the B2_* variables to its environment, then retry."
+        },
+        delete: {
+            path: "/admin",
+            method: "DELETE",
+            description: "delete order",
+            successMessage: () => "Order and its receipt deleted."
+        }
+    };
+
     async function performOrderAction(button) {
         const card = button.closest(".admin-order-card");
         const orderId = card?.dataset.orderId;
@@ -278,55 +338,28 @@
         )
             return;
 
-        const actionUrls = {
-            receipt: `/api/orders/${encodeURIComponent(orderId)}/admin/receipt`,
-            "generate-receipt": `/api/orders/${encodeURIComponent(orderId)}/admin/receipt/retry`,
-            approve: `/api/orders/${encodeURIComponent(orderId)}/admin/approve-delivery`,
-            "approve-pickup": `/api/orders/${encodeURIComponent(orderId)}/admin/approve-pickup`,
-            delete: `/api/orders/${encodeURIComponent(orderId)}/admin`
-        };
+        const orderPath = `/api/orders/${encodeURIComponent(orderId)}`;
         if (action === "receipt") {
-            window.location.assign(actionUrls.receipt);
+            window.location.assign(`${orderPath}/admin/receipt`);
             return;
         }
+        const actionConfig = ADMIN_ORDER_ACTIONS[action];
+        if (!actionConfig) return;
 
         button.disabled = true;
         try {
-            const response = await fetch(actionUrls[action], {
-                method: ["approve", "approve-pickup"].includes(action)
-                    ? "PATCH"
-                    : action === "generate-receipt"
-                      ? "POST"
-                      : "DELETE",
+            const response = await fetch(`${orderPath}${actionConfig.path}`, {
+                method: actionConfig.method,
                 credentials: "same-origin",
                 headers: { "Content-Type": "application/json" },
-                body: ["approve", "approve-pickup", "generate-receipt"].includes(action) ? "{}" : undefined
+                body: actionConfig.method === "DELETE" ? undefined : "{}"
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Order action failed (${response.status}).`);
-            $("#admin-message").textContent =
-                action === "approve" || action === "approve-pickup"
-                    ? action === "approve"
-                        ? "Order approved as delivered."
-                        : "Order verified as ready for pickup."
-                    : action === "generate-receipt"
-                      ? result.receiptStatus === "available"
-                          ? "Receipt generated and saved to Backblaze."
-                          : result.receiptStatus === "failed"
-                            ? "Receipt generation or upload failed. Check the server logs and B2 application-key permissions."
-                            : "B2 storage is not configured on this server. Add the B2_* variables to its environment, then retry."
-                      : "Order and its receipt deleted.";
+            $("#admin-message").textContent = actionConfig.successMessage(result);
             await loadOrders();
         } catch (error) {
-            const actionDescription =
-                action === "approve"
-                    ? "approve delivery"
-                    : action === "approve-pickup"
-                      ? "verify pickup readiness"
-                      : action === "generate-receipt"
-                        ? "generate receipt"
-                        : "delete order";
-            $("#admin-message").textContent = `Could not ${actionDescription}: ${error.message}`;
+            $("#admin-message").textContent = `Could not ${actionConfig.description}: ${error.message}`;
             button.disabled = false;
         }
     }

@@ -436,6 +436,8 @@
             : "calculating total…";
         $("#checkout-summary").textContent =
             `${count} drink${count === 1 ? "" : "s"} · ${pricesText} · ${getEstimatedEta(state, count)}`;
+        // Wording comes from the server (services/paymentService.js) so it matches the receipt.
+        $("#checkout-payment-note").textContent = latestCartQuote?.paymentInstruction || "";
     }
 
     function updateCheckoutSummary() {

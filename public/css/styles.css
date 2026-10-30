@@ -1068,6 +1068,18 @@ dialog::backdrop {
     border-radius: 12px;
     background: #f8f4ee;
 }
+/* Cash is the only payment method, so make "how to pay" impossible to miss. */
+.checkout-payment-note {
+    margin: 10px 0 0;
+    padding: 10px 14px;
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    color: var(--ink);
+    font-weight: 600;
+}
+.checkout-payment-note:empty {
+    display: none;
+}
 .tracking-page {
     max-width: 950px;
     margin: 24px auto 60px;
