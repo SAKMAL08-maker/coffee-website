@@ -263,15 +263,15 @@ Append-only. Format and rules: [README.md](README.md).
 - **Tool:** Claude Code (Claude Opus 5.5)
 - **Owner's request:** an admin dashboard with metrics and bar charts per tab; a way to verify admins without a terminal; a ready admin account (`Arthur_Admin`, authenticator only, no one-time key); Terms of Use beside the Privacy Policy with the contact email; at least 3 scalability PRs to choose from; any free extra features.
 
-| PR | What | Migration | Base |
-|---|---|---|---|
-| [#21](https://github.com/SAKMAL08-maker/coffee-website/pull/21) | Terms of Use page, linked beside all 5 Privacy Policy links; email on both pages | none | `main` |
-| [#22](https://github.com/SAKMAL08-maker/coffee-website/pull/22) | Admin dashboard: 4 totals plus 10 bar-chart tabs (orders/sales per day, drink type, base, milk, temperature, add-ons, caffeine, fulfillment, status), 7/30/90 days | none | `main` |
-| [#23](https://github.com/SAKMAL08-maker/coffee-website/pull/23) | Admin access panel: approve or reset another admin's authenticator in the app; approved admins scan a QR code with no key; `scripts/create-admin-account.js` | `20261104000000_admin_setup_preapproval` | on #22 |
-| [#24](https://github.com/SAKMAL08-maker/coffee-website/pull/24) | Scalability **A**: dashboard counted in Postgres (`admin_order_metrics`), with a Node fallback | `20261105000000_admin_order_metrics` | on #22 |
-| [#25](https://github.com/SAKMAL08-maker/coffee-website/pull/25) | Scalability **B**: brotli/gzip (220 KB → 45 KB first load), cached page, 30 s dashboard cache | none | on #22 |
-| [#26](https://github.com/SAKMAL08-maker/coffee-website/pull/26) | Scalability **C**: optional Postgres-shared rate limits for several instances (`RATE_LIMIT_STORE=postgres`) | `20261106000000_shared_rate_limits` | `main` |
-| [#27](https://github.com/SAKMAL08-maker/coffee-website/pull/27) | Extra: download orders as CSV (no customer contact details; formula-injection safe) | none | on #22 |
+| PR                                                              | What                                                                                                                                                               | Migration                                | Base   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- | ------ |
+| [#21](https://github.com/SAKMAL08-maker/coffee-website/pull/21) | Terms of Use page, linked beside all 5 Privacy Policy links; email on both pages                                                                                   | none                                     | `main` |
+| [#22](https://github.com/SAKMAL08-maker/coffee-website/pull/22) | Admin dashboard: 4 totals plus 10 bar-chart tabs (orders/sales per day, drink type, base, milk, temperature, add-ons, caffeine, fulfillment, status), 7/30/90 days | none                                     | `main` |
+| [#23](https://github.com/SAKMAL08-maker/coffee-website/pull/23) | Admin access panel: approve or reset another admin's authenticator in the app; approved admins scan a QR code with no key; `scripts/create-admin-account.js`       | `20261104000000_admin_setup_preapproval` | on #22 |
+| [#24](https://github.com/SAKMAL08-maker/coffee-website/pull/24) | Scalability **A**: dashboard counted in Postgres (`admin_order_metrics`), with a Node fallback                                                                     | `20261105000000_admin_order_metrics`     | on #22 |
+| [#25](https://github.com/SAKMAL08-maker/coffee-website/pull/25) | Scalability **B**: brotli/gzip (220 KB → 45 KB first load), cached page, 30 s dashboard cache                                                                      | none                                     | on #22 |
+| [#26](https://github.com/SAKMAL08-maker/coffee-website/pull/26) | Scalability **C**: optional Postgres-shared rate limits for several instances (`RATE_LIMIT_STORE=postgres`)                                                        | `20261106000000_shared_rate_limits`      | `main` |
+| [#27](https://github.com/SAKMAL08-maker/coffee-website/pull/27) | Extra: download orders as CSV (no customer contact details; formula-injection safe)                                                                                | none                                     | on #22 |
 
 **AI recommendation among the scalability PRs:** A. The dashboard is the only feature whose cost grows with total order history. B helps page speed but may duplicate Render's own compression. C only matters once more than one instance runs.
 
