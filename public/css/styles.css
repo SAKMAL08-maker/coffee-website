@@ -1068,6 +1068,18 @@ dialog::backdrop {
     border-radius: 12px;
     background: #f8f4ee;
 }
+/* Cash is the only payment method, so make "how to pay" impossible to miss. */
+.checkout-payment-note {
+    margin: 10px 0 0;
+    padding: 10px 14px;
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    color: var(--ink);
+    font-weight: 600;
+}
+.checkout-payment-note:empty {
+    display: none;
+}
 .tracking-page {
     max-width: 950px;
     margin: 24px auto 60px;
@@ -2331,4 +2343,46 @@ dialog::backdrop {
     .privacy-nav-link {
         order: 10;
     }
+}
+
+/* Community recipes: banner for a shared link, and the publish dialog's QR result. */
+.shared-recipe-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-left: 4px solid var(--accent);
+    border-radius: 12px;
+    color: var(--ink);
+}
+.shared-recipe-banner p {
+    margin: 0;
+}
+.published-recipe {
+    margin-top: 12px;
+    text-align: center;
+}
+.published-recipe img {
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px;
+}
+.published-recipe a {
+    overflow-wrap: anywhere;
+}
+.my-published-recipes {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+.my-published-recipes li {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
 }

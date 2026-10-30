@@ -103,3 +103,95 @@ Append-only. Format and rules: [README.md](README.md).
 - [ ] Business plan figures and customer segments are assumptions. Replace them with your own.
 - [ ] Runbook steps match what you actually see in the Render, Supabase, and Backblaze dashboards (menu names change).
 - [ ] Before you ever run `delete from public.coffee_sessions;` from the runbook: it logs out every customer.
+
+## 2026-10-30 · Phase 3 · Pricing and order-status refactor
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `phase-3-pricing-refactor` (stacked on `phase-2-collaboration-docs`) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/13
+
+**What changed**
+
+- `services/pricingService.js`: all pricing moved out of `controllers/orderController.js` with named constants (`PRICING_RULES`), integer centavos, and a base/modifier split. Same math, same rounding.
+- `POST /api/orders/quote` (Zod schema, 120/min limiter, `no-store`): prices a cart without saving it.
+- Browser: `public/js/pricing.js` no longer calculates prices; new `public/js/pricingApi.js` fetches quotes (200 ms debounce, aborts stale requests, 50-entry cache). `app.js` displays server centavos.
+- `services/orderStatusMachine.js`: explicit allowed transitions per fulfillment method; used by the staff status endpoint and both admin approvals.
+- `PATCH /api/orders/:orderId/status` now has a rate limiter (30/min).
+- 13 new tests (24 → 37).
+
+**Why:** one source of truth for prices (the displayed total is now exactly the charged total), and status rules that are explicit and can't reach invalid states.
+
+**How "identical totals" was verified**
+
+- `test/pricingRegression.test.js` embeds the **verbatim** old pricing code from `main@e2285d7` (checked with `diff` against git) and compares 448 single drinks × pickup/delivery × 10 tips, plus 200 random 1–20-item carts, plus validation errors. All identical.
+- Mutation check: deliberately breaking tip rounding, the delivery fee, or the size step each made the regression tests fail; restored afterwards.
+- Headless Edge render of the real page showed server-quoted prices (₱386.50 default delivery total; static HTML holds ₱0.00).
+
+**Behavior changes (intended)**
+
+- Pickup orders can no longer be moved to "Out for Delivery"/"Arrived" through the staff endpoint (no UI used this).
+- Final orders (Delivered / Ready for Pickup) now get a clean 409 instead of a 500 when someone tries to move them.
+- Displayed prices can differ from the old browser estimate by ₱0.01 in rare custom-tip cases; they now match what checkout charges.
+- Checkout summary says "total" instead of "estimated total".
+
+**Human checks required**
+
+- [ ] Render env: is `TRUST_PROXY_HOPS` set (e.g. `1`)? If not, all visitors may share one rate-limit bucket, and the new 120/min quote limit could be hit with several customers at once.
+- [ ] Manual UI pass (checklist in the PR): prices update while customizing, cart prices, tip/custom tip, pickup ↔ delivery, checkout total equals the order's saved total.
+
+## 2026-10-30 · Phase 4 · Cash handling
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `phase-4-cash-handling` (stacked on `phase-3-pricing-refactor`) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/14
+
+**What changed**
+
+- Migration `20261101000000_cash_payment_tracking.sql` (additive): `orders.payment_method` (not null, default `'cash'`, check `in ('cash')`), `cash_collected_at`, `cash_collected_by` (FK to `coffee_users`), an all-or-nothing consistency check, and a partial index for uncollected cash.
+- `services/paymentService.js`: payment wording and the "can collect" rule in one module.
+- Checkout dialog shows "Pay in cash on pickup/delivery" (text supplied by the quote endpoint); PDF and image receipts show the same line, and "TOTAL PAID" became "TOTAL DUE".
+- Admin: `PATCH /api/orders/:orderId/admin/cash-collected` (`requireAdmin`, strict Zod with empty body, 20/min limiter). Race-safe: the update only matches while `cash_collected_at` is null. Dashboard shows cash status and a "Mark cash collected" button.
+- Admin order list now falls back schema-by-schema (cash → approvals → base), so deploying this code before the migration degrades gracefully instead of failing.
+- Admin action handler refactored from nested ternaries into a lookup table.
+- 11 new tests (37 → 48).
+
+**Why:** cash is the only payment method; customers must know before ordering, and the shop must know which orders still owe money.
+
+**Verification of the migration (without touching Supabase)**
+
+- Parsed with `libpg-query` (Postgres's real parser): 6 statements OK. Syntax only.
+- `create_coffee_order` inserts with an explicit column list (`20261025000000_username_accounts.sql`), so the new default applies and checkout needs no change.
+
+**Human checks required**
+
+- [ ] Apply the migration in Supabase **before merging** (order and checks in the PR).
+- [ ] Old app after migration: place an order on the currently deployed site; in Supabase it should have `payment_method = 'cash'`.
+- [ ] After deploy: checkout note, receipt line, admin button, second click returns "already recorded".
+
+## 2026-10-30 · Phase 5 · Community recipes with royalties
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `phase-5-community-recipes` (stacked on `phase-4-cash-handling`) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/15
+
+**What changed**
+
+- Migration `20261102000000_community_recipes.sql` (additive): `coffees.public_slug` / `published_at` (format + both-or-neither checks, partial unique index); `order_items.source_coffee_id`, `royalty_account_id`, `royalty_points` (default 0, `>= 0`); `create_coffee_order` replaced with the same signature and grants, plus three optional item keys; new `recipe_royalty_summary(uuid)` (service_role only).
+- `services/communityRecipeService.js`: slug generation (crypto, unbiased), exact-drink matching, the royalty rules, publish/unpublish/read/list.
+- `services/recipeQrCode.js`: server-side SVG QR (new dependency `qrcode-generator`, MIT, no transitive deps), so the CSP stays `'self'`.
+- Routes `/api/recipes`: `POST /` (publish, auth), `GET /mine` (auth), `GET /:slug`, `GET /:slug/qr.svg`, `DELETE /:slug` (owner-only). All Zod-validated and rate-limited.
+- Checkout: items may carry `recipeSlug`; the server resolves royalties and saves them in the same RPC as the order. If the lookup fails, the order still goes through without royalties.
+- UI: "Publish to community" dialog (name, link, QR, points, unpublish); `/?recipe=<slug>` loads the drink with an "Order this recipe" banner.
+- 14 new tests (48 → 62), including a mutation check (3 deliberate breaks of the royalty rules were each caught).
+
+**Why these rules:** royalties must not be gameable from the browser. The server decides; the drink must match exactly; there is no self-royalty; points live on the order item, so they are stored once per drink; and they are "earned" only after cash is collected, so unpaid or fake orders earn nothing.
+
+**Decisions made by the AI that the owner should confirm**
+
+- 10 points per drink (`ROYALTY_POINTS_PER_DRINK`). There is no points redemption yet.
+- Guests' orders also pay royalties.
+- The creator's username is shown publicly on a shared recipe (the dialog says so).
+- Wording "Publish to community" was chosen because `test/api.test.js` deliberately forbids the old removed "Share recipe" wording.
+
+**Human checks required**
+
+- [ ] Apply migration 2 of 2 (after Phase 4's) **before merging**. Order and checks are in the PR.
+- [ ] Set `PUBLIC_APP_URL` on Render.
+- [ ] Two-account test: B orders A's link and admin collects cash → A's points move from pending to earned; A ordering own link earns 0.

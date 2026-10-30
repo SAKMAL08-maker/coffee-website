@@ -42,7 +42,11 @@ test("creates a readable PDF receipt from a saved order", async () => {
         assert.match(image, /Coffee Lab/);
         assert.match(image, /Coffee &lt;Customer&gt;/);
         assert.match(image, /Vanilla &lt;Latte&gt;/);
-        assert.match(image, /TOTAL PAID/);
+        // Cash is collected on pickup/delivery, so the receipt shows an amount due, not "paid".
+        assert.match(image, /TOTAL DUE/);
+        assert.doesNotMatch(image, /TOTAL PAID/);
+        // No payment_method on this (pre-migration-shaped) order: it defaults to cash.
+        assert.match(image, /Pay in cash on pickup/);
         assert.match(image, /PHP 337\.50/);
         assert.doesNotMatch(image, /Coffee <Customer>/);
     });

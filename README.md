@@ -85,6 +85,7 @@ Set these in `.env` locally and in the Render dashboard (**Environment** tab) in
 | `B2_REGION`                 | For receipts | B2 region, e.g. `us-west-004`.                                                                                                                               |
 | `B2_KEY_ID`                 | For receipts | Bucket-scoped application key ID.                                                                                                                            |
 | `B2_APPLICATION_KEY`        | For receipts | Bucket-scoped application key.                                                                                                                               |
+| `PUBLIC_APP_URL`            | No           | Public site URL for shared recipe links and QR codes. Falls back to the request host when empty.                                                             |
 | `TRUST_PROXY_HOPS`          | No           | Number of trusted reverse proxies (for correct client IPs in rate limiting). Leave empty unless you know your proxy setup.                                   |
 
 The `B2_*` variables are all-or-nothing: set all five or none. Without them, orders still work but receipts are marked unavailable.

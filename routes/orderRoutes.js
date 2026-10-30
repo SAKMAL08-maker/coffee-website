@@ -8,10 +8,17 @@ const {
     trackingLimiter,
     receiptLimiter,
     deliveryReportLimiter,
-    adminOrderLimiter
+    adminOrderLimiter,
+    orderQuoteLimiter,
+    orderStatusLimiter,
+    cashCollectionLimiter
 } = require("../middleware/rateLimiters");
 
 const router = express.Router();
+
+// Read-only price quote for the cart and customizer preview; no auth needed,
+// but limited because the browser calls it as customers change ingredients.
+router.post("/quote", orderQuoteLimiter, validateRequest(schemas.orderQuote), orderController.createOrderQuote);
 
 router.post(
     "/checkout",
@@ -99,6 +106,15 @@ router.patch(
     requireAdmin,
     orderController.approvePickup
 );
+// Admin records that the customer paid cash at pickup or delivery.
+router.patch(
+    "/:orderId/admin/cash-collected",
+    cashCollectionLimiter,
+    validateRequest(schemas.cashCollection),
+    authenticate,
+    requireAdmin,
+    orderController.markCashCollected
+);
 router.delete(
     "/:orderId/admin",
     adminOrderLimiter,
@@ -109,6 +125,7 @@ router.delete(
 );
 router.patch(
     "/:orderId/status",
+    orderStatusLimiter,
     validateRequest(schemas.status),
     authenticate,
     requireStaff,

@@ -24,15 +24,15 @@ Express application (server.js)
 
 Source code is maintained in GitHub (`SAKMAL08-maker/coffee-website`). The Express application is deployed to Render. Render hosts the application; Supabase and Backblaze remain external managed services.
 
-| Layer                        | Location                                                                        | Responsibility                                                                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| User interface               | `index.html`, `public/privacy.html`, `public/css/styles.css`                    | Semantic page structure, privacy policy page, responsive styling, controls, dialogs, and customer/admin views.                                      |
-| Browser state and behavior   | `public/js/state.js`, `pricing.js`, `app.js`, `auth.js`, `admin.js`, `theme.js` | Drink configuration, live rendering, checkout and order-history interactions, login/MFA UI, admin order actions, and theme state.                   |
-| HTTP/API setup               | `server.js`                                                                     | Express setup, static assets, security headers, same-origin protection, routes, generic error responses, and server startup.                        |
-| API boundaries               | `routes/`, `schemas/`, `middleware/`                                            | Endpoint wiring, Zod request validation, authentication/authorization, rate limiting, and same-origin checks.                                       |
-| Application logic            | `controllers/`, `services/`                                                     | Drink calculations, order pricing and fulfillment transitions, credential/session handling, TOTP enrollment policy, and receipt generation/storage. |
-| Persistence and integrations | `config/supabase.js`, `supabase/migrations/`, `services/b2ReceiptStorage.js`    | Supabase PostgreSQL and Auth integration, schema changes, and private B2 receipt uploads/downloads through signed URLs.                             |
-| Hosting and source control   | Render; GitHub repository                                                       | Render runs the Node.js service. GitHub stores source code and its history.                                                                         |
+| Layer                        | Location                                                                                         | Responsibility                                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| User interface               | `index.html`, `public/privacy.html`, `public/css/styles.css`                                     | Semantic page structure, privacy policy page, responsive styling, controls, dialogs, and customer/admin views.                                      |
+| Browser state and behavior   | `public/js/state.js`, `pricing.js`, `pricingApi.js`, `app.js`, `auth.js`, `admin.js`, `theme.js` | Drink configuration, live rendering, checkout and order-history interactions, login/MFA UI, admin order actions, and theme state.                   |
+| HTTP/API setup               | `server.js`                                                                                      | Express setup, static assets, security headers, same-origin protection, routes, generic error responses, and server startup.                        |
+| API boundaries               | `routes/`, `schemas/`, `middleware/`                                                             | Endpoint wiring, Zod request validation, authentication/authorization, rate limiting, and same-origin checks.                                       |
+| Application logic            | `controllers/`, `services/`                                                                      | Drink calculations, order pricing and fulfillment transitions, credential/session handling, TOTP enrollment policy, and receipt generation/storage. |
+| Persistence and integrations | `config/supabase.js`, `supabase/migrations/`, `services/b2ReceiptStorage.js`                     | Supabase PostgreSQL and Auth integration, schema changes, and private B2 receipt uploads/downloads through signed URLs.                             |
+| Hosting and source control   | Render; GitHub repository                                                                        | Render runs the Node.js service. GitHub stores source code and its history.                                                                         |
 
 ### Application and order flow
 
@@ -60,7 +60,8 @@ flowchart TD
 ### Design choices
 
 - **Separation by responsibility:** Routes, controllers, middleware, and services isolate HTTP concerns, policy checks, business rules, and integrations. This makes individual behaviors easier to test and change.
-- **Server-authoritative checkout:** The browser previews pricing, but the server validates the request and calculates order totals before persisting an order. Client-supplied prices are not trusted.
+- **Server-authoritative pricing:** All price rules live in `services/pricingService.js` (integer centavos). The browser shows prices by calling `POST /api/orders/quote` (debounced and cached in `public/js/pricingApi.js`), and checkout recalculates with the same function before saving, so the displayed total is the charged total. Client-supplied prices are rejected.
+- **Order status state machine:** Allowed status moves per fulfillment method live in `services/orderStatusMachine.js`; anything not listed is rejected with 409.
 - **Progressive enhancement without a frontend framework:** The UI uses browser-native HTML elements and JavaScript modules exposed through `window` namespaces. This keeps the dependency surface small, though larger UI growth may eventually justify a component framework.
 - **Database migrations:** SQL files describe incremental schema changes. They must be applied to the target Supabase project; files present in Git do not prove that a hosted database has been migrated.
 - **Polling for order updates:** The browser periodically refreshes order data rather than using Supabase Realtime or a WebSocket connection. This is straightforward for a small deployment; it causes repeated API/database reads as traffic grows.
@@ -91,12 +92,19 @@ The original blueprint is available in the development conversation, not as a ch
 2. Set the heights of the visual drink layers and update the ingredient legend.
 3. Classify the drink from its base, temperature, milk-to-coffee ratio, foam ratio, and selected extras.
 4. Estimate nutrition using the ingredient lookup values.
-5. Recalculate the estimated drink price and delivery/service/tax/tip totals.
+5. Request a price quote from the server (`POST /api/orders/quote`) and display the drink price and delivery/service/tax/tip totals it returns.
 6. Add the current configuration to the cart or edit an existing cart item.
 
 The backend counterpart is `services/coffeeService.js`. It validates and normalizes submitted drink configurations, classifies drinks, and calculates nutrition. The server repeats validation at the API boundary so a modified browser request cannot bypass supported values and bounds.
 
 Nutrition, recipe labels, service fees, taxes, and other displayed calculations are estimates implemented from project lookup values and business rules. They may differ from actual café recipes, local tax requirements, or final commercial pricing.
+
+### Community recipes with royalties
+
+- **Publish:** a signed-in customer taps **Publish to community**; the drink is saved to their coffees with a random 10-character public slug (`POST /api/recipes`). They get a link (`/?recipe=<slug>`) and a QR code (`GET /api/recipes/:slug/qr.svg`, generated on the server).
+- **Order this recipe:** opening the link loads the drink into the customizer with a banner; **Order this recipe** adds it to the basket, and checkout sends the slug with that item.
+- **Royalties** (`services/communityRecipeService.js`, decided only on the server): the creator earns `ROYALTY_POINTS_PER_DRINK` (10) points per drink when the ordered configuration exactly matches the published one and the buyer is not the creator. Points are stored on the order item inside the same `create_coffee_order` transaction, so they cannot be counted twice, and count as **earned** only after the order's cash is collected (`recipe_royalty_summary`). `GET /api/recipes/mine` shows earned and pending points.
+- **Unpublish:** the publish dialog lists the creator's recipes with an **Unpublish** button (`DELETE /api/recipes/:slug`, owner-only; others get 404). The coffee row is kept, so points already earned stay with the creator.
 
 ### Admin and staff capabilities
 
@@ -185,7 +193,7 @@ This is a recommended procedure, **not a claim that automated CI/CD currently en
 - Service-role access is highly privileged. Keep it on the server, restrict secret access, and rotate immediately if exposed.
 - CI runs `npm audit --omit=dev` on every pull request. There is still no centralized security monitoring or backup/restore validation. Review Render service logs and Supabase/Backblaze provider logs during deployment and incident response.
 - `NODE_ENV=production` enables secure-cookie, HSTS, and CSP upgrade behavior. Production deployment must use HTTPS and set this variable correctly.
-- No payment processor is configured in the inspected source; order totals are calculated, but payment collection/settlement should not be assumed.
+- Payment is **cash only**, on pickup or delivery (`services/paymentService.js`). Checkout and receipts say so; admins record collection with "Mark cash collected" (`PATCH /api/orders/:orderId/admin/cash-collected`, which stores who and when). No online payment processor is configured.
 
 ## 7. Team Collaboration & Developer Onboarding
 
@@ -219,7 +227,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
 ```
 
-Set the `B2_*` values shown in `.env.example` for the Render service and local development environment. These configure the Backblaze B2 bucket used to store generated receipt PDFs and images; partial configuration is rejected. If B2 credentials are absent from an environment, receipt storage is unavailable there. Never use browser-side code for service-role or B2 application credentials. `TRUST_PROXY_HOPS` should only be set when the deployment’s trusted proxy topology is known.
+Set the `B2_*` values shown in `.env.example` for the Render service and local development environment. These configure the Backblaze B2 bucket used to store generated receipt PDFs and images; partial configuration is rejected. If B2 credentials are absent from an environment, receipt storage is unavailable there. Never use browser-side code for service-role or B2 application credentials. `TRUST_PROXY_HOPS` should only be set when the deployment’s trusted proxy topology is known. Set `PUBLIC_APP_URL` (e.g. `https://your-app.onrender.com`) so shared recipe links and QR codes never depend on the request's Host header.
 
 In Render, configure at least `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as protected environment variables. Configure the complete `B2_*` set for receipt storage, `PORT` only if required by the service configuration, and `NODE_ENV=production` for production security behavior. Do not copy production secrets into a committed file.
 

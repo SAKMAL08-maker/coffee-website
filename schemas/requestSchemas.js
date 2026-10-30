@@ -98,10 +98,15 @@ const namedConfigurationBody = z
 
 const quoteBody = z.object({ configuration }).strict();
 
+// Public community-recipe slug (see services/communityRecipeService.js).
+const recipeSlug = z.string().regex(/^[A-Za-z0-9]{10}$/);
+
 const orderItem = z
     .object({
         name: z.string().trim().min(1).max(80).optional(),
-        configuration
+        configuration,
+        // Optional: which shared recipe this drink came from. The server decides any royalty.
+        recipeSlug: recipeSlug.optional()
     })
     .strict();
 
@@ -142,6 +147,14 @@ const checkoutBody = z
         }
     });
 
+// Same pricing inputs as checkout, without customer or address details: a quote saves nothing.
+const orderQuoteBody = z
+    .object({
+        items: z.array(orderItem).min(1).max(20),
+        fulfillmentMethod: z.enum(["delivery", "pickup"]),
+        tipPercent: z.number().finite().min(0).max(100).default(15)
+    })
+    .strict();
 const schemas = {
     emptyQuery,
     emptyParams,
@@ -163,6 +176,10 @@ const schemas = {
     savedRecipe: { body: namedConfigurationBody, query: emptyQuery, params: emptyParams },
     quote: { body: quoteBody, query: emptyQuery, params: emptyParams },
     checkout: { body: checkoutBody, query: emptyQuery, params: emptyParams },
+    orderQuote: { body: orderQuoteBody, query: emptyQuery, params: emptyParams },
+    publishRecipe: { body: namedConfigurationBody, query: emptyQuery, params: emptyParams },
+    publicRecipe: { body: emptyBody, query: emptyQuery, params: z.object({ slug: recipeSlug }).strict() },
+    myRecipes: { body: emptyBody, query: emptyQuery, params: emptyParams },
     tracking: {
         params: z.object({ trackingCode: z.string().regex(/^[a-f0-9]{48}$/) }).strict(),
         query: emptyQuery
@@ -181,6 +198,12 @@ const schemas = {
         query: emptyQuery
     },
     deliveryReport: {
+        body: emptyBody,
+        params: z.object({ orderId: uuid }).strict(),
+        query: emptyQuery
+    },
+    // No body fields: the server records who and when; the client can't backdate or attribute it.
+    cashCollection: {
         body: emptyBody,
         params: z.object({ orderId: uuid }).strict(),
         query: emptyQuery
