@@ -29,7 +29,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Phase 1 · CI and deploy config
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `phase-1-ci-deploy-config`
+- **Branch:** `phase-1-ci-deploy-config` · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/10
 
 **What changed**
 - GitHub Actions CI (`.github/workflows/ci.yml`): `npm ci`, `npm run lint`, `npm test`, `npm audit --omit=dev` on every PR and push to `main`. Read-only permissions, no secrets.
