@@ -13,7 +13,7 @@ Each phase is one branch and one pull request, reviewed and merged by the owner.
 | 2     | Collaboration docs: CONTRIBUTING, ADRs, runbook, this plan, AI-USAGE                                                                         | 🔄 In review (#12)   |
 | 3     | Refactor: `services/pricingService.js` (integer cents), order-status state machine, rate limit on status updates, browser uses server quotes | 🔄 In review         |
 | 4     | Cash handling: `payment_method`, cash-collected tracking, admin "mark cash collected"                                                        | 🔄 In review         |
-| 5     | **Community recipes with royalties**: shareable recipe link/QR, "order this recipe", creator earns loyalty points                            | Planned              |
+| 5     | **Community recipes with royalties**: shareable recipe link/QR, "order this recipe", creator earns loyalty points                            | 🔄 In review         |
 | 5b    | Then, owner's choice: caffeine guardian (daily caffeine total, cutoff time, half-caf nudge) **or** origin-traceable beans                    | Decide after 5       |
 | 6     | _(Optional)_ Data-driven menu: prices in database tables with cache, admin price editing, safe fallback                                      | Only if requested    |
 

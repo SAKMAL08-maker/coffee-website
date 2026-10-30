@@ -99,6 +99,13 @@ The backend counterpart is `services/coffeeService.js`. It validates and normali
 
 Nutrition, recipe labels, service fees, taxes, and other displayed calculations are estimates implemented from project lookup values and business rules. They may differ from actual café recipes, local tax requirements, or final commercial pricing.
 
+### Community recipes with royalties
+
+- **Publish:** a signed-in customer taps **Publish to community**; the drink is saved to their coffees with a random 10-character public slug (`POST /api/recipes`). They get a link (`/?recipe=<slug>`) and a QR code (`GET /api/recipes/:slug/qr.svg`, generated on the server).
+- **Order this recipe:** opening the link loads the drink into the customizer with a banner; **Order this recipe** adds it to the basket, and checkout sends the slug with that item.
+- **Royalties** (`services/communityRecipeService.js`, decided only on the server): the creator earns `ROYALTY_POINTS_PER_DRINK` (10) points per drink when the ordered configuration exactly matches the published one and the buyer is not the creator. Points are stored on the order item inside the same `create_coffee_order` transaction, so they cannot be counted twice, and count as **earned** only after the order's cash is collected (`recipe_royalty_summary`). `GET /api/recipes/mine` shows earned and pending points.
+- **Unpublish:** the publish dialog lists the creator's recipes with an **Unpublish** button (`DELETE /api/recipes/:slug`, owner-only; others get 404). The coffee row is kept, so points already earned stay with the creator.
+
 ### Admin and staff capabilities
 
 - **Staff authorization:** Staff and administrators can use the order-status endpoint for the allowed preparation states.
@@ -220,7 +227,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-server-only-service-role-key
 ```
 
-Set the `B2_*` values shown in `.env.example` for the Render service and local development environment. These configure the Backblaze B2 bucket used to store generated receipt PDFs and images; partial configuration is rejected. If B2 credentials are absent from an environment, receipt storage is unavailable there. Never use browser-side code for service-role or B2 application credentials. `TRUST_PROXY_HOPS` should only be set when the deployment’s trusted proxy topology is known.
+Set the `B2_*` values shown in `.env.example` for the Render service and local development environment. These configure the Backblaze B2 bucket used to store generated receipt PDFs and images; partial configuration is rejected. If B2 credentials are absent from an environment, receipt storage is unavailable there. Never use browser-side code for service-role or B2 application credentials. `TRUST_PROXY_HOPS` should only be set when the deployment’s trusted proxy topology is known. Set `PUBLIC_APP_URL` (e.g. `https://your-app.onrender.com`) so shared recipe links and QR codes never depend on the request's Host header.
 
 In Render, configure at least `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` as protected environment variables. Configure the complete `B2_*` set for receipt storage, `PORT` only if required by the service configuration, and `NODE_ENV=production` for production security behavior. Do not copy production secrets into a committed file.
 

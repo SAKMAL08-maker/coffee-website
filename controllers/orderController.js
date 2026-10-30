@@ -12,6 +12,7 @@ const {
     canMarkCashCollected,
     describePaymentInstruction
 } = require("../services/paymentService");
+const { resolveRecipeRoyalties } = require("../services/communityRecipeService");
 const {
     createOrderReceipt,
     getReceiptDownloadUrl,
@@ -135,6 +136,10 @@ async function checkout(request, response, next) {
         const { lineItems, pricing } = calculateOrderPricing(items, fulfillmentMethod, tipPercent);
         const trackingCode = crypto.randomBytes(24).toString("hex");
         const supabase = getAdminClient();
+        // Server-side royalty decision (exact recipe match, no self-royalty). Saved on the
+        // order items in the same transaction as the order, so it can never be counted twice.
+        const royalties = await resolveRecipeRoyalties(supabase, items, request.user?.id || null);
+        const itemsWithRoyalties = lineItems.map((lineItem, index) => ({ ...lineItem, ...royalties[index] }));
         const { data: orderId, error } = await supabase.rpc("create_coffee_order", {
             order_data: {
                 tracking_code: trackingCode,
@@ -150,7 +155,7 @@ async function checkout(request, response, next) {
                 ...(notes ? { notes: notes.trim() } : {}),
                 pricing
             },
-            item_data: lineItems
+            item_data: itemsWithRoyalties
         });
         if (error) throw error;
 

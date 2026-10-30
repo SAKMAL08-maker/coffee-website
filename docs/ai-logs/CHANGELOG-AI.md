@@ -165,3 +165,33 @@ Append-only. Format and rules: [README.md](README.md).
 - [ ] Apply the migration in Supabase **before merging** (order and checks in the PR).
 - [ ] Old app after migration: place an order on the currently deployed site; in Supabase it should have `payment_method = 'cash'`.
 - [ ] After deploy: checkout note, receipt line, admin button, second click returns "already recorded".
+
+## 2026-10-30 · Phase 5 · Community recipes with royalties
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `phase-5-community-recipes` (stacked on `phase-4-cash-handling`) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/15
+
+**What changed**
+
+- Migration `20261102000000_community_recipes.sql` (additive): `coffees.public_slug` / `published_at` (format + both-or-neither checks, partial unique index); `order_items.source_coffee_id`, `royalty_account_id`, `royalty_points` (default 0, `>= 0`); `create_coffee_order` replaced with the same signature and grants, plus three optional item keys; new `recipe_royalty_summary(uuid)` (service_role only).
+- `services/communityRecipeService.js`: slug generation (crypto, unbiased), exact-drink matching, the royalty rules, publish/unpublish/read/list.
+- `services/recipeQrCode.js`: server-side SVG QR (new dependency `qrcode-generator`, MIT, no transitive deps), so the CSP stays `'self'`.
+- Routes `/api/recipes`: `POST /` (publish, auth), `GET /mine` (auth), `GET /:slug`, `GET /:slug/qr.svg`, `DELETE /:slug` (owner-only). All Zod-validated and rate-limited.
+- Checkout: items may carry `recipeSlug`; the server resolves royalties and saves them in the same RPC as the order. If the lookup fails, the order still goes through without royalties.
+- UI: "Publish to community" dialog (name, link, QR, points, unpublish); `/?recipe=<slug>` loads the drink with an "Order this recipe" banner.
+- 14 new tests (48 → 62), including a mutation check (3 deliberate breaks of the royalty rules were each caught).
+
+**Why these rules:** royalties must not be gameable from the browser. The server decides; the drink must match exactly; there is no self-royalty; points live on the order item, so they are stored once per drink; and they are "earned" only after cash is collected, so unpaid or fake orders earn nothing.
+
+**Decisions made by the AI that the owner should confirm**
+
+- 10 points per drink (`ROYALTY_POINTS_PER_DRINK`). There is no points redemption yet.
+- Guests' orders also pay royalties.
+- The creator's username is shown publicly on a shared recipe (the dialog says so).
+- Wording "Publish to community" was chosen because `test/api.test.js` deliberately forbids the old removed "Share recipe" wording.
+
+**Human checks required**
+
+- [ ] Apply migration 2 of 2 (after Phase 4's) **before merging**. Order and checks are in the PR.
+- [ ] Set `PUBLIC_APP_URL` on Render.
+- [ ] Two-account test: B orders A's link and admin collects cash → A's points move from pending to earned; A ordering own link earns 0.
