@@ -145,7 +145,7 @@ Examples of problem-solving milestones visible in the project record include rep
 
 There is **no frontend build step**: this is plain HTML, CSS, and browser JavaScript. The application is deployed on **Render** and its source repository is on **GitHub**. `npm start` runs `node server.js`; `npm test` runs Node’s built-in test runner.
 
-GitHub Actions (`.github/workflows/ci.yml`) runs `npm ci`, ESLint, `npm test`, and `npm audit --omit=dev` on every pull request and push to `main`. There is no deployment manifest (`render.yaml`); Render deployment settings are therefore managed outside the checked-in source (for example, in the Render service configuration/dashboard); the exact branch trigger, build command, health checks, and auto-deploy settings cannot be confirmed from this codebase. A typical Render Node service uses `npm install` or `npm ci` as its build command and `npm start` as its start command, but use the values configured for the actual service.
+GitHub Actions (`.github/workflows/ci.yml`) runs `npm ci`, ESLint, a Prettier check, `npm test`, and `npm audit --omit=dev` on every pull request and push to `main`. There is no deployment manifest (`render.yaml`); Render deployment settings are therefore managed outside the checked-in source (for example, in the Render service configuration/dashboard); the exact branch trigger, build command, health checks, and auto-deploy settings cannot be confirmed from this codebase. A typical Render Node service uses `npm install` or `npm ci` as its build command and `npm start` as its start command, but use the values configured for the actual service.
 
 Recommended safe release sequence (manual unless CI/CD is added):
 
@@ -263,7 +263,7 @@ test/            Node test-runner tests
 
 - Replace order polling with Supabase Realtime, server-sent events, or another push mechanism if polling load or update latency becomes material.
 - Use a shared rate-limit store before horizontally scaling the Express app.
-- Extend CI with migration validation and Prettier enforcement; add staged deployment and rollback automation.
+- Extend CI with migration validation; add staged deployment and rollback automation.
 - Add explicit operational documentation for Supabase migration tracking, B2 retention/lifecycle rules, backups, MFA recovery, and incident response.
 - Consolidate or contract-test shared pricing and recipe calculations if frontend and server rules begin to diverge.
 - Introduce typed API contracts or TypeScript if the application’s size and team concurrency increase.

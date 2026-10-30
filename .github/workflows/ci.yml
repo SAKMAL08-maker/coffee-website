@@ -34,6 +34,9 @@ jobs:
 
       - run: npm run lint
 
+      # Fails if any file isn't Prettier-formatted. Fix locally with `npm run format`.
+      - run: npm run format:check
+
       - run: npm test
 
       # Only production dependencies ship to Render, so only they gate the build.
