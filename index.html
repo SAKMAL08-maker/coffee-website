@@ -285,6 +285,17 @@
             </nav>
 
             <main id="customizer-page" hidden>
+                <section
+                    class="shared-recipe-banner"
+                    id="shared-recipe-banner"
+                    hidden
+                    aria-labelledby="shared-recipe-title"
+                >
+                    <p><strong id="shared-recipe-title"></strong> <span id="shared-recipe-creator"></span></p>
+                    <button class="button button-primary" id="order-shared-recipe-button" type="button">
+                        Order this recipe
+                    </button>
+                </section>
                 <section class="fulfillment-bar" aria-label="Delivery preferences">
                     <div class="fulfillment-options" role="group" aria-label="Fulfillment method">
                         <button class="fulfillment-option" id="delivery-option" type="button" aria-pressed="true">
@@ -801,6 +812,7 @@
                         <button class="button button-primary" id="add-to-cart-button" type="button">
                             ＋ Add to order basket
                         </button>
+                        <button class="button" id="publish-recipe-button" type="button">🌍 Publish to community</button>
                         <button class="button cart-trigger" id="open-cart-button" type="button">
                             🧺 Basket <span class="cart-count" id="cart-count">0</span>
                         </button>
@@ -952,11 +964,35 @@
             </form>
         </dialog>
 
+        <dialog id="publish-recipe-dialog" aria-labelledby="publish-recipe-title">
+            <form class="dialog-content" id="publish-recipe-form">
+                <h2 id="publish-recipe-title">Publish to community</h2>
+                <p>
+                    Anyone with the link or QR code can order this drink. You earn loyalty points each time someone else
+                    orders it and pays. Your username is shown as the creator, and the recipe stays public until you
+                    unpublish it below.
+                </p>
+                <label for="publish-recipe-name">Recipe name</label>
+                <input id="publish-recipe-name" name="recipeName" maxlength="48" required />
+                <div class="published-recipe" id="published-recipe-result" hidden>
+                    <img id="published-recipe-qr" alt="QR code for your published recipe" width="160" height="160" />
+                    <p><a id="published-recipe-link" target="_blank" rel="noopener noreferrer"></a></p>
+                </div>
+                <p class="field-help" id="recipe-royalty-summary" role="status" aria-live="polite"></p>
+                <ul class="my-published-recipes" id="my-published-recipes" aria-label="Your published recipes"></ul>
+                <div class="dialog-actions">
+                    <button class="button" id="close-publish-recipe" type="button">Close</button
+                    ><button class="button button-primary" id="publish-recipe-submit" type="submit">Publish</button>
+                </div>
+            </form>
+        </dialog>
+
         <script src="/js/admin.js" defer></script>
         <script src="/js/auth.js" defer></script>
         <script src="/js/state.js" defer></script>
         <script src="/js/pricing.js" defer></script>
         <script src="/js/pricingApi.js" defer></script>
+        <script src="/js/communityRecipes.js" defer></script>
         <script src="/js/app.js" defer></script>
     </body>
 </html>

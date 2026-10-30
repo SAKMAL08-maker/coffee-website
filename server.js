@@ -8,6 +8,7 @@ const { assertSupabaseConfig } = require("./config/supabase");
 const userRoutes = require("./routes/userRoutes");
 const coffeeRoutes = require("./routes/coffeeRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const recipeRoutes = require("./routes/recipeRoutes");
 const healthRoutes = require("./routes/healthRoutes");
 const { verifySameOrigin } = require("./middleware/originProtection");
 
@@ -64,6 +65,7 @@ app.get(["/", "/index.html"], async (request, response, next) => {
 app.use("/api/users", userRoutes);
 app.use("/api/coffees", coffeeRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/recipes", recipeRoutes);
 
 app.use((request, response) => {
     response.status(404).json({ error: "Not found." });
