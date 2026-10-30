@@ -141,7 +141,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Phase 4 · Cash handling
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `phase-4-cash-handling` (stacked on `phase-3-pricing-refactor`)
+- **Branch:** `phase-4-cash-handling` (stacked on `phase-3-pricing-refactor`) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/14
 
 **What changed**
 
