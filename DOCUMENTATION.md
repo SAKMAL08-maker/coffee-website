@@ -4,7 +4,7 @@
 
 Coffee Lab is a responsive coffee customizer and ordering web application. Customers configure drinks, see estimated composition and nutrition, place delivery or pickup orders, and review order progress. Staff and administrators have separate order-management capabilities. The application uses a plain HTML/CSS/JavaScript frontend, a Node.js/Express API deployed on Render, Supabase for the PostgreSQL database and authentication, Backblaze B2 as the receipt object-storage container, and GitHub for source control.
 
-This document describes the repository as inspected on October 26, 2026. It distinguishes checked-in implementation from recommended deployment practices and from production behavior that cannot be verified from source code alone.
+This document describes the repository as inspected on October 26, 2026, with branch, setup, and AI-logging details updated on October 30, 2026. Quick-start setup lives in `README.md`. It distinguishes checked-in implementation from recommended deployment practices and from production behavior that cannot be verified from source code alone.
 
 ## 2. Project Architecture & Plan
 
@@ -26,7 +26,7 @@ Source code is maintained in GitHub (`SAKMAL08-maker/coffee-website`). The Expre
 
 | Layer | Location | Responsibility |
 |---|---|---|
-| User interface | `index.html`, `public/css/styles.css` | Semantic page structure, responsive styling, controls, dialogs, and customer/admin views. |
+| User interface | `index.html`, `public/privacy.html`, `public/css/styles.css` | Semantic page structure, privacy policy page, responsive styling, controls, dialogs, and customer/admin views. |
 | Browser state and behavior | `public/js/state.js`, `pricing.js`, `app.js`, `auth.js`, `admin.js`, `theme.js` | Drink configuration, live rendering, checkout and order-history interactions, login/MFA UI, admin order actions, and theme state. |
 | HTTP/API setup | `server.js` | Express setup, static assets, security headers, same-origin protection, routes, generic error responses, and server startup. |
 | API boundaries | `routes/`, `schemas/`, `middleware/` | Endpoint wiring, Zod request validation, authentication/authorization, rate limiting, and same-origin checks. |
@@ -127,7 +127,7 @@ The repository does not contain a complete AI conversation-log archive. Git comm
 | Commit messages mention Copilot-assisted HTML organization, security review/implementation, and an admin-order loading/UI fix. | Copilot was used as a development aid on those tasks. |
 | A later commit describes fixing fragile admin initialization by starting the dashboard directly after authentication, while retaining polling and manual refresh. | A concrete debugging iteration addressed script/event ordering and initialization. |
 | Commits describe moving away from an incorrect Mongo/JWT direction toward Supabase, and later implementing admin authorization/TOTP. | The architecture evolved through implementation corrections rather than following a fixed framework scaffold. |
-| No checked-in Claude Code transcripts or identifiable Claude Code records were found. | Claude Code involvement cannot be confirmed from the repository and is not asserted here. |
+| Earlier work has no checked-in AI transcripts. From October 30, 2026, Claude Code work is logged in `docs/ai-logs/` (see its README). | Claims about AI involvement before that date rest on commit messages only. |
 
 Examples of problem-solving milestones visible in the project record include replacing fragile admin startup signaling, adding server-side order polling, moving order pricing to trusted server calculations, and building receipt generation against B2. The code and commit descriptions show the resulting changes; they do not establish how quickly an individual learned a concept or prove that AI output was correct without human review.
 
@@ -136,8 +136,8 @@ Examples of problem-solving milestones visible in the project record include rep
 ### Repository and branch observations
 
 - The repository has a GitHub remote at `SAKMAL08-maker/coffee-website`.
-- Branches observed during documentation include `main`, `version_0.2`, and `version_0.9`; the working branch at inspection was `version_0.9`.
-- History contains versioned branches and feature/fix commits. No documented trunk-based, GitFlow, pull-request approval, or protected-branch policy was found. Do not assume one is enforced.
+- `main` is the default branch and was brought up to date with `version_1.0` on October 30, 2026. The `version_*` branches are historical snapshots.
+- New work happens on short-lived branches (for example `phase-<n>-<topic>`) that are merged into `main` through pull requests reviewed by the owner. Branch protection is not configured, so this is a working agreement, not an enforced rule.
 - `.gitignore` excludes `.env` and `node_modules/`. The committed `.env.example` documents variable names but contains placeholders.
 - Keep changes reviewable, avoid committing credentials or customer data, and test migrations against a staging project before production.
 
@@ -203,12 +203,11 @@ This is a recommended procedure, **not a claim that automated CI/CD currently en
 ```powershell
 git clone https://github.com/SAKMAL08-maker/coffee-website.git
 Set-Location coffee-website
-git switch version_0.9
 npm ci
 Copy-Item .env.example .env
 ```
 
-If the team has moved development to another branch, use the current agreed branch instead of `version_0.9`.
+Cloning checks out `main`, the default branch.
 
 ### Configure environment
 
