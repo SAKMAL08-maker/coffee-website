@@ -1,5 +1,6 @@
 const { getAdminClient } = require("../config/supabase");
 const { getAdminMetrics } = require("../services/adminMetricsService");
+const { ordersToCsv, fetchOrdersForExport } = require("../services/orderCsvExport");
 
 async function getMetrics(request, response, next) {
     try {
@@ -11,4 +12,17 @@ async function getMetrics(request, response, next) {
     }
 }
 
-module.exports = { getMetrics };
+async function exportOrdersCsv(request, response, next) {
+    try {
+        const days = Number(request.query.days) || 30;
+        const orders = await fetchOrdersForExport(getAdminClient(), { days });
+        const date = new Date().toISOString().slice(0, 10);
+        response.set("Cache-Control", "no-store");
+        response.attachment(`coffee-lab-orders-last-${days}-days-${date}.csv`);
+        response.type("text/csv; charset=utf-8").send(ordersToCsv(orders));
+    } catch (error) {
+        next(error);
+    }
+}
+
+module.exports = { getMetrics, exportOrdersCsv };

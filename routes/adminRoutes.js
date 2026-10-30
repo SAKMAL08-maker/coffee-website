@@ -17,4 +17,14 @@ router.get(
     adminController.getMetrics
 );
 
+// Spreadsheet download of orders in the same range (no customer contact details).
+router.get(
+    "/orders.csv",
+    adminOrderLimiter,
+    validateRequest(schemas.adminMetrics),
+    authenticate,
+    requireAdmin,
+    adminController.exportOrdersCsv
+);
+
 module.exports = router;

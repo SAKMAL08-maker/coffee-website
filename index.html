@@ -946,6 +946,14 @@
                                 <option value="90">Last 90 days</option>
                             </select>
                         </label>
+                        <!-- adminDashboard.js keeps ?days in step with the selected range. -->
+                        <a
+                            class="button button-small"
+                            id="admin-export-csv"
+                            href="/api/admin/orders.csv?days=30"
+                            download
+                            >Download CSV</a
+                        >
                     </div>
                     <div class="admin-kpis" id="admin-kpis"></div>
                     <div class="admin-chart-tabs" id="admin-chart-tabs" role="tablist" aria-label="Metrics"></div>
