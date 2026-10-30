@@ -55,7 +55,7 @@ Append-only. Format and rules: [README.md](README.md).
 ## 2026-10-30 · Format-only PR · Prettier across the codebase
 
 - **Tool:** Claude Code (Claude Opus 5.5)
-- **Branch:** `chore-format-codebase`
+- **Branch:** `chore-format-codebase` · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/11
 
 **What changed**
 
