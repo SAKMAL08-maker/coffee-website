@@ -25,3 +25,25 @@ Append-only. Format and rules: [README.md](README.md).
 - [ ] The Mermaid diagram renders on the GitHub PR page.
 - [ ] Free-tier figures in the README still match the Render, Supabase, and Backblaze pricing pages.
 - [ ] Incident during setup (before any file changes): an unscoped `grep` printed two `.env` values into the AI session. The owner rotated the Supabase key by hand and removed the unused `JWT_SECRET` and mislabelled `SUPABASE_ANON_KEY`. Confirm the legacy keys are disabled in Supabase.
+
+## 2026-10-30 · Phase 1 · CI and deploy config
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `phase-1-ci-deploy-config`
+
+**What changed**
+- GitHub Actions CI (`.github/workflows/ci.yml`): `npm ci`, `npm run lint`, `npm test`, `npm audit --omit=dev` on every PR and push to `main`. Read-only permissions, no secrets.
+- ESLint 10 flat config (`eslint.config.js`) with `eslint:recommended`; Prettier 3 config matching the existing style. Prettier is **not** enforced in CI yet: it would reformat 39 existing files, which belongs in a separate format-only PR.
+- `GET /healthz` (route → controller → service) runs one `select id limit 1` on `coffee_users` with a 5 s timeout and returns `200 {"status":"ok"}` or `503 {"status":"unavailable"}`. Mounted outside `/api` so cross-site pingers are not blocked by the same-origin guard; rate-limited to 30/min; rejects query params via the existing Zod `empty` schema.
+- 3 new tests in `test/health.test.js` using a fake Supabase client (24 total).
+- PR template and issue forms (bug report, feature request).
+- **No `render.yaml`**: the existing Render service was created in the dashboard, and a Blueprint is only applied if someone creates one in Render, so the file brings risk (a mis-synced Blueprint can create a second service) without benefit right now.
+
+**Why:** every PR now gets an automatic pass/fail before the owner reviews it, and the free-tier services can be kept awake with an honest health check instead of a fake one.
+
+**Human checks required**
+- [ ] The CI check on the PR is green (first real run of the workflow).
+- [ ] After merge and deploy, `https://<your-app>.onrender.com/healthz` returns `{"status":"ok"}`.
+- [ ] Set up one external pinger on `/healthz` every 10–14 min (steps in the PR / runbook in Phase 2).
+- [ ] Do **not** set Render's own "Health Check Path" to `/healthz`: Render probes often, so every probe would query Supabase, and a brief database outage would make Render restart a healthy app.
+- [ ] Render free-tier numbers (750 instance hours/month, ~15 min spin-down) still match Render's pricing page.

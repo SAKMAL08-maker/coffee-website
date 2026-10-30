@@ -1,0 +1,40 @@
+# Runs on every pull request and every push to main. A red check on a PR means
+# "do not merge yet". The job needs no secrets: tests never call real Supabase or B2.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: the job only needs to read the code.
+permissions:
+  contents: read
+
+# A new push to the same PR cancels the older, now-irrelevant run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, test, audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # Exact versions from package-lock.json; fails if the lockfile is out of sync.
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm test
+
+      # Only production dependencies ship to Render, so only they gate the build.
+      - run: npm audit --omit=dev

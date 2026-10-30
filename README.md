@@ -51,7 +51,15 @@ cp .env.example .env      # PowerShell: Copy-Item .env.example .env
 | Command | What it does |
 |---|---|
 | `npm start` | Runs `node server.js` (the same command Render uses). |
-| `npm test` | Runs the Node.js built-in test runner over `test/`. The tests exercise validation, auth rejections, pricing, and receipt generation without network calls, and pass with no `.env`. They do not prove your live Supabase or B2 setup works. |
+| `npm test` | Runs the Node.js built-in test runner over `test/`. The tests exercise validation, auth rejections, pricing, receipt generation, and the health check without network calls, and pass with no `.env`. They do not prove your live Supabase or B2 setup works. |
+| `npm run lint` | ESLint (bug-finding rules) over all JavaScript. |
+| `npm run format:check` / `npm run format` | Prettier check / rewrite. Not enforced in CI yet; the existing code predates the config. |
+
+Every pull request runs `npm ci`, lint, tests, and `npm audit --omit=dev` in GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+## Health check
+
+`GET /healthz` runs one tiny Supabase query and returns `200 {"status":"ok"}` or `503 {"status":"unavailable"}`. It is rate-limited (30 requests/minute) and reveals nothing else. Point a free uptime pinger at it to keep the free Render service awake and the Supabase project active (see below).
 
 ## Environment variables
 
@@ -77,7 +85,8 @@ The `B2_*` variables are all-or-nothing: set all five or none. Without them, ord
 This project is designed to run on free plans. Know their limits:
 
 - **Render (free web service):** the service spins down after about 15 minutes without traffic, and the next request takes roughly 30–60 seconds to wake it. The in-memory rate-limit counters reset whenever it restarts.
-- **Supabase (free plan):** projects with no real database activity for about a week can be paused. A scheduled request that runs an actual query keeps it active (a `/healthz` endpoint for this is planned).
+- **Supabase (free plan):** projects with no real database activity for about a week can be paused. A scheduled request to `/healthz`, which runs an actual query, keeps it active.
+- **Keep-alive:** an external pinger (e.g. a free UptimeRobot or cron-job.org monitor) calling `https://<your-app>.onrender.com/healthz` every 10–14 minutes prevents both. One always-awake service uses about 744 of Render's 750 free instance hours per month, so do this for **one** service only.
 - **Backblaze B2:** the first 10 GB of storage is free. Receipts are small, but consider a lifecycle rule if storage grows.
 
 Plan limits change; check each provider's pricing page before relying on these numbers.
