@@ -195,3 +195,28 @@ Append-only. Format and rules: [README.md](README.md).
 - [ ] Apply migration 2 of 2 (after Phase 4's) **before merging**. Order and checks are in the PR.
 - [ ] Set `PUBLIC_APP_URL` on Render.
 - [ ] Two-account test: B orders A's link and admin collects cash → A's points move from pending to earned; A ordering own link earns 0.
+
+## 2026-10-30 · Phase 5b · Caffeine guardian
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `phase-5b-caffeine-guardian` (stacked on `phase-5-community-recipes` / PR #16) · **PR:** https://github.com/SAKMAL08-maker/coffee-website/pull/17
+- **Owner's choice:** caffeine guardian over origin-traceable beans.
+
+**What changed**
+
+- Migration `20261103000000_caffeine_guardian.sql` (additive): `coffee_users.caffeine_cutoff_time time` (nullable). The daily total needs no storage; it is summed from `order_items.nutrition->caffeineMg`.
+- `services/caffeineGuardianService.js`: Manila-time "today" and cutoff, daily total, and a pure `evaluateDrink` that returns reasons and a half-caf suggestion.
+- `POST /api/caffeine/check` (auth, Zod, 120/min) and `PUT /api/caffeine/settings` (auth, `HH:MM` or null).
+- UI: panel under the drink metrics, a cutoff time input, and a one-tap **Make it half-caf** button. `auth.js` emits `coffeelab:signed-in` so the panel starts after login (admins excluded).
+- 12 new tests (62 → 74), plus a mutation check (4 deliberate breaks, each caught).
+
+**Decisions made by the AI that the owner should confirm**
+
+- A 400 mg daily guide (a fixed constant, not per-user). The UI says "guidance only, not medical advice".
+- Asia/Manila as the shop time zone.
+- "Today" counts orders placed today, not drinks actually consumed.
+
+**Human checks required**
+
+- [ ] Approve applying the migration (Claude will run it via the Supabase MCP only after your yes).
+- [ ] Manual checklist in the PR.
