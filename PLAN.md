@@ -10,8 +10,8 @@ Each phase is one branch and one pull request, reviewed and merged by the owner.
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | 0     | Repo hygiene: README, LICENSE, line endings, accurate docs, AI-log folder                                                                    | ✅ Merged (#9)       |
 | 1     | CI (lint, format, test, audit), `/healthz` keep-alive, PR/issue templates                                                                    | ✅ Merged (#10, #11) |
-| 2     | Collaboration docs: CONTRIBUTING, ADRs, runbook, this plan, AI-USAGE                                                                         | 🔄 In review         |
-| 3     | Refactor: `services/pricingService.js` (integer cents), order-status state machine, rate limit on status updates, browser uses server quotes | Planned              |
+| 2     | Collaboration docs: CONTRIBUTING, ADRs, runbook, this plan, AI-USAGE                                                                         | 🔄 In review (#12)   |
+| 3     | Refactor: `services/pricingService.js` (integer cents), order-status state machine, rate limit on status updates, browser uses server quotes | 🔄 In review         |
 | 4     | Cash handling: `payment_method`, cash-collected tracking, admin "mark cash collected"                                                        | Planned              |
 | 5     | **Community recipes with royalties**: shareable recipe link/QR, "order this recipe", creator earns loyalty points                            | Planned              |
 | 5b    | Then, owner's choice: caffeine guardian (daily caffeine total, cutoff time, half-caf nudge) **or** origin-traceable beans                    | Decide after 5       |
