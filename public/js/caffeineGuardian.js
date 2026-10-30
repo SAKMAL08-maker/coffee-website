@@ -4,7 +4,7 @@
     const CHECK_DEBOUNCE_MS = 400;
 
     /**
-     * Debounced checker: call schedule(configuration) on every drink change.
+     * Debounced checker: call schedule({ configuration, basket }) on every drink or basket change.
      * onResult(result) gets the latest answer; onUnavailable() fires when the
      * customer isn't signed in (401) or the check fails, so the panel can hide.
      * No cache on purpose: today's total changes after every order.
@@ -14,12 +14,12 @@
         let controller = null;
         let latestRequestId = 0;
 
-        function schedule(configuration) {
+        function schedule(checkRequest) {
             clearTimeout(timer);
-            timer = setTimeout(() => run(configuration), CHECK_DEBOUNCE_MS);
+            timer = setTimeout(() => run(checkRequest), CHECK_DEBOUNCE_MS);
         }
 
-        async function run(configuration) {
+        async function run(checkRequest) {
             controller?.abort();
             controller = new AbortController();
             const requestId = ++latestRequestId;
@@ -28,7 +28,7 @@
                     method: "POST",
                     credentials: "same-origin",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ configuration }),
+                    body: JSON.stringify(checkRequest),
                     signal: controller.signal
                 });
                 if (requestId !== latestRequestId) return;

@@ -404,28 +404,6 @@
                                     ><strong class="metric-value" id="sugar-value">0 g</strong>
                                 </div>
                             </div>
-                            <section
-                                class="caffeine-guardian"
-                                id="caffeine-guardian"
-                                hidden
-                                aria-labelledby="caffeine-guardian-title"
-                            >
-                                <div class="caffeine-guardian-header">
-                                    <h3 id="caffeine-guardian-title">Caffeine guardian</h3>
-                                    <label for="caffeine-cutoff-input"
-                                        >No caffeine after <input id="caffeine-cutoff-input" type="time" step="900"
-                                    /></label>
-                                </div>
-                                <p id="caffeine-today" aria-live="polite"></p>
-                                <div class="caffeine-warning" id="caffeine-warning" role="status" hidden>
-                                    <p id="caffeine-warning-text"></p>
-                                    <button class="button button-primary" id="half-caf-button" type="button"></button>
-                                </div>
-                                <p class="field-help">
-                                    Counts drinks ordered today (Philippine time) on this account. Guidance only, not
-                                    medical advice.
-                                </p>
-                            </section>
                             <table class="legend">
                                 <thead>
                                     <tr>
@@ -827,6 +805,28 @@
                     </section>
                 </div>
 
+                <section
+                    class="caffeine-guardian"
+                    id="caffeine-guardian"
+                    hidden
+                    aria-labelledby="caffeine-guardian-title"
+                >
+                    <div class="caffeine-guardian-header">
+                        <h3 id="caffeine-guardian-title">Caffeine guardian</h3>
+                        <label for="caffeine-cutoff-input"
+                            >No caffeine after <input id="caffeine-cutoff-input" type="time" step="900"
+                        /></label>
+                    </div>
+                    <p id="caffeine-today" aria-live="polite"></p>
+                    <div class="caffeine-warning" id="caffeine-warning" role="status" hidden>
+                        <p id="caffeine-warning-text"></p>
+                        <button class="button button-primary" id="half-caf-button" type="button"></button>
+                    </div>
+                    <p class="field-help">
+                        Counts drinks ordered today (Philippine time), your basket, and this drink. Guidance only, not
+                        medical advice.
+                    </p>
+                </section>
                 <footer class="actions-footer">
                     <p class="field-help">Crafted to your taste.</p>
                     <a class="privacy-footer-link" href="/privacy.html">Privacy Policy</a>

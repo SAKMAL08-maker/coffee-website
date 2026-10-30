@@ -219,7 +219,7 @@
         renderLegend(composition);
         elements.classification.textContent = getDrinkName(composition);
         $("#caffeine-value").textContent = `${metrics.caffeine} mg`;
-        if (isCaffeineGuardianActive) caffeineChecker.schedule(getDrinkConfiguration());
+        if (isCaffeineGuardianActive) caffeineChecker.schedule(getCaffeineCheckRequest());
         $("#calories-value").textContent = `${metrics.calories} kcal`;
         $("#sugar-value").textContent = `${metrics.sugar} g`;
         $("#volume-readout").textContent = displayVolume(state.volumeMl);
@@ -707,6 +707,14 @@
         $("#caffeine-guardian").hidden = true;
     });
 
+    // The drink being built, plus the basket (minus the item being edited, which IS this drink).
+    function getCaffeineCheckRequest() {
+        return {
+            configuration: getDrinkConfiguration(),
+            basket: state.cartItems.filter((item) => item.id !== editingCartItemId).map((item) => item.state)
+        };
+    }
+
     function describeCaffeineReasons(result) {
         const reasons = [];
         if (result.reasons.includes("over-daily-limit")) {
@@ -719,7 +727,7 @@
     function renderCaffeineGuardian(result) {
         $("#caffeine-guardian").hidden = false;
         $("#caffeine-today").textContent =
-            `Today: ${result.todayMg} mg ordered · this drink ${result.drinkMg} mg · daily guide ${result.dailyLimitMg} mg`;
+            `Today: ${result.todayMg} mg ordered · ${result.basketMg} mg in basket · this drink ${result.drinkMg} mg · daily guide ${result.dailyLimitMg} mg`;
         const cutoffInput = $("#caffeine-cutoff-input");
         if (document.activeElement !== cutoffInput) cutoffInput.value = result.cutoffTime || "";
 
@@ -748,7 +756,7 @@
         try {
             const cutoffTime = await window.CoffeeLabCaffeine.saveCutoffTime($("#caffeine-cutoff-input").value || null);
             setNotice(cutoffTime ? `Caffeine cutoff set to ${cutoffTime}.` : "Caffeine cutoff cleared.");
-            caffeineChecker.checkNow(getDrinkConfiguration());
+            caffeineChecker.checkNow(getCaffeineCheckRequest());
         } catch (error) {
             setNotice(error.message);
         }
@@ -1019,7 +1027,7 @@
     document.addEventListener("coffeelab:signed-in", (event) => {
         isCaffeineGuardianActive = event.detail.role !== "admin";
         $("#caffeine-guardian").hidden = true;
-        if (isCaffeineGuardianActive) caffeineChecker.checkNow(getDrinkConfiguration());
+        if (isCaffeineGuardianActive) caffeineChecker.checkNow(getCaffeineCheckRequest());
     });
     $("#publish-recipe-form").addEventListener("submit", publishCurrentRecipe);
     $("#close-publish-recipe").addEventListener("click", () => $("#publish-recipe-dialog").close());
