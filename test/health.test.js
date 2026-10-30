@@ -10,9 +10,8 @@ function createFakeSupabaseClient() {
     const query = {
         select: () => query,
         limit: () => query,
-        abortSignal: () => (nextQueryOutcome instanceof Error
-            ? Promise.reject(nextQueryOutcome)
-            : Promise.resolve(nextQueryOutcome))
+        abortSignal: () =>
+            nextQueryOutcome instanceof Error ? Promise.reject(nextQueryOutcome) : Promise.resolve(nextQueryOutcome)
     };
     return { from: () => query };
 }
@@ -55,7 +54,9 @@ test("checkDatabaseHealth reports unhealthy on a Supabase error, a thrown error,
     nextQueryOutcome = Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" });
     assert.deepEqual(await checkDatabaseHealth(createFakeSupabaseClient), { healthy: false });
 
-    const missingConfig = () => { throw new Error("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env."); };
+    const missingConfig = () => {
+        throw new Error("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.");
+    };
     assert.deepEqual(await checkDatabaseHealth(missingConfig), { healthy: false });
 });
 

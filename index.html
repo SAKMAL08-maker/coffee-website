@@ -1,425 +1,960 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#f7f3ed">
-    <title>Coffee Lab — Customizer</title>
-    <script src="/js/theme.js"></script>
-    <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body>
-    <div class="shell">
-        <section class="auth-page" id="auth-page" aria-labelledby="auth-title">
-            <a class="brand auth-brand" href="/" aria-label="Coffee Lab home"><span class="brand-mark" aria-hidden="true">☕</span><span>Coffee Lab</span></a>
-            <div class="auth-card">
-                <p class="eyebrow">A little coffee, just for you</p>
-                <h1 id="auth-title">Welcome to Coffee Lab</h1>
-                <p class="auth-intro">Sign in or create an account to build and order your coffee. Administrator accounts use Supabase Auth and require an authenticator code.</p>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#f7f3ed" />
+        <title>Coffee Lab — Customizer</title>
+        <script src="/js/theme.js"></script>
+        <link rel="stylesheet" href="/css/styles.css" />
+    </head>
+    <body>
+        <div class="shell">
+            <section class="auth-page" id="auth-page" aria-labelledby="auth-title">
+                <a class="brand auth-brand" href="/" aria-label="Coffee Lab home"
+                    ><span class="brand-mark" aria-hidden="true">☕</span><span>Coffee Lab</span></a
+                >
+                <div class="auth-card">
+                    <p class="eyebrow">A little coffee, just for you</p>
+                    <h1 id="auth-title">Welcome to Coffee Lab</h1>
+                    <p class="auth-intro">
+                        Sign in or create an account to build and order your coffee. Administrator accounts use Supabase
+                        Auth and require an authenticator code.
+                    </p>
 
-                <form class="auth-form" id="login-form" data-auth-screen="login">
-                    <label for="login-username">Username</label>
-                    <input id="login-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required>
-                    <label for="login-password">Password</label>
-                    <input id="login-password" name="password" type="password" autocomplete="current-password" required>
-                    <label class="auth-checkbox"><input id="stay-signed-in" type="checkbox"><span>Stay signed in on this device</span></label>
-                    <span class="field-help">Administrator sessions are browser-only and require an authenticator code each time.</span>
-                    <button class="button button-primary auth-submit" type="submit">Log in</button>
-                    <p class="auth-switch">New to Coffee Lab? <button class="auth-link" type="button" data-show-auth="signup">Create an account</button></p>
-                    <button class="auth-link auth-recovery-link" type="button" data-show-auth="recovery">Forgot your password?</button>
-                </form>
+                    <form class="auth-form" id="login-form" data-auth-screen="login">
+                        <label for="login-username">Username</label>
+                        <input
+                            id="login-username"
+                            name="username"
+                            autocomplete="username"
+                            minlength="3"
+                            maxlength="24"
+                            pattern="[A-Za-z0-9_]+"
+                            required
+                        />
+                        <label for="login-password">Password</label>
+                        <input
+                            id="login-password"
+                            name="password"
+                            type="password"
+                            autocomplete="current-password"
+                            required
+                        />
+                        <label class="auth-checkbox"
+                            ><input id="stay-signed-in" type="checkbox" /><span
+                                >Stay signed in on this device</span
+                            ></label
+                        >
+                        <span class="field-help"
+                            >Administrator sessions are browser-only and require an authenticator code each time.</span
+                        >
+                        <button class="button button-primary auth-submit" type="submit">Log in</button>
+                        <p class="auth-switch">
+                            New to Coffee Lab?
+                            <button class="auth-link" type="button" data-show-auth="signup">Create an account</button>
+                        </p>
+                        <button class="auth-link auth-recovery-link" type="button" data-show-auth="recovery">
+                            Forgot your password?
+                        </button>
+                    </form>
 
-                <form class="auth-form" id="signup-form" data-auth-screen="signup" hidden>
-                    <label for="signup-username">Choose a username</label>
-                    <input id="signup-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" aria-describedby="username-help" required>
-                    <span class="field-help" id="username-help">3–24 letters, numbers, or underscores. Usernames are public.</span>
-                    <p class="privacy-notice">By creating an account, you acknowledge that Coffee Lab uses account and security information to operate your account. Read our <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for details and how to contact us about your information.</p>
-                    <label for="signup-password">Create a password</label>
-                    <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
-                    <label for="signup-password-confirm">Retype your password</label>
-                    <input id="signup-password-confirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
-                    <p class="field-help">Use at least 12 characters. Password recovery requires a saved recovery code; there is no email or phone recovery.</p>
-                    <button class="button button-primary auth-submit" type="submit">Create account</button>
-                    <p class="auth-switch">Already have an account? <button class="auth-link" type="button" data-show-auth="login">Log in</button></p>
-                </form>
+                    <form class="auth-form" id="signup-form" data-auth-screen="signup" hidden>
+                        <label for="signup-username">Choose a username</label>
+                        <input
+                            id="signup-username"
+                            name="username"
+                            autocomplete="username"
+                            minlength="3"
+                            maxlength="24"
+                            pattern="[A-Za-z0-9_]+"
+                            aria-describedby="username-help"
+                            required
+                        />
+                        <span class="field-help" id="username-help"
+                            >3–24 letters, numbers, or underscores. Usernames are public.</span
+                        >
+                        <p class="privacy-notice">
+                            By creating an account, you acknowledge that Coffee Lab uses account and security
+                            information to operate your account. Read our
+                            <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for
+                            details and how to contact us about your information.
+                        </p>
+                        <label for="signup-password">Create a password</label>
+                        <input
+                            id="signup-password"
+                            name="password"
+                            type="password"
+                            autocomplete="new-password"
+                            minlength="12"
+                            maxlength="128"
+                            required
+                        />
+                        <label for="signup-password-confirm">Retype your password</label>
+                        <input
+                            id="signup-password-confirm"
+                            name="passwordConfirm"
+                            type="password"
+                            autocomplete="new-password"
+                            minlength="12"
+                            maxlength="128"
+                            required
+                        />
+                        <p class="field-help">
+                            Use at least 12 characters. Password recovery requires a saved recovery code; there is no
+                            email or phone recovery.
+                        </p>
+                        <button class="button button-primary auth-submit" type="submit">Create account</button>
+                        <p class="auth-switch">
+                            Already have an account?
+                            <button class="auth-link" type="button" data-show-auth="login">Log in</button>
+                        </p>
+                    </form>
 
-                <form class="auth-form" id="recovery-form" data-auth-screen="recovery" hidden>
-                    <p class="field-help">Enter your username and one unused recovery code. Each code works once. If you lose your password and all recovery codes, this account cannot be recovered.</p>
-                    <label for="recovery-username">Username</label>
-                    <input id="recovery-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" required>
-                    <label for="recovery-code">Unused recovery code</label>
-                    <input id="recovery-code" name="recoveryCode" autocomplete="off" autocapitalize="characters" required>
-                    <label for="reset-password">New password</label>
-                    <input id="reset-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
-                    <label for="reset-password-confirm">Retype new password</label>
-                    <input id="reset-password-confirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
-                    <button class="button button-primary auth-submit" type="submit">Reset password</button>
-                    <p class="auth-switch"><button class="auth-link" type="button" data-show-auth="login">Back to log in</button></p>
-                </form>
+                    <form class="auth-form" id="recovery-form" data-auth-screen="recovery" hidden>
+                        <p class="field-help">
+                            Enter your username and one unused recovery code. Each code works once. If you lose your
+                            password and all recovery codes, this account cannot be recovered.
+                        </p>
+                        <label for="recovery-username">Username</label>
+                        <input
+                            id="recovery-username"
+                            name="username"
+                            autocomplete="username"
+                            minlength="3"
+                            maxlength="24"
+                            pattern="[A-Za-z0-9_]+"
+                            required
+                        />
+                        <label for="recovery-code">Unused recovery code</label>
+                        <input
+                            id="recovery-code"
+                            name="recoveryCode"
+                            autocomplete="off"
+                            autocapitalize="characters"
+                            required
+                        />
+                        <label for="reset-password">New password</label>
+                        <input
+                            id="reset-password"
+                            name="password"
+                            type="password"
+                            autocomplete="new-password"
+                            minlength="12"
+                            maxlength="128"
+                            required
+                        />
+                        <label for="reset-password-confirm">Retype new password</label>
+                        <input
+                            id="reset-password-confirm"
+                            name="passwordConfirm"
+                            type="password"
+                            autocomplete="new-password"
+                            minlength="12"
+                            maxlength="128"
+                            required
+                        />
+                        <button class="button button-primary auth-submit" type="submit">Reset password</button>
+                        <p class="auth-switch">
+                            <button class="auth-link" type="button" data-show-auth="login">Back to log in</button>
+                        </p>
+                    </form>
 
-                <section class="auth-form recovery-codes" id="recovery-codes-screen" data-auth-screen="codes" hidden aria-labelledby="recovery-codes-title">
-                    <h2 id="recovery-codes-title">Save your recovery codes</h2>
-                    <p>These codes are shown only once. Store them somewhere private and safe. Use one code to reset your password; used codes cannot be reused.</p>
-                    <ol class="recovery-code-list" id="recovery-code-list"></ol>
-                    <button class="button" id="copy-recovery-codes" type="button">Copy codes</button>
-                    <label class="auth-checkbox recovery-confirm"><input id="recovery-codes-saved" type="checkbox"><span>I saved these codes somewhere safe.</span></label>
-                    <button class="button button-primary auth-submit" id="finish-signup" type="button" disabled>Continue to log in</button>
+                    <section
+                        class="auth-form recovery-codes"
+                        id="recovery-codes-screen"
+                        data-auth-screen="codes"
+                        hidden
+                        aria-labelledby="recovery-codes-title"
+                    >
+                        <h2 id="recovery-codes-title">Save your recovery codes</h2>
+                        <p>
+                            These codes are shown only once. Store them somewhere private and safe. Use one code to
+                            reset your password; used codes cannot be reused.
+                        </p>
+                        <ol class="recovery-code-list" id="recovery-code-list"></ol>
+                        <button class="button" id="copy-recovery-codes" type="button">Copy codes</button>
+                        <label class="auth-checkbox recovery-confirm"
+                            ><input id="recovery-codes-saved" type="checkbox" /><span
+                                >I saved these codes somewhere safe.</span
+                            ></label
+                        >
+                        <button class="button button-primary auth-submit" id="finish-signup" type="button" disabled>
+                            Continue to log in
+                        </button>
+                    </section>
+
+                    <form class="auth-form" id="admin-mfa-form" data-auth-screen="admin-mfa" hidden>
+                        <h2 id="admin-mfa-title">Administrator verification</h2>
+                        <p id="admin-mfa-description" class="field-help"></p>
+                        <div id="admin-mfa-setup" hidden>
+                            <p class="field-help">
+                                Enter the one-time setup authorization issued by your trusted project owner. A password
+                                alone cannot register an authenticator.
+                            </p>
+                            <label for="admin-mfa-bootstrap-token">One-time setup authorization</label>
+                            <input
+                                id="admin-mfa-bootstrap-token"
+                                type="password"
+                                autocomplete="off"
+                                spellcheck="false"
+                            />
+                            <button class="button auth-submit" id="admin-mfa-enroll" type="button">
+                                Authorize authenticator setup
+                            </button>
+                            <p class="field-help">
+                                Scan this QR code with an authenticator app, then enter its current six-digit code
+                                below. Keep the setup key private.
+                            </p>
+                            <img class="admin-mfa-qr" id="admin-mfa-qr" alt="Authenticator setup QR code" hidden />
+                            <p class="field-help">Manual setup key:</p>
+                            <code class="admin-mfa-secret" id="admin-mfa-secret" hidden></code>
+                        </div>
+                        <label for="admin-mfa-code">Six-digit authenticator code</label>
+                        <input
+                            id="admin-mfa-code"
+                            name="code"
+                            inputmode="numeric"
+                            autocomplete="one-time-code"
+                            pattern="[0-9]{6}"
+                            minlength="6"
+                            maxlength="6"
+                            required
+                            disabled
+                        />
+                        <button class="button button-primary auth-submit" id="admin-mfa-verify" type="submit" disabled>
+                            Verify and continue
+                        </button>
+                        <button class="button auth-submit" id="admin-mfa-cancel" type="button">
+                            Cancel and sign out
+                        </button>
+                        <p class="field-help">
+                            If you lose access to your authenticator, contact the trusted Supabase project owner for a
+                            verified account recovery.
+                        </p>
+                    </form>
+
+                    <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+                </div>
+                <p class="privacy-global-link"><a href="/privacy.html">Privacy Policy</a></p>
+            </section>
+
+            <header class="topbar" id="app-header" hidden>
+                <a class="brand" href="/" aria-label="Coffee Lab home"
+                    ><span class="brand-mark" aria-hidden="true">☕</span><span>Coffee Lab</span></a
+                >
+                <div class="top-actions">
+                    <span class="signed-in-user" id="signed-in-user"></span>
+                    <a class="privacy-nav-link" href="/privacy.html">Privacy Policy</a>
+                    <div class="unit-control">
+                        <span id="unit-label">Metric</span
+                        ><button
+                            class="switch"
+                            id="unit-toggle"
+                            type="button"
+                            role="switch"
+                            aria-checked="true"
+                            aria-label="Switch units"
+                        ></button>
+                    </div>
+                    <button
+                        class="button button-small"
+                        id="theme-toggle"
+                        type="button"
+                        aria-pressed="false"
+                        aria-label="Enable dark mode"
+                    >
+                        <span id="theme-icon" aria-hidden="true">☾</span><span id="theme-label">Dark</span>
+                    </button>
+                    <button class="button button-quiet" id="surprise-button" type="button">✦ Surprise me</button>
+                    <button class="button button-small" id="logout-button" type="button">Log out</button>
+                </div>
+            </header>
+            <nav class="customer-nav" id="customer-nav" aria-label="Customer pages" hidden>
+                <button
+                    class="button customer-nav-button is-active"
+                    id="customizer-nav-button"
+                    type="button"
+                    aria-current="page"
+                >
+                    Customize coffee
+                </button>
+                <button class="button customer-nav-button" id="order-history-nav-button" type="button">
+                    Order history
+                </button>
+            </nav>
+
+            <main id="customizer-page" hidden>
+                <section class="fulfillment-bar" aria-label="Delivery preferences">
+                    <div class="fulfillment-options" role="group" aria-label="Fulfillment method">
+                        <button class="fulfillment-option" id="delivery-option" type="button" aria-pressed="true">
+                            🛵 Delivery
+                        </button>
+                        <button class="fulfillment-option" id="pickup-option" type="button" aria-pressed="false">
+                            🛍️ Pickup
+                        </button>
+                    </div>
+                    <div class="address-wrap" id="delivery-address-wrap">
+                        <label class="sr-only" for="delivery-address">Delivery address</label>
+                        <input
+                            class="address-input"
+                            id="delivery-address"
+                            autocomplete="street-address"
+                            placeholder="Enter delivery address"
+                        />
+                        <button
+                            class="button button-small"
+                            id="locate-button"
+                            type="button"
+                            aria-label="Use my location"
+                            title="Use my location"
+                        >
+                            📍
+                        </button>
+                    </div>
+                    <div class="eta" id="eta-text" aria-live="polite">Arriving in 15–25 mins</div>
+                </section>
+                <section class="intro" aria-labelledby="page-title">
+                    <p class="eyebrow">Your cup, your craft</p>
+                    <h1 id="page-title" tabindex="-1">Make it yours.</h1>
+                    <p class="intro-copy">Build a little coffee moment, exactly how you like it.</p>
                 </section>
 
-                <form class="auth-form" id="admin-mfa-form" data-auth-screen="admin-mfa" hidden>
-                    <h2 id="admin-mfa-title">Administrator verification</h2>
-                    <p id="admin-mfa-description" class="field-help"></p>
-                    <div id="admin-mfa-setup" hidden>
-                        <p class="field-help">Enter the one-time setup authorization issued by your trusted project owner. A password alone cannot register an authenticator.</p>
-                        <label for="admin-mfa-bootstrap-token">One-time setup authorization</label>
-                        <input id="admin-mfa-bootstrap-token" type="password" autocomplete="off" spellcheck="false">
-                        <button class="button auth-submit" id="admin-mfa-enroll" type="button">Authorize authenticator setup</button>
-                        <p class="field-help">Scan this QR code with an authenticator app, then enter its current six-digit code below. Keep the setup key private.</p>
-                        <img class="admin-mfa-qr" id="admin-mfa-qr" alt="Authenticator setup QR code" hidden>
-                        <p class="field-help">Manual setup key:</p>
-                        <code class="admin-mfa-secret" id="admin-mfa-secret" hidden></code>
-                    </div>
-                    <label for="admin-mfa-code">Six-digit authenticator code</label>
-                    <input id="admin-mfa-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required disabled>
-                    <button class="button button-primary auth-submit" id="admin-mfa-verify" type="submit" disabled>Verify and continue</button>
-                    <button class="button auth-submit" id="admin-mfa-cancel" type="button">Cancel and sign out</button>
-                    <p class="field-help">If you lose access to your authenticator, contact the trusted Supabase project owner for a verified account recovery.</p>
-                </form>
-
-                <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
-            </div>
-            <p class="privacy-global-link"><a href="/privacy.html">Privacy Policy</a></p>
-        </section>
-
-        <header class="topbar" id="app-header" hidden>
-            <a class="brand" href="/" aria-label="Coffee Lab home"><span class="brand-mark" aria-hidden="true">☕</span><span>Coffee Lab</span></a>
-            <div class="top-actions">
-                <span class="signed-in-user" id="signed-in-user"></span>
-                <a class="privacy-nav-link" href="/privacy.html">Privacy Policy</a>
-                <div class="unit-control"><span id="unit-label">Metric</span><button class="switch" id="unit-toggle" type="button" role="switch" aria-checked="true" aria-label="Switch units"></button></div>
-                <button class="button button-small" id="theme-toggle" type="button" aria-pressed="false" aria-label="Enable dark mode"><span id="theme-icon" aria-hidden="true">☾</span><span id="theme-label">Dark</span></button>
-                <button class="button button-quiet" id="surprise-button" type="button">✦ Surprise me</button>
-                <button class="button button-small" id="logout-button" type="button">Log out</button>
-            </div>
-        </header>
-        <nav class="customer-nav" id="customer-nav" aria-label="Customer pages" hidden>
-            <button class="button customer-nav-button is-active" id="customizer-nav-button" type="button" aria-current="page">Customize coffee</button>
-            <button class="button customer-nav-button" id="order-history-nav-button" type="button">Order history</button>
-        </nav>
-
-        <main id="customizer-page" hidden>
-            <section class="fulfillment-bar" aria-label="Delivery preferences">
-                <div class="fulfillment-options" role="group" aria-label="Fulfillment method">
-                    <button class="fulfillment-option" id="delivery-option" type="button" aria-pressed="true">🛵 Delivery</button>
-                    <button class="fulfillment-option" id="pickup-option" type="button" aria-pressed="false">🛍️ Pickup</button>
-                </div>
-                <div class="address-wrap" id="delivery-address-wrap">
-                    <label class="sr-only" for="delivery-address">Delivery address</label>
-                    <input class="address-input" id="delivery-address" autocomplete="street-address" placeholder="Enter delivery address">
-                    <button class="button button-small" id="locate-button" type="button" aria-label="Use my location" title="Use my location">📍</button>
-                </div>
-                <div class="eta" id="eta-text" aria-live="polite">Arriving in 15–25 mins</div>
-            </section>
-            <section class="intro" aria-labelledby="page-title">
-                <p class="eyebrow">Your cup, your craft</p>
-                <h1 id="page-title" tabindex="-1">Make it yours.</h1>
-                <p class="intro-copy">Build a little coffee moment, exactly how you like it.</p>
-            </section>
-
-            <div class="layout">
-                <section class="visual-column" aria-label="Live drink preview and nutrition">
-                    <article class="canvas-card" id="creation-view">
-                        <div class="drink-heading">
-                            <div><h2>Your creation</h2><p id="drink-summary">A fresh cup is waiting</p></div>
-                            <span class="classification" id="drink-classification" aria-live="polite">Custom Concoction</span>
-                            <button class="panel-order-button" id="creation-view-toggle" type="button" aria-label="Show drink details" title="Show drink details">→</button>
-                        </div>
-                        <div class="cup-stage">
-                            <div class="cup-shadow" aria-hidden="true"></div>
-                            <div class="cup" role="img" id="cup" aria-label="Empty coffee cup">
-                                <span class="cup-handle" aria-hidden="true"></span>
-                                <div class="cup-glass" aria-hidden="true">
-                                    <div class="liquid" id="liquid">
-                                        <div class="layer layer-espresso" id="espresso-layer"></div>
-                                        <div class="layer layer-drip" id="drip-layer"></div>
-                                        <div class="layer layer-matcha" id="matcha-layer"></div>
-                                        <div class="layer layer-milk" id="milk-layer"></div>
-                                        <div class="layer layer-syrup" id="syrup-layer"></div>
-                                        <div class="layer layer-foam" id="foam-layer"></div>
-                                        <div class="layer-ice" id="ice-layer" hidden><i class="ice-cube"></i><i class="ice-cube"></i><i class="ice-cube"></i></div>
+                <div class="layout">
+                    <section class="visual-column" aria-label="Live drink preview and nutrition">
+                        <article class="canvas-card" id="creation-view">
+                            <div class="drink-heading">
+                                <div>
+                                    <h2>Your creation</h2>
+                                    <p id="drink-summary">A fresh cup is waiting</p>
+                                </div>
+                                <span class="classification" id="drink-classification" aria-live="polite"
+                                    >Custom Concoction</span
+                                >
+                                <button
+                                    class="panel-order-button"
+                                    id="creation-view-toggle"
+                                    type="button"
+                                    aria-label="Show drink details"
+                                    title="Show drink details"
+                                >
+                                    →
+                                </button>
+                            </div>
+                            <div class="cup-stage">
+                                <div class="cup-shadow" aria-hidden="true"></div>
+                                <div class="cup" role="img" id="cup" aria-label="Empty coffee cup">
+                                    <span class="cup-handle" aria-hidden="true"></span>
+                                    <div class="cup-glass" aria-hidden="true">
+                                        <div class="liquid" id="liquid">
+                                            <div class="layer layer-espresso" id="espresso-layer"></div>
+                                            <div class="layer layer-drip" id="drip-layer"></div>
+                                            <div class="layer layer-matcha" id="matcha-layer"></div>
+                                            <div class="layer layer-milk" id="milk-layer"></div>
+                                            <div class="layer layer-syrup" id="syrup-layer"></div>
+                                            <div class="layer layer-foam" id="foam-layer"></div>
+                                            <div class="layer-ice" id="ice-layer" hidden>
+                                                <i class="ice-cube"></i><i class="ice-cube"></i><i class="ice-cube"></i>
+                                            </div>
+                                        </div>
+                                        <span class="cup-gloss"></span>
                                     </div>
-                                    <span class="cup-gloss"></span>
+                                </div>
+                                <span class="cup-capacity" id="cup-capacity">0 ml</span>
+                            </div>
+                            <p class="cup-caption" id="temperature-caption">A cozy cup, made your way</p>
+                        </article>
+
+                        <article class="stats-card" id="summary-view" aria-labelledby="stats-title" hidden>
+                            <div class="stats-header">
+                                <h2 id="stats-title">Your drink at a glance</h2>
+                                <span class="live-label">● LIVE</span>
+                                <button
+                                    class="panel-order-button"
+                                    id="summary-view-toggle"
+                                    type="button"
+                                    aria-label="Show your creation"
+                                    title="Show your creation"
+                                >
+                                    ←
+                                </button>
+                            </div>
+                            <div class="metrics" aria-live="polite">
+                                <div class="metric">
+                                    <span class="metric-label">Caffeine</span
+                                    ><strong class="metric-value" id="caffeine-value">0 mg</strong>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Calories</span
+                                    ><strong class="metric-value" id="calories-value">0 kcal</strong>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Sugar</span
+                                    ><strong class="metric-value" id="sugar-value">0 g</strong>
                                 </div>
                             </div>
-                            <span class="cup-capacity" id="cup-capacity">0 ml</span>
-                        </div>
-                        <p class="cup-caption" id="temperature-caption">A cozy cup, made your way</p>
-                    </article>
-
-                    <article class="stats-card" id="summary-view" aria-labelledby="stats-title" hidden>
-                        <div class="stats-header">
-                            <h2 id="stats-title">Your drink at a glance</h2>
-                            <span class="live-label">● LIVE</span>
-                            <button class="panel-order-button" id="summary-view-toggle" type="button" aria-label="Show your creation" title="Show your creation">←</button>
-                        </div>
-                        <div class="metrics" aria-live="polite">
-                            <div class="metric"><span class="metric-label">Caffeine</span><strong class="metric-value" id="caffeine-value">0 mg</strong></div>
-                            <div class="metric"><span class="metric-label">Calories</span><strong class="metric-value" id="calories-value">0 kcal</strong></div>
-                            <div class="metric"><span class="metric-label">Sugar</span><strong class="metric-value" id="sugar-value">0 g</strong></div>
-                        </div>
-                        <table class="legend">
-                            <thead><tr><th scope="col">Ingredient</th><th scope="col">Amount</th></tr></thead>
-                            <tbody id="ingredient-legend"><tr><td>Choose ingredients to begin</td><td>—</td></tr></tbody>
-                        </table>
-                        <div class="price-list" aria-label="Live order pricing">
-                            <div class="stats-header"><h2>Live pricing</h2><span class="field-help">PHP · estimate</span></div>
-                            <div class="price-row"><span>Drink</span><strong id="drink-price">₱250.00</strong></div>
-                            <div class="price-row"><span>Premium modifiers</span><strong id="modifier-price">₱0.00</strong></div>
-                            <div class="price-row"><span id="delivery-fee-label">Delivery fee</span><strong id="delivery-fee">₱49.00</strong></div>
-                            <div class="price-row"><span>Service fee (8%)</span><strong id="service-fee">₱0.00</strong></div>
-                            <div class="price-row"><span>Estimated VAT (12%)</span><strong id="tax-fee">₱0.00</strong></div>
-                            <div class="tip-picker" role="group" aria-label="Delivery tip">
-                                <span class="field-help">Tip</span>
-                                <button class="tip-button" type="button" data-tip="15" aria-pressed="true">15%</button>
-                                <button class="tip-button" type="button" data-tip="18" aria-pressed="false">18%</button>
-                                <button class="tip-button" type="button" data-tip="20" aria-pressed="false">20%</button>
-                                <button class="tip-button" type="button" data-tip="custom" aria-pressed="false">Custom</button>
-                                <label class="sr-only" for="custom-tip-input">Custom tip percentage</label>
-                                <input class="custom-tip" id="custom-tip-input" type="number" min="0" max="100" step="1" value="15" aria-label="Custom tip percentage" hidden>
+                            <table class="legend">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Ingredient</th>
+                                        <th scope="col">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ingredient-legend">
+                                    <tr>
+                                        <td>Choose ingredients to begin</td>
+                                        <td>—</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="price-list" aria-label="Live order pricing">
+                                <div class="stats-header">
+                                    <h2>Live pricing</h2>
+                                    <span class="field-help">PHP · estimate</span>
+                                </div>
+                                <div class="price-row"><span>Drink</span><strong id="drink-price">₱250.00</strong></div>
+                                <div class="price-row">
+                                    <span>Premium modifiers</span><strong id="modifier-price">₱0.00</strong>
+                                </div>
+                                <div class="price-row">
+                                    <span id="delivery-fee-label">Delivery fee</span
+                                    ><strong id="delivery-fee">₱49.00</strong>
+                                </div>
+                                <div class="price-row">
+                                    <span>Service fee (8%)</span><strong id="service-fee">₱0.00</strong>
+                                </div>
+                                <div class="price-row">
+                                    <span>Estimated VAT (12%)</span><strong id="tax-fee">₱0.00</strong>
+                                </div>
+                                <div class="tip-picker" role="group" aria-label="Delivery tip">
+                                    <span class="field-help">Tip</span>
+                                    <button class="tip-button" type="button" data-tip="15" aria-pressed="true">
+                                        15%
+                                    </button>
+                                    <button class="tip-button" type="button" data-tip="18" aria-pressed="false">
+                                        18%
+                                    </button>
+                                    <button class="tip-button" type="button" data-tip="20" aria-pressed="false">
+                                        20%
+                                    </button>
+                                    <button class="tip-button" type="button" data-tip="custom" aria-pressed="false">
+                                        Custom
+                                    </button>
+                                    <label class="sr-only" for="custom-tip-input">Custom tip percentage</label>
+                                    <input
+                                        class="custom-tip"
+                                        id="custom-tip-input"
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="1"
+                                        value="15"
+                                        aria-label="Custom tip percentage"
+                                        hidden
+                                    />
+                                </div>
+                                <div class="price-row">
+                                    <span>Tip (<span id="tip-percent">15</span>%)</span
+                                    ><strong id="tip-fee">₱0.00</strong>
+                                </div>
+                                <div class="price-total">
+                                    <span>Estimated total</span><strong id="order-total">₱0.00</strong>
+                                </div>
                             </div>
-                            <div class="price-row"><span>Tip (<span id="tip-percent">15</span>%)</span><strong id="tip-fee">₱0.00</strong></div>
-                            <div class="price-total"><span>Estimated total</span><strong id="order-total">₱0.00</strong></div>
+                        </article>
+                    </section>
+
+                    <section class="controls-card" aria-labelledby="customize-title">
+                        <div class="controls-top">
+                            <h2 id="customize-title">Customize your cup</h2>
+                            <label class="sr-only" for="classics-select">Café classics</label>
+                            <select class="classic-select" id="classics-select">
+                                <option value="">Café classics</option>
+                                <option value="latte">Classic Latte</option>
+                                <option value="cappuccino">Cappuccino</option>
+                                <option value="cortado">Cortado</option>
+                                <option value="americano">Americano</option>
+                                <option value="flatWhite">Flat White</option>
+                                <option value="macchiato">Macchiato</option>
+                            </select>
                         </div>
-                    </article>
+                        <div class="tabs" role="tablist" aria-label="Drink customization">
+                            <button
+                                class="tab"
+                                id="tab-foundation"
+                                role="tab"
+                                aria-selected="true"
+                                aria-controls="panel-foundation"
+                                tabindex="0"
+                                type="button"
+                            >
+                                01 · Foundation
+                            </button>
+                            <button
+                                class="tab"
+                                id="tab-milk"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="panel-milk"
+                                tabindex="-1"
+                                type="button"
+                            >
+                                02 · Milk &amp; ice
+                            </button>
+                            <button
+                                class="tab"
+                                id="tab-flavors"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="panel-flavors"
+                                tabindex="-1"
+                                type="button"
+                            >
+                                03 · Extras
+                            </button>
+                        </div>
+
+                        <div class="tab-panel" id="panel-foundation" role="tabpanel" aria-labelledby="tab-foundation">
+                            <div class="field">
+                                <p class="field-label">Choose your base</p>
+                                <div class="segmented" data-choice-group="base">
+                                    <button class="segment" type="button" data-value="espresso" aria-pressed="true">
+                                        Espresso
+                                    </button>
+                                    <button class="segment" type="button" data-value="drip" aria-pressed="false">
+                                        Filter / drip
+                                    </button>
+                                    <button class="segment" type="button" data-value="coldBrew" aria-pressed="false">
+                                        Cold brew
+                                    </button>
+                                    <button class="segment" type="button" data-value="matcha" aria-pressed="false">
+                                        Matcha
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <p class="field-label">Caffeine mode</p>
+                                <div class="segmented" data-choice-group="caffeineMode">
+                                    <button class="segment" type="button" data-value="regular" aria-pressed="true">
+                                        Regular
+                                    </button>
+                                    <button class="segment" type="button" data-value="decaf" aria-pressed="false">
+                                        Decaf
+                                    </button>
+                                    <button class="segment" type="button" data-value="half" aria-pressed="false">
+                                        Half-caf
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="volume-range"
+                                    ><span>Drink size</span
+                                    ><span class="range-readout" id="volume-readout">240 ml</span></label
+                                >
+                                <div class="volume-control">
+                                    <button
+                                        class="step-button"
+                                        type="button"
+                                        data-adjust="volume"
+                                        data-delta="-30"
+                                        aria-label="Decrease drink size"
+                                    >
+                                        −
+                                    </button>
+                                    <input id="volume-range" type="range" min="60" max="480" step="30" value="240" />
+                                    <button
+                                        class="step-button"
+                                        type="button"
+                                        data-adjust="volume"
+                                        data-delta="30"
+                                        aria-label="Increase drink size"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                <div class="range-sub"><span>60 ml</span><span>480 ml</span></div>
+                            </div>
+                            <div class="field" id="extraction-field">
+                                <p class="field-label">Espresso extraction</p>
+                                <div class="segmented" data-choice-group="extraction">
+                                    <button class="segment" type="button" data-value="ristretto" aria-pressed="false">
+                                        Ristretto
+                                    </button>
+                                    <button class="segment" type="button" data-value="standard" aria-pressed="true">
+                                        Standard shot
+                                    </button>
+                                    <button class="segment" type="button" data-value="lungo" aria-pressed="false">
+                                        Lungo
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="shot-range"
+                                    ><span>Espresso shots</span
+                                    ><span class="range-readout" id="shot-readout">2 shots</span></label
+                                >
+                                <input id="shot-range" type="range" min="1" max="4" step="1" value="2" />
+                                <div class="range-sub"><span>1 shot</span><span>4 shots</span></div>
+                            </div>
+                        </div>
+
+                        <div class="tab-panel" id="panel-milk" role="tabpanel" aria-labelledby="tab-milk" hidden>
+                            <div class="field">
+                                <p class="field-label">Temperature</p>
+                                <div class="segmented" data-choice-group="temperature">
+                                    <button class="segment" type="button" data-value="hot" aria-pressed="true">
+                                        ☀ Hot
+                                    </button>
+                                    <button class="segment" type="button" data-value="iced" aria-pressed="false">
+                                        ✧ Iced
+                                    </button>
+                                    <button class="segment" type="button" data-value="blended" aria-pressed="false">
+                                        ❄ Blended
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field" id="ice-field" hidden>
+                                <p class="field-label">Ice style</p>
+                                <div class="segmented" data-choice-group="iceStyle">
+                                    <button class="segment" type="button" data-value="cube" aria-pressed="true">
+                                        🧊 Cube ice
+                                    </button>
+                                    <button class="segment" type="button" data-value="coffee" aria-pressed="false">
+                                        ☕ Coffee ice
+                                    </button>
+                                    <button class="segment" type="button" data-value="crushed" aria-pressed="false">
+                                        ❄ Crushed
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <p class="field-label">Milk source <span class="field-help">Choose one</span></p>
+                                <div class="card-grid" data-choice-group="milk">
+                                    <button class="option-card" type="button" data-value="whole" aria-pressed="true">
+                                        <span>🐄 Whole milk</span><small>Rich &amp; creamy</small>
+                                    </button>
+                                    <button class="option-card" type="button" data-value="skim" aria-pressed="false">
+                                        <span>🥛 Skim milk</span><small>Light &amp; smooth</small>
+                                    </button>
+                                    <button class="option-card" type="button" data-value="oat" aria-pressed="false">
+                                        <span>🌾 Oat milk</span><small>Toasty &amp; mellow</small>
+                                    </button>
+                                    <button class="option-card" type="button" data-value="almond" aria-pressed="false">
+                                        <span>🌰 Almond milk</span><small>Nutty &amp; delicate</small>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="foam-range"
+                                    ><span>Foam aeration</span
+                                    ><span class="range-readout" id="foam-readout">25%</span></label
+                                >
+                                <input
+                                    class="foam-range"
+                                    id="foam-range"
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="5"
+                                    value="25"
+                                />
+                                <div class="range-sub"><span>Flat</span><span>Extra airy</span></div>
+                            </div>
+                        </div>
+
+                        <div class="tab-panel" id="panel-flavors" role="tabpanel" aria-labelledby="tab-flavors" hidden>
+                            <div class="field">
+                                <p class="field-label">Syrups &amp; sauces <span class="field-help">Pumps</span></p>
+                                <div class="stepper-row">
+                                    <span class="stepper-name">🍦 Vanilla syrup</span>
+                                    <div class="stepper-controls">
+                                        <button
+                                            class="step-button"
+                                            type="button"
+                                            data-counter="vanilla"
+                                            data-delta="-1"
+                                            aria-label="Less vanilla"
+                                        >
+                                            −</button
+                                        ><span class="stepper-value" id="vanilla-count">0 pumps</span
+                                        ><button
+                                            class="step-button"
+                                            type="button"
+                                            data-counter="vanilla"
+                                            data-delta="1"
+                                            aria-label="More vanilla"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="stepper-row">
+                                    <span class="stepper-name">🍮 Caramel sauce</span>
+                                    <div class="stepper-controls">
+                                        <button
+                                            class="step-button"
+                                            type="button"
+                                            data-counter="caramel"
+                                            data-delta="-1"
+                                            aria-label="Less caramel"
+                                        >
+                                            −</button
+                                        ><span class="stepper-value" id="caramel-count">0 pumps</span
+                                        ><button
+                                            class="step-button"
+                                            type="button"
+                                            data-counter="caramel"
+                                            data-delta="1"
+                                            aria-label="More caramel"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="stepper-row">
+                                    <span class="stepper-name">🍫 Dark chocolate mocha</span>
+                                    <div class="stepper-controls">
+                                        <button
+                                            class="step-button"
+                                            type="button"
+                                            data-counter="chocolate"
+                                            data-delta="-1"
+                                            aria-label="Less chocolate"
+                                        >
+                                            −</button
+                                        ><span class="stepper-value" id="chocolate-count">0 pumps</span
+                                        ><button
+                                            class="step-button"
+                                            type="button"
+                                            data-counter="chocolate"
+                                            data-delta="1"
+                                            aria-label="More chocolate"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <p class="field-label">Sweeteners <span class="field-help">Choose any</span></p>
+                                <div class="chip-list" data-multi-group="sweeteners">
+                                    <button class="chip" type="button" data-value="whiteSugar" aria-pressed="false">
+                                        White sugar
+                                    </button>
+                                    <button class="chip" type="button" data-value="rawSugar" aria-pressed="false">
+                                        Raw sugar
+                                    </button>
+                                    <button class="chip" type="button" data-value="honey" aria-pressed="false">
+                                        Honey
+                                    </button>
+                                    <button class="chip" type="button" data-value="stevia" aria-pressed="false">
+                                        Stevia
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <p class="field-label">Toppings</p>
+                                <div class="toggle-list">
+                                    <div class="toggle-row">
+                                        <span>Cinnamon dusting</span
+                                        ><button
+                                            class="switch topping-switch"
+                                            type="button"
+                                            role="switch"
+                                            aria-checked="false"
+                                            data-topping="cinnamon"
+                                            aria-label="Cinnamon dusting"
+                                        ></button>
+                                    </div>
+                                    <div class="toggle-row">
+                                        <span>Whipped cream swirl</span
+                                        ><button
+                                            class="switch topping-switch"
+                                            type="button"
+                                            role="switch"
+                                            aria-checked="false"
+                                            data-topping="whippedCream"
+                                            aria-label="Whipped cream swirl"
+                                        ></button>
+                                    </div>
+                                    <div class="toggle-row">
+                                        <span>Cocoa powder dusting</span
+                                        ><button
+                                            class="switch topping-switch"
+                                            type="button"
+                                            role="switch"
+                                            aria-checked="false"
+                                            data-topping="cocoa"
+                                            aria-label="Cocoa powder dusting"
+                                        ></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <footer class="actions-footer">
+                    <p class="field-help">Crafted to your taste.</p>
+                    <a class="privacy-footer-link" href="/privacy.html">Privacy Policy</a>
+                    <div class="footer-actions">
+                        <button class="button button-primary" id="add-to-cart-button" type="button">
+                            ＋ Add to order basket
+                        </button>
+                        <button class="button cart-trigger" id="open-cart-button" type="button">
+                            🧺 Basket <span class="cart-count" id="cart-count">0</span>
+                        </button>
+                    </div>
+                </footer>
+                <p class="notice" id="app-notice" role="status" aria-live="polite"></p>
+            </main>
+
+            <main class="order-history-page" id="order-history-page" hidden aria-labelledby="order-history-title">
+                <div class="order-history-heading">
+                    <div>
+                        <p class="eyebrow">Your Coffee Lab account</p>
+                        <h1 id="order-history-title" tabindex="-1">Order history</h1>
+                        <p>Review past orders and check whether delivery or pickup has been verified.</p>
+                    </div>
+                    <button class="button button-primary" id="refresh-order-history-button" type="button">
+                        Refresh orders
+                    </button>
+                </div>
+                <p class="notice" id="order-history-message" role="status" aria-live="polite"></p>
+                <section class="order-history-list" id="order-history-list" aria-label="Your past orders"></section>
+            </main>
+
+            <main class="tracking-page" id="tracking-page" hidden aria-labelledby="tracking-title">
+                <div class="tracking-heading">
+                    <p class="eyebrow" id="tracking-eyebrow">Your coffee is on its way</p>
+                    <h1 id="tracking-title" tabindex="-1">Order <span id="tracking-order-number"></span></h1>
+                    <p id="tracking-eta">We’ll update this page once delivery is verified.</p>
+                </div>
+                <section
+                    class="tracking-card fulfillment-progress-card"
+                    id="fulfillment-progress-card"
+                    aria-label="Order progress"
+                >
+                    <h2>Order progress</h2>
+                    <div class="fulfillment-progress" id="fulfillment-progress" aria-live="polite">
+                        <span class="fulfillment-progress-icon" id="fulfillment-progress-icon" aria-hidden="true"
+                            >•</span
+                        >
+                        <strong id="fulfillment-progress-label">Not yet delivered</strong>
+                    </div>
+                    <p class="notice" id="tracking-status-message" role="status" aria-live="polite"></p>
+                    <button class="button button-primary" id="report-delivered-button" type="button">
+                        My order has already been delivered
+                    </button>
                 </section>
-
-                <section class="controls-card" aria-labelledby="customize-title">
-                    <div class="controls-top">
-                        <h2 id="customize-title">Customize your cup</h2>
-                        <label class="sr-only" for="classics-select">Café classics</label>
-                        <select class="classic-select" id="classics-select">
-                            <option value="">Café classics</option>
-                            <option value="latte">Classic Latte</option>
-                            <option value="cappuccino">Cappuccino</option>
-                            <option value="cortado">Cortado</option>
-                            <option value="americano">Americano</option>
-                            <option value="flatWhite">Flat White</option>
-                            <option value="macchiato">Macchiato</option>
-                        </select>
-                    </div>
-                    <div class="tabs" role="tablist" aria-label="Drink customization">
-                        <button class="tab" id="tab-foundation" role="tab" aria-selected="true" aria-controls="panel-foundation" tabindex="0" type="button">01 · Foundation</button>
-                        <button class="tab" id="tab-milk" role="tab" aria-selected="false" aria-controls="panel-milk" tabindex="-1" type="button">02 · Milk &amp; ice</button>
-                        <button class="tab" id="tab-flavors" role="tab" aria-selected="false" aria-controls="panel-flavors" tabindex="-1" type="button">03 · Extras</button>
-                    </div>
-
-                    <div class="tab-panel" id="panel-foundation" role="tabpanel" aria-labelledby="tab-foundation">
-                        <div class="field">
-                            <p class="field-label">Choose your base</p>
-                            <div class="segmented" data-choice-group="base">
-                                <button class="segment" type="button" data-value="espresso" aria-pressed="true">Espresso</button>
-                                <button class="segment" type="button" data-value="drip" aria-pressed="false">Filter / drip</button>
-                                <button class="segment" type="button" data-value="coldBrew" aria-pressed="false">Cold brew</button>
-                                <button class="segment" type="button" data-value="matcha" aria-pressed="false">Matcha</button>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <p class="field-label">Caffeine mode</p>
-                            <div class="segmented" data-choice-group="caffeineMode">
-                                <button class="segment" type="button" data-value="regular" aria-pressed="true">Regular</button>
-                                <button class="segment" type="button" data-value="decaf" aria-pressed="false">Decaf</button>
-                                <button class="segment" type="button" data-value="half" aria-pressed="false">Half-caf</button>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="field-label" for="volume-range"><span>Drink size</span><span class="range-readout" id="volume-readout">240 ml</span></label>
-                            <div class="volume-control">
-                                <button class="step-button" type="button" data-adjust="volume" data-delta="-30" aria-label="Decrease drink size">−</button>
-                                <input id="volume-range" type="range" min="60" max="480" step="30" value="240">
-                                <button class="step-button" type="button" data-adjust="volume" data-delta="30" aria-label="Increase drink size">+</button>
-                            </div>
-                            <div class="range-sub"><span>60 ml</span><span>480 ml</span></div>
-                        </div>
-                        <div class="field" id="extraction-field">
-                            <p class="field-label">Espresso extraction</p>
-                            <div class="segmented" data-choice-group="extraction">
-                                <button class="segment" type="button" data-value="ristretto" aria-pressed="false">Ristretto</button>
-                                <button class="segment" type="button" data-value="standard" aria-pressed="true">Standard shot</button>
-                                <button class="segment" type="button" data-value="lungo" aria-pressed="false">Lungo</button>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="field-label" for="shot-range"><span>Espresso shots</span><span class="range-readout" id="shot-readout">2 shots</span></label>
-                            <input id="shot-range" type="range" min="1" max="4" step="1" value="2">
-                            <div class="range-sub"><span>1 shot</span><span>4 shots</span></div>
-                        </div>
-                    </div>
-
-                    <div class="tab-panel" id="panel-milk" role="tabpanel" aria-labelledby="tab-milk" hidden>
-                        <div class="field">
-                            <p class="field-label">Temperature</p>
-                            <div class="segmented" data-choice-group="temperature">
-                                <button class="segment" type="button" data-value="hot" aria-pressed="true">☀ Hot</button>
-                                <button class="segment" type="button" data-value="iced" aria-pressed="false">✧ Iced</button>
-                                <button class="segment" type="button" data-value="blended" aria-pressed="false">❄ Blended</button>
-                            </div>
-                        </div>
-                        <div class="field" id="ice-field" hidden>
-                            <p class="field-label">Ice style</p>
-                            <div class="segmented" data-choice-group="iceStyle">
-                                <button class="segment" type="button" data-value="cube" aria-pressed="true">🧊 Cube ice</button>
-                                <button class="segment" type="button" data-value="coffee" aria-pressed="false">☕ Coffee ice</button>
-                                <button class="segment" type="button" data-value="crushed" aria-pressed="false">❄ Crushed</button>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <p class="field-label">Milk source <span class="field-help">Choose one</span></p>
-                            <div class="card-grid" data-choice-group="milk">
-                                <button class="option-card" type="button" data-value="whole" aria-pressed="true"><span>🐄 Whole milk</span><small>Rich &amp; creamy</small></button>
-                                <button class="option-card" type="button" data-value="skim" aria-pressed="false"><span>🥛 Skim milk</span><small>Light &amp; smooth</small></button>
-                                <button class="option-card" type="button" data-value="oat" aria-pressed="false"><span>🌾 Oat milk</span><small>Toasty &amp; mellow</small></button>
-                                <button class="option-card" type="button" data-value="almond" aria-pressed="false"><span>🌰 Almond milk</span><small>Nutty &amp; delicate</small></button>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label class="field-label" for="foam-range"><span>Foam aeration</span><span class="range-readout" id="foam-readout">25%</span></label>
-                            <input class="foam-range" id="foam-range" type="range" min="0" max="100" step="5" value="25">
-                            <div class="range-sub"><span>Flat</span><span>Extra airy</span></div>
-                        </div>
-                    </div>
-
-                    <div class="tab-panel" id="panel-flavors" role="tabpanel" aria-labelledby="tab-flavors" hidden>
-                        <div class="field">
-                            <p class="field-label">Syrups &amp; sauces <span class="field-help">Pumps</span></p>
-                            <div class="stepper-row"><span class="stepper-name">🍦 Vanilla syrup</span><div class="stepper-controls"><button class="step-button" type="button" data-counter="vanilla" data-delta="-1" aria-label="Less vanilla">−</button><span class="stepper-value" id="vanilla-count">0 pumps</span><button class="step-button" type="button" data-counter="vanilla" data-delta="1" aria-label="More vanilla">+</button></div></div>
-                            <div class="stepper-row"><span class="stepper-name">🍮 Caramel sauce</span><div class="stepper-controls"><button class="step-button" type="button" data-counter="caramel" data-delta="-1" aria-label="Less caramel">−</button><span class="stepper-value" id="caramel-count">0 pumps</span><button class="step-button" type="button" data-counter="caramel" data-delta="1" aria-label="More caramel">+</button></div></div>
-                            <div class="stepper-row"><span class="stepper-name">🍫 Dark chocolate mocha</span><div class="stepper-controls"><button class="step-button" type="button" data-counter="chocolate" data-delta="-1" aria-label="Less chocolate">−</button><span class="stepper-value" id="chocolate-count">0 pumps</span><button class="step-button" type="button" data-counter="chocolate" data-delta="1" aria-label="More chocolate">+</button></div></div>
-                        </div>
-                        <div class="field">
-                            <p class="field-label">Sweeteners <span class="field-help">Choose any</span></p>
-                            <div class="chip-list" data-multi-group="sweeteners">
-                                <button class="chip" type="button" data-value="whiteSugar" aria-pressed="false">White sugar</button>
-                                <button class="chip" type="button" data-value="rawSugar" aria-pressed="false">Raw sugar</button>
-                                <button class="chip" type="button" data-value="honey" aria-pressed="false">Honey</button>
-                                <button class="chip" type="button" data-value="stevia" aria-pressed="false">Stevia</button>
-                            </div>
-                        </div>
-                        <div class="field">
-                            <p class="field-label">Toppings</p>
-                            <div class="toggle-list">
-                                <div class="toggle-row"><span>Cinnamon dusting</span><button class="switch topping-switch" type="button" role="switch" aria-checked="false" data-topping="cinnamon" aria-label="Cinnamon dusting"></button></div>
-                                <div class="toggle-row"><span>Whipped cream swirl</span><button class="switch topping-switch" type="button" role="switch" aria-checked="false" data-topping="whippedCream" aria-label="Whipped cream swirl"></button></div>
-                                <div class="toggle-row"><span>Cocoa powder dusting</span><button class="switch topping-switch" type="button" role="switch" aria-checked="false" data-topping="cocoa" aria-label="Cocoa powder dusting"></button></div>
-                            </div>
-                        </div>
+                <section class="tracking-card receipt-card" aria-labelledby="receipt-title">
+                    <h2 id="receipt-title">Digital receipt</h2>
+                    <p id="receipt-message" role="status" aria-live="polite">Preparing your receipt…</p>
+                    <img
+                        class="receipt-preview-image"
+                        id="receipt-preview-image"
+                        alt="Digital receipt for this order"
+                        hidden
+                    />
+                    <div class="tracking-actions">
+                        <button class="button button-primary" id="download-receipt-button" type="button" hidden>
+                            Download receipt (PDF)
+                        </button>
+                        <button class="button" id="retry-receipt-button" type="button" hidden>Try receipt again</button>
                     </div>
                 </section>
+                <section class="tracking-card" aria-label="Tracking controls">
+                    <div class="tracking-actions">
+                        <button class="button button-primary" id="refresh-order-button" type="button">
+                            Refresh order status
+                        </button>
+                        <button class="button" id="back-to-customizer-button" type="button">Back to coffee lab</button>
+                    </div>
+                </section>
+            </main>
+
+            <main class="admin-page" id="admin-page" hidden aria-labelledby="admin-title">
+                <div class="admin-heading">
+                    <div>
+                        <p class="eyebrow">Coffee Lab operations</p>
+                        <h1 id="admin-title" tabindex="-1">Order administration</h1>
+                        <p>Review customer delivery reports, verify receipts, and manage orders.</p>
+                    </div>
+                    <button class="button button-primary" id="admin-refresh-button" type="button">
+                        Refresh orders
+                    </button>
+                </div>
+                <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
+                <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
+                <nav class="admin-pagination" aria-label="Order pages">
+                    <button class="button" id="admin-previous-page" type="button" disabled>Previous</button>
+                    <span id="admin-page-label">Page 1</span>
+                    <button class="button" id="admin-next-page" type="button" disabled>Next</button>
+                </nav>
+            </main>
+        </div>
+
+        <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+        <aside
+            class="cart-drawer"
+            id="cart-drawer"
+            aria-labelledby="cart-title"
+            aria-modal="true"
+            aria-hidden="true"
+            role="dialog"
+        >
+            <div class="drawer-head">
+                <h2 id="cart-title">Your order <span id="drawer-count">(0)</span></h2>
+                <button class="button button-small" id="close-cart-button" type="button" aria-label="Close basket">
+                    ✕
+                </button>
             </div>
-
-            <footer class="actions-footer">
-                <p class="field-help">Crafted to your taste.</p>
-                <a class="privacy-footer-link" href="/privacy.html">Privacy Policy</a>
-                <div class="footer-actions">
-                    <button class="button button-primary" id="add-to-cart-button" type="button">＋ Add to order basket</button>
-                    <button class="button cart-trigger" id="open-cart-button" type="button">🧺 Basket <span class="cart-count" id="cart-count">0</span></button>
-                </div>
-            </footer>
-            <p class="notice" id="app-notice" role="status" aria-live="polite"></p>
-        </main>
-
-        <main class="order-history-page" id="order-history-page" hidden aria-labelledby="order-history-title">
-            <div class="order-history-heading">
-                <div>
-                    <p class="eyebrow">Your Coffee Lab account</p>
-                    <h1 id="order-history-title" tabindex="-1">Order history</h1>
-                    <p>Review past orders and check whether delivery or pickup has been verified.</p>
-                </div>
-                <button class="button button-primary" id="refresh-order-history-button" type="button">Refresh orders</button>
+            <div class="drawer-items" id="cart-items"></div>
+            <div class="drawer-total">
+                <div class="price-row"><span>Estimated total</span><strong id="cart-total">₱0.00</strong></div>
+                <button class="button button-primary" id="checkout-button" type="button" disabled>
+                    Proceed to checkout
+                </button>
             </div>
-            <p class="notice" id="order-history-message" role="status" aria-live="polite"></p>
-            <section class="order-history-list" id="order-history-list" aria-label="Your past orders"></section>
-        </main>
+        </aside>
 
-        <main class="tracking-page" id="tracking-page" hidden aria-labelledby="tracking-title">
-            <div class="tracking-heading">
-                <p class="eyebrow" id="tracking-eyebrow">Your coffee is on its way</p>
-                <h1 id="tracking-title" tabindex="-1">Order <span id="tracking-order-number"></span></h1>
-                <p id="tracking-eta">We’ll update this page once delivery is verified.</p>
-            </div>
-            <section class="tracking-card fulfillment-progress-card" id="fulfillment-progress-card" aria-label="Order progress">
-                <h2>Order progress</h2>
-                <div class="fulfillment-progress" id="fulfillment-progress" aria-live="polite">
-                    <span class="fulfillment-progress-icon" id="fulfillment-progress-icon" aria-hidden="true">•</span>
-                    <strong id="fulfillment-progress-label">Not yet delivered</strong>
+        <button class="button button-primary checkout-fab" id="checkout-fab" type="button" hidden>
+            Checkout · <span id="fab-total">₱0.00</span>
+        </button>
+
+        <dialog id="checkout-dialog" aria-labelledby="checkout-title">
+            <form class="dialog-content" id="checkout-form">
+                <h2 id="checkout-title">Complete your order</h2>
+                <p>Review the details and place your coffee order.</p>
+                <p class="field-help">
+                    Prototype checkout only: no payment is processed and no delivery service is contacted.
+                </p>
+                <p class="privacy-notice">
+                    We use your name, phone number, order details, and delivery address when applicable to manage this
+                    order. Location is optional. See our
+                    <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for storage,
+                    retention, and privacy requests.
+                </p>
+                <div class="checkout-summary" id="checkout-summary"></div>
+                <label for="customer-name">Name</label>
+                <input id="customer-name" name="customerName" autocomplete="name" maxlength="80" required />
+                <label for="customer-phone">Phone</label>
+                <input id="customer-phone" name="customerPhone" type="tel" autocomplete="tel" maxlength="32" required />
+                <div id="checkout-address-field">
+                    <label for="checkout-address">Delivery address</label
+                    ><input id="checkout-address" name="checkoutAddress" autocomplete="street-address" required />
                 </div>
-                <p class="notice" id="tracking-status-message" role="status" aria-live="polite"></p>
-                <button class="button button-primary" id="report-delivered-button" type="button">My order has already been delivered</button>
-            </section>
-            <section class="tracking-card receipt-card" aria-labelledby="receipt-title">
-                <h2 id="receipt-title">Digital receipt</h2>
-                <p id="receipt-message" role="status" aria-live="polite">Preparing your receipt…</p>
-                <img class="receipt-preview-image" id="receipt-preview-image" alt="Digital receipt for this order" hidden>
-                <div class="tracking-actions">
-                    <button class="button button-primary" id="download-receipt-button" type="button" hidden>Download receipt (PDF)</button>
-                    <button class="button" id="retry-receipt-button" type="button" hidden>Try receipt again</button>
+                <div class="dialog-actions">
+                    <button class="button" id="cancel-checkout" type="button">Keep shopping</button
+                    ><button class="button button-primary" type="submit">Place order</button>
                 </div>
-            </section>
-            <section class="tracking-card" aria-label="Tracking controls">
-                <div class="tracking-actions">
-                    <button class="button button-primary" id="refresh-order-button" type="button">Refresh order status</button>
-                    <button class="button" id="back-to-customizer-button" type="button">Back to coffee lab</button>
-                </div>
-            </section>
-        </main>
+            </form>
+        </dialog>
 
-        <main class="admin-page" id="admin-page" hidden aria-labelledby="admin-title">
-            <div class="admin-heading">
-                <div>
-                    <p class="eyebrow">Coffee Lab operations</p>
-                    <h1 id="admin-title" tabindex="-1">Order administration</h1>
-                    <p>Review customer delivery reports, verify receipts, and manage orders.</p>
-                </div>
-                <button class="button button-primary" id="admin-refresh-button" type="button">Refresh orders</button>
-            </div>
-            <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
-            <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
-            <nav class="admin-pagination" aria-label="Order pages">
-                <button class="button" id="admin-previous-page" type="button" disabled>Previous</button>
-                <span id="admin-page-label">Page 1</span>
-                <button class="button" id="admin-next-page" type="button" disabled>Next</button>
-            </nav>
-        </main>
-    </div>
-
-    <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
-    <aside class="cart-drawer" id="cart-drawer" aria-labelledby="cart-title" aria-modal="true" aria-hidden="true" role="dialog">
-        <div class="drawer-head"><h2 id="cart-title">Your order <span id="drawer-count">(0)</span></h2><button class="button button-small" id="close-cart-button" type="button" aria-label="Close basket">✕</button></div>
-        <div class="drawer-items" id="cart-items"></div>
-        <div class="drawer-total"><div class="price-row"><span>Estimated total</span><strong id="cart-total">₱0.00</strong></div><button class="button button-primary" id="checkout-button" type="button" disabled>Proceed to checkout</button></div>
-    </aside>
-
-    <button class="button button-primary checkout-fab" id="checkout-fab" type="button" hidden>Checkout · <span id="fab-total">₱0.00</span></button>
-
-    <dialog id="checkout-dialog" aria-labelledby="checkout-title">
-        <form class="dialog-content" id="checkout-form">
-            <h2 id="checkout-title">Complete your order</h2>
-            <p>Review the details and place your coffee order.</p>
-            <p class="field-help">Prototype checkout only: no payment is processed and no delivery service is contacted.</p>
-            <p class="privacy-notice">We use your name, phone number, order details, and delivery address when applicable to manage this order. Location is optional. See our <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for storage, retention, and privacy requests.</p>
-            <div class="checkout-summary" id="checkout-summary"></div>
-            <label for="customer-name">Name</label>
-            <input id="customer-name" name="customerName" autocomplete="name" maxlength="80" required>
-            <label for="customer-phone">Phone</label>
-            <input id="customer-phone" name="customerPhone" type="tel" autocomplete="tel" maxlength="32" required>
-            <div id="checkout-address-field"><label for="checkout-address">Delivery address</label><input id="checkout-address" name="checkoutAddress" autocomplete="street-address" required></div>
-            <div class="dialog-actions"><button class="button" id="cancel-checkout" type="button">Keep shopping</button><button class="button button-primary" type="submit">Place order</button></div>
-        </form>
-    </dialog>
-
-    <script src="/js/admin.js" defer></script>
-    <script src="/js/auth.js" defer></script>
-    <script src="/js/state.js" defer></script>
-    <script src="/js/pricing.js" defer></script>
-    <script src="/js/app.js" defer></script>
-</body>
+        <script src="/js/admin.js" defer></script>
+        <script src="/js/auth.js" defer></script>
+        <script src="/js/state.js" defer></script>
+        <script src="/js/pricing.js" defer></script>
+        <script src="/js/app.js" defer></script>
+    </body>
 </html>

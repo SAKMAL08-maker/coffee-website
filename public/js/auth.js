@@ -16,8 +16,9 @@
         });
         authMessage.textContent = "";
         authMessage.dataset.state = "";
-        const heading = document.querySelector(`[data-auth-screen="${name}"] h2`)
-            || (name === "codes" ? $("#recovery-codes-title") : $("#auth-title"));
+        const heading =
+            document.querySelector(`[data-auth-screen="${name}"] h2`) ||
+            (name === "codes" ? $("#recovery-codes-title") : $("#auth-title"));
         heading.focus?.();
     }
 
@@ -107,15 +108,17 @@
         $("#admin-mfa-description").textContent = result.setupRequired
             ? `Welcome, ${result.username}. Your project owner must provide a one-time setup authorization before you can register an authenticator.`
             : result.setupInProgress
-                ? `Finish the authenticator setup for ${result.username} using the app where you saved the setup key.`
-                : `Enter the current authenticator code for ${result.username}.`;
+              ? `Finish the authenticator setup for ${result.username} using the app where you saved the setup key.`
+              : `Enter the current authenticator code for ${result.username}.`;
         $("#admin-mfa-setup").hidden = !result.setupRequired;
         $("#admin-mfa-bootstrap-token").required = result.setupRequired;
         if (result.factorId) {
             $("#admin-mfa-code").disabled = false;
             $("#admin-mfa-verify").disabled = false;
         } else if (!result.setupRequired) {
-            showMessage("No owner-approved authenticator is available. Contact the Supabase project owner to authorize or recover setup.");
+            showMessage(
+                "No owner-approved authenticator is available. Contact the Supabase project owner to authorize or recover setup."
+            );
         }
     }
 

@@ -134,7 +134,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         });
         assert.equal(invalidAdminMfaCode.status, 400);
 
-        const unauthenticatedReceipt = await fetch(`${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt`);
+        const unauthenticatedReceipt = await fetch(
+            `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt`
+        );
         assert.equal(unauthenticatedReceipt.status, 401);
         const unauthenticatedReceiptPreview = await fetch(
             `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/receipt/preview`
@@ -243,7 +245,7 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal(invalidCheckout.status, 400);
     } finally {
         await new Promise((resolve, reject) => {
-            server.close((error) => error ? reject(error) : resolve());
+            server.close((error) => (error ? reject(error) : resolve()));
         });
     }
 });

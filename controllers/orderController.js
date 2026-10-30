@@ -1,10 +1,6 @@
 const crypto = require("crypto");
 const { getAdminClient } = require("../config/supabase");
-const {
-    normalizeConfiguration,
-    classifyDrink,
-    calculateNutrition
-} = require("../services/coffeeService");
+const { normalizeConfiguration, classifyDrink, calculateNutrition } = require("../services/coffeeService");
 const {
     createOrderReceipt,
     getReceiptDownloadUrl,
@@ -26,7 +22,7 @@ function badRequest(message) {
 }
 
 function roundBasisPoints(amountCents, basisPoints) {
-    return Math.round(amountCents * basisPoints / 10000);
+    return Math.round((amountCents * basisPoints) / 10000);
 }
 
 function calculateDrinkPriceCents(configuration) {
@@ -56,9 +52,10 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = 15) {
             throw badRequest(`items[${index}] contains an unsupported field.`);
         }
         const configuration = normalizeConfiguration(item.configuration);
-        const name = typeof item.name === "string" && item.name.trim()
-            ? item.name.trim().slice(0, 80)
-            : classifyDrink(configuration);
+        const name =
+            typeof item.name === "string" && item.name.trim()
+                ? item.name.trim().slice(0, 80)
+                : classifyDrink(configuration);
         return {
             name,
             configuration,
@@ -72,7 +69,7 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = 15) {
     const deliveryFeeCents = fulfillmentMethod === "delivery" ? DELIVERY_FEE_CENTS : 0;
     const serviceFeeCents = roundBasisPoints(subtotalCents, SERVICE_FEE_BASIS_POINTS);
     const taxCents = roundBasisPoints(subtotalCents, TAX_BASIS_POINTS);
-    const tipCents = Math.round(subtotalCents * tipPercent / 100);
+    const tipCents = Math.round((subtotalCents * tipPercent) / 100);
 
     return {
         lineItems,
@@ -90,12 +87,20 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = 15) {
 
 function validateCoordinates(coordinates) {
     if (coordinates === undefined) return undefined;
-    if (!coordinates || typeof coordinates !== "object" || Array.isArray(coordinates)
-        || Object.keys(coordinates).some((key) => !["latitude", "longitude"].includes(key))
-        || typeof coordinates.latitude !== "number" || !Number.isFinite(coordinates.latitude)
-        || coordinates.latitude < -90 || coordinates.latitude > 90
-        || typeof coordinates.longitude !== "number" || !Number.isFinite(coordinates.longitude)
-        || coordinates.longitude < -180 || coordinates.longitude > 180) {
+    if (
+        !coordinates ||
+        typeof coordinates !== "object" ||
+        Array.isArray(coordinates) ||
+        Object.keys(coordinates).some((key) => !["latitude", "longitude"].includes(key)) ||
+        typeof coordinates.latitude !== "number" ||
+        !Number.isFinite(coordinates.latitude) ||
+        coordinates.latitude < -90 ||
+        coordinates.latitude > 90 ||
+        typeof coordinates.longitude !== "number" ||
+        !Number.isFinite(coordinates.longitude) ||
+        coordinates.longitude < -180 ||
+        coordinates.longitude > 180
+    ) {
         throw badRequest("deliveryCoordinates must contain valid latitude and longitude numbers.");
     }
     return coordinates;
@@ -104,11 +109,20 @@ function validateCoordinates(coordinates) {
 async function checkout(request, response, next) {
     try {
         const allowedKeys = [
-            "items", "fulfillmentMethod", "deliveryAddress", "deliveryCoordinates",
-            "tipPercent", "customer", "notes"
+            "items",
+            "fulfillmentMethod",
+            "deliveryAddress",
+            "deliveryCoordinates",
+            "tipPercent",
+            "customer",
+            "notes"
         ];
-        if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)
-            || Object.keys(request.body).some((key) => !allowedKeys.includes(key))) {
+        if (
+            !request.body ||
+            typeof request.body !== "object" ||
+            Array.isArray(request.body) ||
+            Object.keys(request.body).some((key) => !allowedKeys.includes(key))
+        ) {
             throw badRequest("Checkout request contains an unsupported field.");
         }
         const {
@@ -121,18 +135,32 @@ async function checkout(request, response, next) {
             notes
         } = request.body;
 
-        if (!customer || typeof customer !== "object" || Array.isArray(customer)
-            || Object.keys(customer).some((key) => !["name", "phone", "email"].includes(key))
-            || typeof customer.name !== "string" || !customer.name.trim() || customer.name.trim().length > 80
-            || typeof customer.phone !== "string" || !customer.phone.trim() || customer.phone.trim().length > 32) {
+        if (
+            !customer ||
+            typeof customer !== "object" ||
+            Array.isArray(customer) ||
+            Object.keys(customer).some((key) => !["name", "phone", "email"].includes(key)) ||
+            typeof customer.name !== "string" ||
+            !customer.name.trim() ||
+            customer.name.trim().length > 80 ||
+            typeof customer.phone !== "string" ||
+            !customer.phone.trim() ||
+            customer.phone.trim().length > 32
+        ) {
             throw badRequest("Customer name and phone are required.");
         }
-        if (customer.email !== undefined && (typeof customer.email !== "string" || customer.email.length > 254
-            || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email))) {
+        if (
+            customer.email !== undefined &&
+            (typeof customer.email !== "string" ||
+                customer.email.length > 254 ||
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email))
+        ) {
             throw badRequest("customer.email must be a valid email address.");
         }
-        if (fulfillmentMethod === "delivery" && (typeof deliveryAddress !== "string"
-            || !deliveryAddress.trim() || deliveryAddress.trim().length > 300)) {
+        if (
+            fulfillmentMethod === "delivery" &&
+            (typeof deliveryAddress !== "string" || !deliveryAddress.trim() || deliveryAddress.trim().length > 300)
+        ) {
             throw badRequest("A delivery address of 300 characters or fewer is required for delivery.");
         }
         if (fulfillmentMethod === "pickup" && deliveryAddress !== undefined) {
@@ -217,7 +245,9 @@ async function trackOrder(request, response, next) {
         const supabase = getAdminClient();
         const { data: order, error } = await supabase
             .from("orders")
-            .select("tracking_code, status, fulfillment_method, receipt_status, delivery_reported_at, pickup_approved_at, created_at, updated_at")
+            .select(
+                "tracking_code, status, fulfillment_method, receipt_status, delivery_reported_at, pickup_approved_at, created_at, updated_at"
+            )
             .eq("tracking_code", request.params.trackingCode)
             .maybeSingle();
         if (error) throw error;
@@ -317,13 +347,19 @@ async function reportDelivery(request, response, next) {
 }
 
 function hasMissingOptionalOrderColumns(error) {
-    return ["42703", "PGRST204"].includes(error?.code)
-        || /column .* does not exist|could not find .* column/i.test(error?.message || "");
+    return (
+        ["42703", "PGRST204"].includes(error?.code) ||
+        /column .* does not exist|could not find .* column/i.test(error?.message || "")
+    );
 }
 
 function isMissingOrdersTable(error) {
-    return ["42P01", "PGRST205"].includes(error?.code)
-        || /relation ["']?(public\.)?orders["']? does not exist|could not find the table .*orders/i.test(error?.message || "");
+    return (
+        ["42P01", "PGRST205"].includes(error?.code) ||
+        /relation ["']?(public\.)?orders["']? does not exist|could not find the table .*orders/i.test(
+            error?.message || ""
+        )
+    );
 }
 
 async function listAdminOrders(request, response, next) {
@@ -333,16 +369,25 @@ async function listAdminOrders(request, response, next) {
         const supabase = getAdminClient();
         let { data, error, count } = await supabase
             .from("orders")
-            .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, pickup_approved_at, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
+            .select(
+                "id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, receipt_status, delivery_reported_at, delivery_approved_at, pickup_approved_at, created_at, order_items(id, name, classification, configuration, price_cents)",
+                { count: "exact" }
+            )
             .order("created_at", { ascending: false })
             .range((page - 1) * pageSize, page * pageSize - 1);
         let schemaWarning = null;
         if (error && hasMissingOptionalOrderColumns(error)) {
-            console.warn("Admin orders query is using the base schema; apply the receipt and delivery approval migrations.");
-            schemaWarning = "Some order details and receipt status are unavailable until the latest Supabase receipt, delivery, and pickup migrations are applied.";
+            console.warn(
+                "Admin orders query is using the base schema; apply the receipt and delivery approval migrations."
+            );
+            schemaWarning =
+                "Some order details and receipt status are unavailable until the latest Supabase receipt, delivery, and pickup migrations are applied.";
             ({ data, error, count } = await supabase
                 .from("orders")
-                .select("id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, created_at, order_items(id, name, classification, configuration, price_cents)", { count: "exact" })
+                .select(
+                    "id, tracking_code, status, fulfillment_method, customer, delivery_address, notes, pricing, created_at, order_items(id, name, classification, configuration, price_cents)",
+                    { count: "exact" }
+                )
                 .order("created_at", { ascending: false })
                 .range((page - 1) * pageSize, page * pageSize - 1));
         }
@@ -506,12 +551,7 @@ async function deleteAdminOrder(request, response, next) {
             await deleteStoredReceipt(order.receipt_object_key, order.receipt_image_object_key);
         }
 
-        const { data, error } = await supabase
-            .from("orders")
-            .delete()
-            .eq("id", order.id)
-            .select("id")
-            .maybeSingle();
+        const { data, error } = await supabase.from("orders").delete().eq("id", order.id).select("id").maybeSingle();
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
         response.json({ message: "Order deleted." });
@@ -522,8 +562,12 @@ async function deleteAdminOrder(request, response, next) {
 
 async function advanceOrderStatus(request, response, next) {
     try {
-        if (!request.body || typeof request.body !== "object" || Array.isArray(request.body)
-            || Object.keys(request.body).some((key) => key !== "status")) {
+        if (
+            !request.body ||
+            typeof request.body !== "object" ||
+            Array.isArray(request.body) ||
+            Object.keys(request.body).some((key) => key !== "status")
+        ) {
             throw badRequest("Request must contain only the next status.");
         }
         const { status } = request.body;
@@ -559,7 +603,9 @@ async function listMyOrders(request, response, next) {
     try {
         const { data, error } = await getAdminClient()
             .from("orders")
-            .select("id, tracking_code, status, fulfillment_method, pricing, receipt_status, created_at, updated_at, order_items(name, classification, price_cents)")
+            .select(
+                "id, tracking_code, status, fulfillment_method, pricing, receipt_status, created_at, updated_at, order_items(name, classification, price_cents)"
+            )
             .eq("account_id", request.user.id)
             .order("created_at", { ascending: false })
             .limit(50);

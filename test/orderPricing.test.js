@@ -53,15 +53,15 @@ test("adds premium modifiers and omits delivery fee for pickup", () => {
 });
 
 test("rejects unsupported client-supplied price fields", () => {
-    assert.throws(
-        () => calculateOrderPricing([{ ...standardEspresso, price: 0 }], "delivery"),
-        { statusCode: 400, message: /unsupported field/ }
-    );
+    assert.throws(() => calculateOrderPricing([{ ...standardEspresso, price: 0 }], "delivery"), {
+        statusCode: 400,
+        message: /unsupported field/
+    });
 });
 
 test("rejects invalid tip percentages", () => {
-    assert.throws(
-        () => calculateOrderPricing([standardEspresso], "delivery", 101),
-        { statusCode: 400, message: /tipPercent/ }
-    );
+    assert.throws(() => calculateOrderPricing([standardEspresso], "delivery", 101), {
+        statusCode: 400,
+        message: /tipPercent/
+    });
 });

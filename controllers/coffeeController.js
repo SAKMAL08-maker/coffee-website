@@ -7,8 +7,12 @@ const {
 } = require("../services/coffeeService");
 
 function validateBody(body, allowedKeys) {
-    if (!body || typeof body !== "object" || Array.isArray(body)
-        || Object.keys(body).some((key) => !allowedKeys.includes(key))) {
+    if (
+        !body ||
+        typeof body !== "object" ||
+        Array.isArray(body) ||
+        Object.keys(body).some((key) => !allowedKeys.includes(key))
+    ) {
         throw Object.assign(new Error("Request body is invalid or contains unsupported fields."), { statusCode: 400 });
     }
 }

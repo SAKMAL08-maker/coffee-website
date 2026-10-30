@@ -16,10 +16,10 @@ function formatDate(value) {
     return Number.isNaN(date.getTime())
         ? "Date unavailable"
         : date.toLocaleString("en-PH", {
-            dateStyle: "medium",
-            timeStyle: "short",
-            timeZone: "Asia/Manila"
-        });
+              dateStyle: "medium",
+              timeStyle: "short",
+              timeZone: "Asia/Manila"
+          });
 }
 
 function truncate(value, maxLength) {
@@ -31,16 +31,22 @@ function createReceiptImage(order) {
     const items = order.order_items || [];
     const pricing = order.pricing || {};
     const customer = order.customer || {};
-    const orderCode = `CL-${String(order.id || "").slice(0, 8).toUpperCase()}`;
+    const orderCode = `CL-${String(order.id || "")
+        .slice(0, 8)
+        .toUpperCase()}`;
     const lines = [];
     let y = 440;
 
     items.forEach((item, index) => {
         lines.push(`<text x="72" y="${y}" class="item">${escapeXml(truncate(item.name || "Coffee", 44))}</text>`);
         if (item.classification) {
-            lines.push(`<text x="72" y="${y + 25}" class="subitem">${escapeXml(truncate(item.classification, 52))}</text>`);
+            lines.push(
+                `<text x="72" y="${y + 25}" class="subitem">${escapeXml(truncate(item.classification, 52))}</text>`
+            );
         }
-        lines.push(`<text x="828" y="${y}" class="item price" text-anchor="end">${escapeXml(formatMoney(item.price_cents))}</text>`);
+        lines.push(
+            `<text x="828" y="${y}" class="item price" text-anchor="end">${escapeXml(formatMoney(item.price_cents))}</text>`
+        );
         if (index < items.length - 1) {
             lines.push(`<path d="M72 ${y + 44}H828" class="rule"/>`);
         }
@@ -58,7 +64,9 @@ function createReceiptImage(order) {
     totals.forEach(([label, amount]) => {
         if (label === "Delivery" && !Number(amount)) return;
         lines.push(`<text x="72" y="${y}" class="total-label">${escapeXml(label)}</text>`);
-        lines.push(`<text x="828" y="${y}" class="total-value" text-anchor="end">${escapeXml(formatMoney(amount))}</text>`);
+        lines.push(
+            `<text x="828" y="${y}" class="total-value" text-anchor="end">${escapeXml(formatMoney(amount))}</text>`
+        );
         y += 42;
     });
 
@@ -67,9 +75,10 @@ function createReceiptImage(order) {
     const height = footerY + 72;
     const fulfillment = order.fulfillment_method === "pickup" ? "Pickup" : "Delivery";
     const customerName = truncate(customer.name || "Coffee Lab customer", 64);
-    const address = order.fulfillment_method === "delivery" && order.delivery_address
-        ? `<text x="72" y="340" class="meta">Address: ${escapeXml(truncate(order.delivery_address, 78))}</text>`
-        : "";
+    const address =
+        order.fulfillment_method === "delivery" && order.delivery_address
+            ? `<text x="72" y="340" class="meta">Address: ${escapeXml(truncate(order.delivery_address, 78))}</text>`
+            : "";
 
     return Buffer.from(
         `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="${height}" viewBox="0 0 900 ${height}" role="img" aria-labelledby="title description">

@@ -5,11 +5,11 @@ This folder records how AI tools contributed to Coffee Lab, so reviewers can tel
 ## What gets logged
 
 - **`CHANGELOG-AI.md`**: one entry per AI-assisted phase or pull request, appended at the end of the work. Each entry has:
-  - **Date** (absolute, `YYYY-MM-DD`)
-  - **Tool and model** (e.g. Claude Code, Claude Opus 5.5)
-  - **What changed** and **why**
-  - **Human checks required**: things the owner must verify by hand before or after merging (live services, secrets, migrations, UI behavior)
-  - **PR link** once the PR is open
+    - **Date** (absolute, `YYYY-MM-DD`)
+    - **Tool and model** (e.g. Claude Code, Claude Opus 5.5)
+    - **What changed** and **why**
+    - **Human checks required**: things the owner must verify by hand before or after merging (live services, secrets, migrations, UI behavior)
+    - **PR link** once the PR is open
 - **Pull request descriptions**: the real `npm ci` / `npm test` output and a self-review risk list, written before the owner reviews.
 
 ## Rules

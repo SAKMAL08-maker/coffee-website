@@ -64,10 +64,16 @@ function validateKeys(value, allowedKeys, label) {
 
 function normalizeConfiguration(input) {
     validateKeys(input, Object.keys(DEFAULT_CONFIGURATION), "configuration");
-    if (input.syrups !== undefined && (!input.syrups || typeof input.syrups !== "object" || Array.isArray(input.syrups))) {
+    if (
+        input.syrups !== undefined &&
+        (!input.syrups || typeof input.syrups !== "object" || Array.isArray(input.syrups))
+    ) {
         throw createBadRequest("configuration.syrups must be an object.");
     }
-    if (input.toppings !== undefined && (!input.toppings || typeof input.toppings !== "object" || Array.isArray(input.toppings))) {
+    if (
+        input.toppings !== undefined &&
+        (!input.toppings || typeof input.toppings !== "object" || Array.isArray(input.toppings))
+    ) {
         throw createBadRequest("configuration.toppings must be an object.");
     }
     if (input.sweeteners !== undefined && !Array.isArray(input.sweeteners)) {
@@ -87,7 +93,11 @@ function normalizeConfiguration(input) {
         }
     }
 
-    for (const [field, min, max] of [["volumeMl", 60, 480], ["shots", 1, 4], ["foam", 0, 100]]) {
+    for (const [field, min, max] of [
+        ["volumeMl", 60, 480],
+        ["shots", 1, 4],
+        ["foam", 0, 100]
+    ]) {
         if (!Number.isInteger(configuration[field]) || configuration[field] < min || configuration[field] > max) {
             throw createBadRequest(`configuration.${field} must be an integer from ${min} to ${max}.`);
         }
@@ -107,7 +117,10 @@ function normalizeConfiguration(input) {
         }
     }
 
-    if (!Array.isArray(configuration.sweeteners) || configuration.sweeteners.some((item) => !ENUMS.sweeteners.includes(item))) {
+    if (
+        !Array.isArray(configuration.sweeteners) ||
+        configuration.sweeteners.some((item) => !ENUMS.sweeteners.includes(item))
+    ) {
         throw createBadRequest("configuration.sweeteners contains an unsupported sweetener.");
     }
 
@@ -117,28 +130,34 @@ function normalizeConfiguration(input) {
 function getComposition(configuration) {
     const shotVolume = { ristretto: 22, standard: 30, lungo: 40 }[configuration.extraction];
     const baseMl = configuration.base === "espresso" ? configuration.shots * shotVolume : 0;
-    const syrupMl = Object.entries(configuration.syrups)
-        .reduce((total, [name, pumps]) => total + pumps * SYRUPS[name].volumeMl, 0);
-    const milkTotal = configuration.base === "espresso"
-        ? Math.max(0, configuration.volumeMl - baseMl - syrupMl)
-        : configuration.base === "matcha" ? Math.max(0, configuration.volumeMl - syrupMl) * 0.3 : 0;
-    const foamMl = milkTotal * configuration.foam / 100 * 0.6;
+    const syrupMl = Object.entries(configuration.syrups).reduce(
+        (total, [name, pumps]) => total + pumps * SYRUPS[name].volumeMl,
+        0
+    );
+    const milkTotal =
+        configuration.base === "espresso"
+            ? Math.max(0, configuration.volumeMl - baseMl - syrupMl)
+            : configuration.base === "matcha"
+              ? Math.max(0, configuration.volumeMl - syrupMl) * 0.3
+              : 0;
+    const foamMl = ((milkTotal * configuration.foam) / 100) * 0.6;
     const milkMl = milkTotal - foamMl;
-    const otherBaseMl = configuration.base === "espresso"
-        ? 0
-        : Math.max(0, configuration.volumeMl - syrupMl - milkTotal);
+    const otherBaseMl =
+        configuration.base === "espresso" ? 0 : Math.max(0, configuration.volumeMl - syrupMl - milkTotal);
     return { baseMl, milkMl, foamMl, syrupMl, otherBaseMl };
 }
 
 function classifyDrink(configuration, composition = getComposition(configuration)) {
-    const hasExtras = Object.values(configuration.syrups).some(Boolean)
-        || configuration.sweeteners.length > 0
-        || Object.values(configuration.toppings).some(Boolean);
+    const hasExtras =
+        Object.values(configuration.syrups).some(Boolean) ||
+        configuration.sweeteners.length > 0 ||
+        Object.values(configuration.toppings).some(Boolean);
 
     if (configuration.base === "drip" && configuration.temperature === "hot" && !hasExtras) return "Americano";
     if (configuration.base === "matcha") return "Matcha";
     if (configuration.base === "coldBrew") return "Cold Brew";
-    if (configuration.base !== "espresso" || configuration.temperature !== "hot" || hasExtras) return "Custom Concoction";
+    if (configuration.base !== "espresso" || configuration.temperature !== "hot" || hasExtras)
+        return "Custom Concoction";
 
     const { baseMl, milkMl, foamMl } = composition;
     if (!baseMl) return "Custom Concoction";
@@ -156,13 +175,14 @@ function classifyDrink(configuration, composition = getComposition(configuration
 function calculateNutrition(configuration) {
     const composition = getComposition(configuration);
     const base = BASES[configuration.base];
-    const caffeineFactor = configuration.caffeineMode === "decaf" ? 0.05
-        : configuration.caffeineMode === "half" ? 0.5 : 1;
-    const caffeine = configuration.base === "espresso"
-        ? base.caffeine * configuration.shots
-        : base.caffeine * configuration.volumeMl / 240;
-    let calories = base.calories + composition.milkMl * MILKS[configuration.milk].calories / 100;
-    let sugar = composition.milkMl * MILKS[configuration.milk].sugar / 100;
+    const caffeineFactor =
+        configuration.caffeineMode === "decaf" ? 0.05 : configuration.caffeineMode === "half" ? 0.5 : 1;
+    const caffeine =
+        configuration.base === "espresso"
+            ? base.caffeine * configuration.shots
+            : (base.caffeine * configuration.volumeMl) / 240;
+    let calories = base.calories + (composition.milkMl * MILKS[configuration.milk].calories) / 100;
+    let sugar = (composition.milkMl * MILKS[configuration.milk].sugar) / 100;
 
     Object.entries(configuration.syrups).forEach(([name, pumps]) => {
         calories += SYRUPS[name].calories * pumps;

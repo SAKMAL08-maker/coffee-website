@@ -45,7 +45,11 @@
         appendDetail(details, "Customer", customer.name);
         appendDetail(details, "Phone", customer.phone);
         appendDetail(details, "Fulfillment", order.fulfillmentMethod);
-        appendDetail(details, order.fulfillmentMethod === "delivery" ? "Delivery address" : "Pickup", order.deliveryAddress || "Pickup counter");
+        appendDetail(
+            details,
+            order.fulfillmentMethod === "delivery" ? "Delivery address" : "Pickup",
+            order.deliveryAddress || "Pickup counter"
+        );
         appendDetail(details, "Placed", Number.isNaN(createdAt.getTime()) ? "Unknown" : createdAt.toLocaleString());
         appendDetail(details, "Total", formatMoney(order.pricing?.total_cents));
         if (order.notes) appendDetail(details, "Order notes", order.notes);
@@ -88,9 +92,10 @@
             fulfillmentState.textContent = "Customer reports delivery; administrator approval is pending.";
             fulfillmentState.dataset.pending = "true";
         } else {
-            fulfillmentState.textContent = order.fulfillmentMethod === "delivery"
-                ? "Waiting for the customer to report delivery."
-                : "Waiting for an administrator to verify that the order is ready for pickup.";
+            fulfillmentState.textContent =
+                order.fulfillmentMethod === "delivery"
+                    ? "Waiting for the customer to report delivery."
+                    : "Waiting for an administrator to verify that the order is ready for pickup.";
         }
         card.append(fulfillmentState);
 
@@ -196,11 +201,15 @@
             }
             if (!response.ok) {
                 if (response.status === 401 || response.status === 403) {
-                    throw new Error("Your administrator session is not authorized. Sign out and sign back in with an admin account.");
+                    throw new Error(
+                        "Your administrator session is not authorized. Sign out and sign back in with an admin account."
+                    );
                 }
                 if (response.status === 503 && result.error) throw new Error(result.error);
                 if (response.status >= 500) {
-                    throw new Error("The server could not query orders. Confirm the latest Supabase migrations are applied, then check the Render logs.");
+                    throw new Error(
+                        "The server could not query orders. Confirm the latest Supabase migrations are applied, then check the Render logs."
+                    );
                 }
                 throw new Error(result.error || `Order request failed (${response.status}).`);
             }
@@ -215,7 +224,8 @@
             }
             renderOrders(result.orders);
             const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
-            $("#admin-page-label").textContent = `Page ${currentPage} of ${pageCount} · ${totalCount} order${totalCount === 1 ? "" : "s"}`;
+            $("#admin-page-label").textContent =
+                `Page ${currentPage} of ${pageCount} · ${totalCount} order${totalCount === 1 ? "" : "s"}`;
             $("#admin-previous-page").disabled = currentPage <= 1;
             $("#admin-next-page").disabled = currentPage >= pageCount;
             message.textContent = result.schemaWarning || "";
@@ -262,7 +272,11 @@
             button.textContent = preview.hidden ? "View receipt image" : "Hide receipt image";
             return;
         }
-        if (action === "delete" && !window.confirm("Permanently delete this order and its stored receipt? This cannot be undone.")) return;
+        if (
+            action === "delete" &&
+            !window.confirm("Permanently delete this order and its stored receipt? This cannot be undone.")
+        )
+            return;
 
         const actionUrls = {
             receipt: `/api/orders/${encodeURIComponent(orderId)}/admin/receipt`,
@@ -279,27 +293,39 @@
         button.disabled = true;
         try {
             const response = await fetch(actionUrls[action], {
-                method: ["approve", "approve-pickup"].includes(action) ? "PATCH" : action === "generate-receipt" ? "POST" : "DELETE",
+                method: ["approve", "approve-pickup"].includes(action)
+                    ? "PATCH"
+                    : action === "generate-receipt"
+                      ? "POST"
+                      : "DELETE",
                 credentials: "same-origin",
                 headers: { "Content-Type": "application/json" },
                 body: ["approve", "approve-pickup", "generate-receipt"].includes(action) ? "{}" : undefined
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Order action failed (${response.status}).`);
-            $("#admin-message").textContent = action === "approve" || action === "approve-pickup"
-                ? action === "approve" ? "Order approved as delivered." : "Order verified as ready for pickup."
-                : action === "generate-receipt"
-                    ? result.receiptStatus === "available"
-                        ? "Receipt generated and saved to Backblaze."
-                        : result.receiptStatus === "failed"
+            $("#admin-message").textContent =
+                action === "approve" || action === "approve-pickup"
+                    ? action === "approve"
+                        ? "Order approved as delivered."
+                        : "Order verified as ready for pickup."
+                    : action === "generate-receipt"
+                      ? result.receiptStatus === "available"
+                          ? "Receipt generated and saved to Backblaze."
+                          : result.receiptStatus === "failed"
                             ? "Receipt generation or upload failed. Check the server logs and B2 application-key permissions."
                             : "B2 storage is not configured on this server. Add the B2_* variables to its environment, then retry."
-                    : "Order and its receipt deleted.";
+                      : "Order and its receipt deleted.";
             await loadOrders();
         } catch (error) {
-            const actionDescription = action === "approve" ? "approve delivery"
-                : action === "approve-pickup" ? "verify pickup readiness"
-                    : action === "generate-receipt" ? "generate receipt" : "delete order";
+            const actionDescription =
+                action === "approve"
+                    ? "approve delivery"
+                    : action === "approve-pickup"
+                      ? "verify pickup readiness"
+                      : action === "generate-receipt"
+                        ? "generate receipt"
+                        : "delete order";
             $("#admin-message").textContent = `Could not ${actionDescription}: ${error.message}`;
             button.disabled = false;
         }
