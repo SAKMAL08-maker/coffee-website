@@ -36,6 +36,8 @@
         $("#signed-in-user").textContent = `Hi, ${user.username}`;
         if (isAdmin) window.CoffeeLabAdmin?.startForUser(user);
         // Lets customer-only features (e.g. the caffeine guardian) start once signed in.
+        // Also recorded on window, because app.js may load after this event fires.
+        window.CoffeeLabSession = { role: user.role };
         document.dispatchEvent(new CustomEvent("coffeelab:signed-in", { detail: { role: user.role } }));
     }
 
