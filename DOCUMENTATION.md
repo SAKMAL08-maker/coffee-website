@@ -145,7 +145,7 @@ Examples of problem-solving milestones visible in the project record include rep
 
 There is **no frontend build step**: this is plain HTML, CSS, and browser JavaScript. The application is deployed on **Render** and its source repository is on **GitHub**. `npm start` runs `node server.js`; `npm test` runs Node’s built-in test runner.
 
-No GitHub Actions workflow, CI pipeline, deployment manifest, or Render configuration file was present in the repository. Render deployment settings are therefore managed outside the checked-in source (for example, in the Render service configuration/dashboard); the exact branch trigger, build command, health checks, and auto-deploy settings cannot be confirmed from this codebase. A typical Render Node service uses `npm install` or `npm ci` as its build command and `npm start` as its start command, but use the values configured for the actual service.
+GitHub Actions (`.github/workflows/ci.yml`) runs `npm ci`, ESLint, `npm test`, and `npm audit --omit=dev` on every pull request and push to `main`. There is no deployment manifest (`render.yaml`); Render deployment settings are therefore managed outside the checked-in source (for example, in the Render service configuration/dashboard); the exact branch trigger, build command, health checks, and auto-deploy settings cannot be confirmed from this codebase. A typical Render Node service uses `npm install` or `npm ci` as its build command and `npm start` as its start command, but use the values configured for the actual service.
 
 Recommended safe release sequence (manual unless CI/CD is added):
 
@@ -183,7 +183,7 @@ This is a recommended procedure, **not a claim that automated CI/CD currently en
 - TOTP is not phishing-resistant and does not protect an already-stolen browser session, compromised device, or leaked setup secret.
 - The rate limiter uses the default in-memory store. Multiple Node instances do not share counts; a shared production store is needed for consistent distributed rate limits.
 - Service-role access is highly privileged. Keep it on the server, restrict secret access, and rotate immediately if exposed.
-- No automated dependency audit, centralized security monitoring, backup/restore validation, or CI security gate was found in the repository. Review Render service logs and Supabase/Backblaze provider logs during deployment and incident response.
+- CI runs `npm audit --omit=dev` on every pull request. There is still no centralized security monitoring or backup/restore validation. Review Render service logs and Supabase/Backblaze provider logs during deployment and incident response.
 - `NODE_ENV=production` enables secure-cookie, HSTS, and CSP upgrade behavior. Production deployment must use HTTPS and set this variable correctly.
 - No payment processor is configured in the inspected source; order totals are calculated, but payment collection/settlement should not be assumed.
 
@@ -263,7 +263,7 @@ test/            Node test-runner tests
 
 - Replace order polling with Supabase Realtime, server-sent events, or another push mechanism if polling load or update latency becomes material.
 - Use a shared rate-limit store before horizontally scaling the Express app.
-- Add CI checks for tests, syntax/linting, dependency/security review, and migration validation; add staged deployment and rollback automation.
+- Extend CI with migration validation and Prettier enforcement; add staged deployment and rollback automation.
 - Add explicit operational documentation for Supabase migration tracking, B2 retention/lifecycle rules, backups, MFA recovery, and incident response.
 - Consolidate or contract-test shared pricing and recipe calculations if frontend and server rules begin to diverge.
 - Introduce typed API contracts or TypeScript if the application’s size and team concurrency increase.
