@@ -182,6 +182,10 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal(unauthenticatedAdminOrders.status, 401);
         const invalidAdminOrdersPage = await fetch(`${baseUrl}/api/orders/admin/all?page=0`);
         assert.equal(invalidAdminOrdersPage.status, 400);
+        assert.equal((await fetch(`${baseUrl}/api/admin/metrics?days=30`)).status, 401);
+        assert.equal((await fetch(`${baseUrl}/api/admin/metrics?days=365`)).status, 400);
+        assert.match(html, /id="admin-dashboard"/);
+        assert.match(html, /src="\/js\/adminDashboard\.js"/);
         const unauthenticatedAdminReceiptRetry = await fetch(
             `${baseUrl}/api/orders/c5c0c718-6e68-4a0f-b490-eaa4897bb4b1/admin/receipt/retry`,
             {

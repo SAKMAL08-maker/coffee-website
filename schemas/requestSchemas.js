@@ -227,6 +227,10 @@ const schemas = {
         params: z.object({ orderId: uuid }).strict(),
         query: emptyQuery
     },
+    adminMetrics: {
+        params: emptyParams,
+        query: z.object({ days: z.enum(["7", "30", "90"]).default("30") }).strict()
+    },
     adminOrders: {
         params: emptyParams,
         query: z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict()

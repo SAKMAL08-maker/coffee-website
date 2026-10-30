@@ -930,13 +930,29 @@
                 <div class="admin-heading">
                     <div>
                         <p class="eyebrow">Coffee Lab operations</p>
-                        <h1 id="admin-title" tabindex="-1">Order administration</h1>
-                        <p>Review customer delivery reports, verify receipts, and manage orders.</p>
+                        <h1 id="admin-title" tabindex="-1">Admin dashboard</h1>
+                        <p>See how the shop is doing, then review and manage orders.</p>
                     </div>
-                    <button class="button button-primary" id="admin-refresh-button" type="button">
-                        Refresh orders
-                    </button>
+                    <button class="button button-primary" id="admin-refresh-button" type="button">Refresh</button>
                 </div>
+                <section class="admin-dashboard" id="admin-dashboard" aria-labelledby="admin-dashboard-title">
+                    <div class="admin-dashboard-header">
+                        <h2 id="admin-dashboard-title">Dashboard</h2>
+                        <label class="admin-dashboard-range">
+                            <span>Show</span>
+                            <select id="admin-dashboard-days">
+                                <option value="7">Last 7 days</option>
+                                <option value="30" selected>Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="admin-kpis" id="admin-kpis"></div>
+                    <div class="admin-chart-tabs" id="admin-chart-tabs" role="tablist" aria-label="Metrics"></div>
+                    <div class="admin-chart" id="admin-chart" role="tabpanel"></div>
+                    <p class="field-help" id="admin-dashboard-status" role="status"></p>
+                </section>
+                <h2 class="admin-orders-title">Orders</h2>
                 <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
                 <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
                 <nav class="admin-pagination" aria-label="Order pages">
@@ -1029,6 +1045,7 @@
         </dialog>
 
         <script src="/js/admin.js" defer></script>
+        <script src="/js/adminDashboard.js" defer></script>
         <script src="/js/auth.js" defer></script>
         <script src="/js/state.js" defer></script>
         <script src="/js/pricing.js" defer></script>
