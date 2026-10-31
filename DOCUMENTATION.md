@@ -115,7 +115,7 @@ Nutrition, recipe labels, service fees, taxes, and other displayed calculations 
 
 ### Admin dashboard
 
-- The admin page has three tabs: **Orders**, **Dashboard** and **Admin access** (called **Accounts** for the superadmin, where it also lists every account and the admin requests sent from the sign-up form's **Admin** tab, to approve or decline). Orders opens first; the last tab used is remembered for the browser session. Arrow keys move between tabs.
+- The admin page has three tabs: **Orders**, **Dashboard** and **Admin access** (called **Accounts** for the superadmin, where it also lists every account; there, Admin access also shows the requests sent from the sign-up form's **Admin** tab, to approve or decline). Orders opens first; the last tab used is remembered for the browser session. Arrow keys move between tabs.
 - At the top of the admin page: totals (orders, drinks, sales, average order) for the last 7, 30 or 90 days, and a bar chart per tab: orders per day, sales per day, drink type, coffee base, milk, hot/iced/blended, add-ons (syrups, toppings, sweeteners), caffeine mode, pickup vs delivery, and order status.
 - Computed on the server (`services/adminMetricsService.js`, `GET /api/admin/metrics?days=30`, admin with MFA only). Days use **Asia/Manila** time. Charts are plain HTML/CSS (no chart library); category charts are tables, so screen readers get the numbers.
 

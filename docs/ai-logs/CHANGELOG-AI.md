@@ -446,3 +446,7 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 - **Waiting state:** a request is a `pending_admin` account linked to a Supabase Auth user whose email stays unconfirmed, so it can't sign in either way. Logging in with the right password says the request is waiting; a wrong password gets the usual answer, so usernames don't leak. At most 20 requests can wait at once.
 - **Superadmin approval:** requests appear at the top of **Accounts → Admins** with their email, and **Approve** / **Decline** buttons. Approve confirms the sign-in, makes the account an admin and approves its authenticator setup for 24 hours; Decline deletes the request and its sign-in.
 - **Migration:** `20261113000000_admin_signup_requests.sql` adds `pending_admin` to the allowed roles. It must be applied before admin requests work; customer sign-up doesn't depend on it.
+
+### Admin requests moved into Admin access
+
+- **Fix:** admin requests now appear in the superadmin's **Admin access** panel (Accounts tab), as asked, instead of in the Accounts list. They sit at the top with the email and **Approve** / **Decline**, count toward the panel's "waiting" badge and the tab badge, and open the panel automatically. The Accounts list shows only real accounts; after an approval it refreshes to show the new admin.
