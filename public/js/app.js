@@ -278,6 +278,13 @@
         elements.volume.value = state.volumeMl;
         elements.shots.value = state.shots;
         elements.foam.value = state.foam;
+        // − and + beside each slider: off at the slider's ends, so a press always does something.
+        $$("[data-adjust]").forEach((button) => {
+            const input = $(`#${button.dataset.adjust}-range`);
+            const value = Number(input.value);
+            button.disabled =
+                Number(button.dataset.delta) < 0 ? value <= Number(input.min) : value >= Number(input.max);
+        });
     }
 
     function setNotice(message) {
@@ -1211,7 +1218,8 @@
 
     $$("[data-adjust]").forEach((button) => {
         button.addEventListener("click", () => {
-            const input = button.dataset.adjust === "volume" ? elements.volume : elements.shots;
+            // data-adjust names the slider: "volume" → #volume-range, "shot" → #shot-range, "foam" → #foam-range.
+            const input = $(`#${button.dataset.adjust}-range`);
             input.value = String(Number(input.value) + Number(button.dataset.delta));
             input.dispatchEvent(new Event("input", { bubbles: true }));
         });
