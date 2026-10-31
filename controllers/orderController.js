@@ -15,7 +15,6 @@ const {
 } = require("../services/paymentService");
 const { resolveRecipeRoyalties } = require("../services/communityRecipeService");
 const {
-    createOrderReceipt,
     getReceiptDownloadUrl,
     getOwnedReceiptImageUrl,
     retryOwnedReceipt,
@@ -24,6 +23,7 @@ const {
     retryAdminReceipt: retryAdminReceiptService,
     deleteStoredReceipt
 } = require("../services/receiptService");
+const { enqueueReceipt } = require("../services/receiptQueue");
 const { ORDER_EVENT, EVENT_FOR_STATUS, recordOrderEvent } = require("../services/orderEvents");
 
 function badRequest(message) {
@@ -161,20 +161,11 @@ async function checkout(request, response, next) {
         });
         if (error) throw error;
 
+        // Signed-in customers get a receipt, built after the response (services/receiptQueue.js);
+        // the order row starts as "pending" and the tracking page polls until it's "available".
         let receiptStatus = "unavailable";
         if (request.user) {
-            try {
-                receiptStatus = await createOrderReceipt(orderId);
-            } catch (receiptError) {
-                console.error("Could not create order receipt:", {
-                    orderId,
-                    errorName: receiptError.name,
-                    errorCode: receiptError.Code || receiptError.code,
-                    httpStatusCode: receiptError.$metadata?.httpStatusCode,
-                    errorMessage: receiptError.message
-                });
-                receiptStatus = "failed";
-            }
+            receiptStatus = "pending";
         } else {
             const { error: receiptStatusError } = await supabase
                 .from("orders")
@@ -200,6 +191,7 @@ async function checkout(request, response, next) {
                 createdAt: new Date().toISOString()
             }
         });
+        if (request.user) enqueueReceipt(orderId);
     } catch (error) {
         next(error);
     }
@@ -564,14 +556,8 @@ async function markCashCollected(request, response, next) {
             action: ORDER_EVENT.CASH_COLLECTED
         });
         response.json({ order: { id: data.id, cashCollectedAt: data.cash_collected_at } });
-        // Reissue the receipt so the customer's copy says PAID. Runs after the response; on failure the
-        // order shows "Receipt failed" and the existing retry button makes it again.
-        createOrderReceipt(data.id).catch((receiptError) =>
-            console.error("Receipt reissue after cash collection failed:", {
-                orderId: data.id,
-                error: receiptError.message
-            })
-        );
+        // Reissue the receipt so the customer's copy says PAID (queued; retried on failure).
+        enqueueReceipt(data.id);
     } catch (error) {
         next(error);
     }

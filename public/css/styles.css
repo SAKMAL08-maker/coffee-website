@@ -3153,6 +3153,31 @@ dialog::backdrop {
 .site-footer a:hover {
     text-decoration: underline;
 }
+.site-footer-install {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+}
+.site-footer-install:not(:has(:not([hidden]))) {
+    display: none;
+}
+.site-footer-install p {
+    margin: 0;
+}
+.offline-page {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    max-width: 420px;
+    margin: 18vh auto;
+    padding: 0 20px;
+    text-align: center;
+}
+.offline-page .brand-mark {
+    font-size: 2.4rem;
+}
 .site-footer-copy {
     grid-column: 1 / -1;
     margin: 0;

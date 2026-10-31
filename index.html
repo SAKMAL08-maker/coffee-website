@@ -4,6 +4,10 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#f7f3ed" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-title" content="Coffee Lab" />
         <title>Coffee Lab — Customizer</title>
         <script src="/js/theme.js"></script>
         <link rel="stylesheet" href="/css/styles.css" />
@@ -1199,10 +1203,7 @@
                     <a href="mailto:coffeelab08@gmail.com">coffeelab08@gmail.com</a>
                 </nav>
                 <nav class="site-footer-social" aria-label="Coffee Lab on social media">
-                    <a
-                        href="https://www.facebook.com/search/top?q=JM%20Legaspi"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <a href="https://www.facebook.com/LegaspiJulian08/" target="_blank" rel="noopener noreferrer"
                         ><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
                             <path
                                 fill="currentColor"
@@ -1219,6 +1220,15 @@
                         ><span>Instagram</span><span class="sr-only"> (opens in a new tab)</span></a
                     >
                 </nav>
+                <div class="site-footer-install">
+                    <button class="button button-small" id="install-app-button" type="button" hidden>
+                        Install app
+                    </button>
+                    <p class="field-help" id="install-app-hint" hidden>
+                        On iPhone: tap Share <span aria-hidden="true">⎋</span>, then
+                        <strong>Add to Home Screen</strong>.
+                    </p>
+                </div>
                 <p class="site-footer-copy">© 2026 Coffee Lab · Made in the Philippines</p>
             </footer>
         </div>
@@ -1468,5 +1478,6 @@
         <script src="/js/profile.js" defer></script>
         <script src="/js/support.js" defer></script>
         <script src="/js/app.js" defer></script>
+        <script src="/js/pwa.js" defer></script>
     </body>
 </html>

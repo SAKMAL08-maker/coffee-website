@@ -84,6 +84,20 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="admin-mfa-enroll"/);
         assert.match(html, /id="recovery-form"/);
         assert.match(html, /id="logout-button"/);
+        // Installable app: manifest, service worker at the root scope, offline page, icons.
+        assert.match(html, /<link rel="manifest" href="\/manifest\.webmanifest"/);
+        const manifestResponse = await fetch(`${baseUrl}/manifest.webmanifest`);
+        assert.equal(manifestResponse.status, 200);
+        assert.match(manifestResponse.headers.get("content-type"), /application\/manifest\+json/);
+        const manifest = await manifestResponse.json();
+        assert.equal(manifest.display, "standalone");
+        assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "maskable"));
+        for (const icon of manifest.icons) assert.equal((await fetch(`${baseUrl}${icon.src}`)).status, 200);
+        const serviceWorker = await fetch(`${baseUrl}/sw.js`);
+        assert.equal(serviceWorker.status, 200);
+        assert.match(serviceWorker.headers.get("content-type"), /javascript/);
+        assert.match(await serviceWorker.text(), /url\.pathname\.startsWith\("\/api\/"\)/, "sw must skip /api");
+        assert.equal((await fetch(`${baseUrl}/offline.html`)).status, 200);
         assert.match(html, /id="receipt-message"/);
         assert.match(html, /id="receipt-preview-image"/);
         assert.match(html, /id="download-receipt-button"/);

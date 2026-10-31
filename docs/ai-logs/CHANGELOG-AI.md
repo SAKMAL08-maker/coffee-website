@@ -386,3 +386,9 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 - **Access:** checked on the server for every ticket: its customer or an MFA-verified admin or the superadmin (`hasAdminAccess`, the same rule as `requireAdmin`). Everyone else gets 404. Messages are plain text, cleaned on the server and rendered with `textContent`.
 - **Updates:** the open conversation polls `messages?after=<id>` every 5 s while it is on screen, and badges refresh every 30 s. That's enough at this scale; Supabase Realtime is the next step (see the scalability notes).
 - **Migration `20261110000000_support_tickets.sql`** (additive): `support_tickets` and `support_messages` with indexes and row-level security, and `staff_profile_stats` gains `supportReplies` (copied from the profiles migration with that one addition, diffed).
+
+### Installable app, receipts out of checkout, Facebook link
+
+- **Installable on phones (PWA):** `manifest.webmanifest`, app icons (192, 512, maskable, Apple touch), and a service worker (`public/sw.js`) that only falls back to cached CSS/JS/icons and an offline page when there's no connection. Pages and `/api` always come from the network, so deploys are live immediately and no stale data is ever shown. The footer shows "Install app" when the browser offers it; on iPhone it explains Share → Add to Home Screen.
+- **Receipts no longer slow down checkout:** the order is saved and answered immediately with receipt status `pending`; `services/receiptQueue.js` builds the PDF and image in the background (2 at a time, 3 attempts), and the tracking page checks back after 3 s and 8 s. A sweeper re-queues receipts left pending by a restart. The cash-collected reissue uses the same queue.
+- **Footer:** Facebook now links to the real profile.

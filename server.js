@@ -15,6 +15,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const superadminRoutes = require("./routes/superadminRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const supportRoutes = require("./routes/supportRoutes");
+const { startReceiptSweeper } = require("./services/receiptQueue");
 const healthRoutes = require("./routes/healthRoutes");
 const { verifySameOrigin } = require("./middleware/originProtection");
 
@@ -133,6 +134,7 @@ app.use((error, request, response, next) => {
 
 async function startServer() {
     assertSupabaseConfig();
+    startReceiptSweeper();
     return app.listen(port, () => {
         console.log(`Coffee Lab API listening on http://localhost:${port} (Supabase configured).`);
     });

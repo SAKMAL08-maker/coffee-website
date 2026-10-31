@@ -718,14 +718,18 @@
                 : "";
         const receiptStatus = order.receiptStatus || "unavailable";
         const receiptMessages = {
-            pending: "Your digital receipt is ready to generate.",
+            pending: order.receiptQueuedAt
+                ? "Preparing your receipt… it appears here in a moment."
+                : "Your digital receipt is ready to generate.",
             available: "Your receipt image is ready to view, and the PDF is ready to download.",
             failed: "We could not prepare your receipt. You can try again.",
             unavailable: "This receipt has not been saved yet. You can try generating it again."
         };
         $("#receipt-message").textContent = receiptMessages[receiptStatus] || receiptMessages.failed;
         $("#download-receipt-button").hidden = receiptStatus !== "available";
-        $("#retry-receipt-button").hidden = !["pending", "failed", "unavailable"].includes(receiptStatus);
+        $("#retry-receipt-button").hidden =
+            !["pending", "failed", "unavailable"].includes(receiptStatus) ||
+            (receiptStatus === "pending" && Boolean(order.receiptQueuedAt));
         $("#retry-receipt-button").textContent = receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
         const receiptPreview = $("#receipt-preview-image");
         if (receiptStatus === "available" && order.id) {
@@ -751,6 +755,9 @@
         if (state.orderStatus && !isFulfillmentComplete(state.orderStatus)) {
             refreshTrackingStatus();
             trackingPollTimer = window.setInterval(refreshTrackingStatus, 20000);
+            // A fresh order's receipt is usually ready within seconds; check sooner than the 20 s poll.
+            if (state.orderStatus?.receiptQueuedAt)
+                [3000, 8000].forEach((ms) => window.setTimeout(refreshTrackingStatus, ms));
         }
     }
 
@@ -796,6 +803,13 @@
             }
             state.orderStatus.status = result.order.status;
             state.orderStatus.receiptStatus = result.order.receiptStatus || state.orderStatus.receiptStatus;
+            // Stop saying "preparing" once it's ready, or after a minute (then offer the button).
+            if (
+                state.orderStatus.receiptStatus !== "pending" ||
+                Date.now() - (state.orderStatus.receiptQueuedAt || 0) > 60000
+            ) {
+                state.orderStatus.receiptQueuedAt = null;
+            }
             state.orderStatus.deliveryReported = Boolean(result.order.deliveryReported);
             renderTracking();
             if (isFulfillmentComplete(state.orderStatus)) window.clearInterval(trackingPollTimer);
@@ -1245,6 +1259,8 @@
                 deliveryAddress: state.deliveryAddress,
                 itemCount: result.order.itemCount,
                 receiptStatus: result.order.receiptStatus || "unavailable",
+                // Built in the background; the tracking page checks back until it's ready.
+                receiptQueuedAt: result.order.receiptStatus === "pending" ? Date.now() : null,
                 deliveryReported: false
             };
             historyReturnView = "customizer";

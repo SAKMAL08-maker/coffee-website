@@ -29,5 +29,13 @@ module.exports = [
             globals: { ...globals.browser }
         }
     },
+    {
+        // The service worker runs in its own global scope (self, caches), not a page.
+        files: ["public/sw.js"],
+        languageOptions: {
+            sourceType: "script",
+            globals: { ...globals.serviceworker }
+        }
+    },
     eslintConfigPrettier
 ];
