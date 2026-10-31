@@ -974,76 +974,132 @@
                     <div>
                         <p class="eyebrow">Coffee Lab operations</p>
                         <h1 id="admin-title" tabindex="-1">Admin dashboard</h1>
-                        <p>See how the shop is doing, then review and manage orders.</p>
+                        <p>Manage orders, see how the shop is doing, and manage accounts.</p>
                     </div>
                     <button class="button button-primary" id="admin-refresh-button" type="button">Refresh</button>
                 </div>
-                <section class="admin-dashboard" id="admin-dashboard" aria-labelledby="admin-dashboard-title">
-                    <div class="admin-dashboard-header">
-                        <h2 id="admin-dashboard-title">Dashboard</h2>
-                        <label class="admin-dashboard-range">
-                            <span>Show</span>
-                            <select id="admin-dashboard-days">
-                                <option value="7">Last 7 days</option>
-                                <option value="30" selected>Last 30 days</option>
-                                <option value="90">Last 90 days</option>
-                            </select>
-                        </label>
-                        <!-- adminDashboard.js keeps ?days in step with the selected range. -->
-                        <a
-                            class="button button-small"
-                            id="admin-export-csv"
-                            href="/api/admin/orders.csv?days=30"
-                            download
-                            >Download CSV</a
-                        >
-                    </div>
-                    <div class="admin-kpis" id="admin-kpis"></div>
-                    <div class="admin-chart-tabs" id="admin-chart-tabs" role="tablist" aria-label="Metrics"></div>
-                    <div class="admin-chart" id="admin-chart" role="tabpanel"></div>
-                    <p class="field-help" id="admin-dashboard-status" role="status"></p>
-                </section>
-                <section
-                    class="account-dashboard"
-                    id="account-dashboard"
+                <!-- Sections of the admin page; adminTabs.js switches between them. -->
+                <div class="admin-tabs" id="admin-tabs" role="tablist" aria-label="Admin sections">
+                    <button
+                        class="admin-tab"
+                        id="admin-tab-orders"
+                        type="button"
+                        role="tab"
+                        aria-controls="admin-panel-orders"
+                        data-admin-tab="orders"
+                    >
+                        Orders
+                    </button>
+                    <button
+                        class="admin-tab"
+                        id="admin-tab-dashboard"
+                        type="button"
+                        role="tab"
+                        aria-controls="admin-panel-dashboard"
+                        data-admin-tab="dashboard"
+                    >
+                        Dashboard
+                    </button>
+                    <button
+                        class="admin-tab"
+                        id="admin-tab-accounts"
+                        type="button"
+                        role="tab"
+                        aria-controls="admin-panel-accounts"
+                        data-admin-tab="accounts"
+                    >
+                        Admin access
+                    </button>
+                </div>
+                <div class="admin-panel" id="admin-panel-orders" role="tabpanel" aria-labelledby="admin-tab-orders">
+                    <h2 class="admin-orders-title">Orders</h2>
+                    <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
+                    <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
+                    <nav class="admin-pagination" aria-label="Order pages">
+                        <button class="button" id="admin-previous-page" type="button" disabled>Previous</button>
+                        <span id="admin-page-label">Page 1</span>
+                        <button class="button" id="admin-next-page" type="button" disabled>Next</button>
+                    </nav>
+                </div>
+                <div
+                    class="admin-panel"
+                    id="admin-panel-dashboard"
+                    role="tabpanel"
+                    aria-labelledby="admin-tab-dashboard"
                     hidden
-                    aria-labelledby="account-dashboard-title"
                 >
-                    <div class="admin-dashboard-header">
-                        <h2 id="account-dashboard-title">Accounts</h2>
-                        <div class="account-filter" role="tablist" aria-label="Account type">
-                            <button class="admin-chart-tab" type="button" role="tab" data-account-filter="admins">
-                                Admins
-                            </button>
-                            <button class="admin-chart-tab" type="button" role="tab" data-account-filter="customers">
-                                Customers
-                            </button>
+                    <section class="admin-dashboard" id="admin-dashboard" aria-labelledby="admin-dashboard-title">
+                        <div class="admin-dashboard-header">
+                            <h2 id="admin-dashboard-title">Dashboard</h2>
+                            <label class="admin-dashboard-range">
+                                <span>Show</span>
+                                <select id="admin-dashboard-days">
+                                    <option value="7">Last 7 days</option>
+                                    <option value="30" selected>Last 30 days</option>
+                                    <option value="90">Last 90 days</option>
+                                </select>
+                            </label>
+                            <!-- adminDashboard.js keeps ?days in step with the selected range. -->
+                            <a
+                                class="button button-small"
+                                id="admin-export-csv"
+                                href="/api/admin/orders.csv?days=30"
+                                download
+                                >Download CSV</a
+                            >
                         </div>
-                    </div>
-                    <p class="field-help" id="account-summary"></p>
-                    <ul class="admin-access-list" id="account-list"></ul>
-                    <p class="notice" id="account-message" role="status" aria-live="polite"></p>
-                </section>
-                <details class="admin-access" id="admin-access">
-                    <summary>
-                        <span class="admin-access-title">Admin access</span>
-                        <span class="admin-access-badge" id="admin-access-badge" hidden></span>
-                    </summary>
-                    <p class="field-help">
-                        Approve a new admin here instead of running the setup script. They then sign in and scan a QR
-                        code with their authenticator app, with no setup key to type. An approval lasts 24 hours.
-                    </p>
-                    <ul class="admin-access-list" id="admin-access-list"></ul>
-                    <p class="notice" id="admin-access-message" role="status" aria-live="polite"></p>
-                </details>
-                <h2 class="admin-orders-title">Orders</h2>
-                <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
-                <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
-                <nav class="admin-pagination" aria-label="Order pages">
-                    <button class="button" id="admin-previous-page" type="button" disabled>Previous</button>
-                    <span id="admin-page-label">Page 1</span>
-                    <button class="button" id="admin-next-page" type="button" disabled>Next</button>
-                </nav>
+                        <div class="admin-kpis" id="admin-kpis"></div>
+                        <div class="admin-chart-tabs" id="admin-chart-tabs" role="tablist" aria-label="Metrics"></div>
+                        <div class="admin-chart" id="admin-chart" role="tabpanel"></div>
+                        <p class="field-help" id="admin-dashboard-status" role="status"></p>
+                    </section>
+                </div>
+                <div
+                    class="admin-panel"
+                    id="admin-panel-accounts"
+                    role="tabpanel"
+                    aria-labelledby="admin-tab-accounts"
+                    hidden
+                >
+                    <section
+                        class="account-dashboard"
+                        id="account-dashboard"
+                        hidden
+                        aria-labelledby="account-dashboard-title"
+                    >
+                        <div class="admin-dashboard-header">
+                            <h2 id="account-dashboard-title">Accounts</h2>
+                            <div class="account-filter" role="tablist" aria-label="Account type">
+                                <button class="admin-chart-tab" type="button" role="tab" data-account-filter="admins">
+                                    Admins
+                                </button>
+                                <button
+                                    class="admin-chart-tab"
+                                    type="button"
+                                    role="tab"
+                                    data-account-filter="customers"
+                                >
+                                    Customers
+                                </button>
+                            </div>
+                        </div>
+                        <p class="field-help" id="account-summary"></p>
+                        <ul class="admin-access-list" id="account-list"></ul>
+                        <p class="notice" id="account-message" role="status" aria-live="polite"></p>
+                    </section>
+                    <details class="admin-access" id="admin-access">
+                        <summary>
+                            <span class="admin-access-title">Admin access</span>
+                            <span class="admin-access-badge" id="admin-access-badge" hidden></span>
+                        </summary>
+                        <p class="field-help">
+                            Approve a new admin here instead of running the setup script. They then sign in and scan a
+                            QR code with their authenticator app, with no setup key to type. An approval lasts 24 hours.
+                        </p>
+                        <ul class="admin-access-list" id="admin-access-list"></ul>
+                        <p class="notice" id="admin-access-message" role="status" aria-live="polite"></p>
+                    </details>
+                </div>
             </main>
         </div>
 
@@ -1133,6 +1189,7 @@
         <script src="/js/adminDashboard.js" defer></script>
         <script src="/js/adminAccess.js" defer></script>
         <script src="/js/accountDashboard.js" defer></script>
+        <script src="/js/adminTabs.js" defer></script>
         <script src="/js/auth.js" defer></script>
         <script src="/js/state.js" defer></script>
         <script src="/js/pricing.js" defer></script>

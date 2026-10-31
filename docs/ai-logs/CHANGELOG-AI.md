@@ -304,3 +304,14 @@ Append-only. Format and rules: [README.md](README.md).
 **Why:** the owner asked for one account above the admins that manages accounts and can be locked from Supabase.
 
 **Security trade-offs, told to the owner:** this account has no second factor, and the answers are personal facts that were shared in a chat. They are stored only as scrypt hashes, set from shell variables, and appear in no file or commit. Mitigations: lockout after 3 attempts, IP rate limit, a 12-hour session, and the normal login and password reset refuse the account.
+
+## 2026-10-31 · Admin page tabs
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `admin-tabs`
+
+**What changed:** the admin page is split into tabs, so you no longer scroll past the charts and account lists to reach orders. Tabs: Orders, Dashboard, and Admin access (labeled Accounts for the superadmin). Built as accessible ARIA tabs with arrow-key support; the last tab is remembered per browser session. Markup was moved, not changed, so every existing element ID is kept.
+
+**Why:** the owner found the single long admin page inconvenient.
+
+**Mistake caught:** the first version saved "Orders" on page load before reading the saved tab, so the remembered tab was always lost. The headless preview showed it, and it was fixed before the PR.
