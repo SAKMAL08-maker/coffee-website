@@ -1008,7 +1008,9 @@
                         aria-controls="admin-panel-accounts"
                         data-admin-tab="accounts"
                     >
-                        Admin access
+                        <span id="admin-tab-accounts-label">Admin access</span>
+                        <!-- Number of admins waiting for authenticator approval (set by adminAccess.js). -->
+                        <span class="admin-tab-badge" id="admin-access-badge" hidden></span>
                     </button>
                 </div>
                 <div class="admin-panel" id="admin-panel-orders" role="tabpanel" aria-labelledby="admin-tab-orders">

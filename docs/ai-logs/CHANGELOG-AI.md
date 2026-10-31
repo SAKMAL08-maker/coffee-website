@@ -312,6 +312,8 @@ Append-only. Format and rules: [README.md](README.md).
 
 **What changed:** the admin page is split into tabs, so you no longer scroll past the charts and account lists to reach orders. Tabs: Orders, Dashboard, and Admin access (labeled Accounts for the superadmin). Built as accessible ARIA tabs with arrow-key support; the last tab is remembered per browser session. Markup was moved, not changed, so every existing element ID is kept.
 
+Follow-up: a count badge on the Admin access / Accounts tab shows how many admins are waiting for authenticator approval. Screen readers hear "2 waiting for approval". Colours are coffee on paper: 10.6:1 contrast in light mode, 6.4:1 in dark.
+
 **Why:** the owner found the single long admin page inconvenient.
 
 **Mistake caught:** the first version saved "Orders" on page load before reading the saved tab, so the remembered tab was always lost. The headless preview showed it, and it was fixed before the PR.

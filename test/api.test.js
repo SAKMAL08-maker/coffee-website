@@ -61,6 +61,7 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="admin-panel-dashboard"[^>]*hidden/);
         assert.match(html, /id="admin-panel-accounts"[^>]*hidden/);
         assert.match(html, /src="\/js\/adminTabs\.js"/);
+        assert.match(html, /id="admin-access-badge"[^>]*hidden/);
         assert.equal((await fetch(`${baseUrl}/api/superadmin/accounts`)).status, 401);
         const incompleteSuperadminLogin = await fetch(`${baseUrl}/api/users/superadmin/login`, {
             method: "POST",

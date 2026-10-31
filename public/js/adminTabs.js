@@ -36,7 +36,8 @@
     function start(role) {
         if (role !== "admin" && role !== "superadmin") return;
         // Admins see only the Admin access panel there; the superadmin also manages all accounts.
-        document.querySelector("#admin-tab-accounts").textContent = role === "superadmin" ? "Accounts" : "Admin access";
+        document.querySelector("#admin-tab-accounts-label").textContent =
+            role === "superadmin" ? "Accounts" : "Admin access";
         let saved = null;
         try {
             saved = sessionStorage.getItem(STORAGE_KEY);
