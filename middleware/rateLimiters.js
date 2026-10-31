@@ -45,6 +45,8 @@ module.exports = {
     receiptLimiter: createLimiter(60 * 1000, 10, "receiptLimiter"),
     deliveryReportLimiter: createLimiter(60 * 60 * 1000, 5, "deliveryReportLimiter"),
     adminOrderLimiter: createLimiter(60 * 1000, 30, "adminOrderLimiter"),
+    // The order list is polled every 15 s per open admin tab; keep it from eating the action budget.
+    adminOrderListLimiter: createLimiter(60 * 1000, 60, "adminOrderListLimiter"),
     adminApprovalLimiter: createLimiter(15 * 60 * 1000, 10, "adminApprovalLimiter"),
     // Superadmin sign-in also locks after 3 wrong answers; this slows guessing per IP.
     superadminLoginLimiter: createLimiter(15 * 60 * 1000, 5, "superadminLoginLimiter"),

@@ -338,20 +338,59 @@ const ADMIN_ORDER_COLUMN_SETS = [
     [ADMIN_ORDER_BASE_COLUMNS, ADMIN_ORDER_ITEM_COLUMNS]
 ].map((columnGroups) => columnGroups.join(", "));
 
+// PostgREST filters for the admin list views. "Active" keeps finished orders visible
+// until their cash is collected, so a ready pickup still waiting for payment isn't lost.
+const FINAL_STATUS_LIST = '("Delivered","Ready for Pickup")';
+const ADMIN_ORDER_VIEWS = {
+    active: (query, hasPaymentColumns) =>
+        hasPaymentColumns
+            ? query.or(`status.not.in.${FINAL_STATUS_LIST},and(payment_method.eq.cash,cash_collected_at.is.null)`)
+            : query.not("status", "in", FINAL_STATUS_LIST),
+    done: (query, hasPaymentColumns) =>
+        hasPaymentColumns
+            ? query
+                  .in("status", ["Delivered", "Ready for Pickup"])
+                  .or("payment_method.neq.cash,cash_collected_at.not.is.null")
+            : query.in("status", ["Delivered", "Ready for Pickup"]),
+    all: (query) => query
+};
+
+function applyAdminOrderFilters(query, { view, search }, hasPaymentColumns) {
+    let filtered = ADMIN_ORDER_VIEWS[view](query, hasPaymentColumns);
+    if (search) {
+        // "CL-AB12CD" and "ab12cd" both match the tracking code; any other text matches the name.
+        const code = search.replace(/^cl-?/i, "").toLowerCase();
+        filtered = filtered.or(`tracking_code.ilike.*${code}*,customer->>name.ilike.*${search}*`);
+    }
+    return filtered;
+}
+
+async function countAdminOrders(supabase, view, search, hasPaymentColumns) {
+    const query = supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count, error } = await applyAdminOrderFilters(query, { view, search }, hasPaymentColumns);
+    return error ? null : count || 0;
+}
+
 async function listAdminOrders(request, response, next) {
     try {
         const pageSize = 50;
         const page = Number(request.query.page) || 1;
+        const view = request.query.view || "all";
+        const search = request.query.q || "";
         const supabase = getAdminClient();
         let data;
         let error;
         let count;
         let schemaWarning = null;
         for (const [setIndex, columns] of ADMIN_ORDER_COLUMN_SETS.entries()) {
-            ({ data, error, count } = await supabase
-                .from("orders")
-                .select(columns, { count: "exact" })
-                .order("created_at", { ascending: false })
+            const hasPaymentColumns = setIndex === 0;
+            ({ data, error, count } = await applyAdminOrderFilters(
+                supabase.from("orders").select(columns, { count: "exact" }),
+                { view, search },
+                hasPaymentColumns
+            )
+                // Active orders are a queue (oldest first); history reads newest first.
+                .order("created_at", { ascending: view === "active" })
                 .range((page - 1) * pageSize, page * pageSize - 1));
             const isLastFallback = setIndex === ADMIN_ORDER_COLUMN_SETS.length - 1;
             if (!error || !hasMissingOptionalOrderColumns(error) || isLastFallback) break;
@@ -365,10 +404,19 @@ async function listAdminOrders(request, response, next) {
             });
         }
         if (error) throw error;
+        // Tab counts (head-only count queries; no rows are transferred).
+        const hasPaymentColumns = !schemaWarning;
+        const [activeCount, doneCount, allCount] = await Promise.all(
+            ["active", "done", "all"].map((countView) =>
+                countView === view ? count || 0 : countAdminOrders(supabase, countView, search, hasPaymentColumns)
+            )
+        );
         response.json({
             page,
             pageSize,
+            view,
             totalCount: count || 0,
+            counts: { active: activeCount, done: doneCount, all: allCount },
             schemaWarning,
             orders: data.map((order) => ({
                 id: order.id,

@@ -31,6 +31,7 @@ const PRICING_RULES = Object.freeze({
 });
 
 const FULFILLMENT_METHODS = Object.freeze(["delivery", "pickup"]);
+const BASES_WITH_MILK = Object.freeze(["espresso", "matcha"]);
 // recipeSlug never affects price; it only attributes a community-recipe royalty (communityRecipeService).
 const ALLOWED_ITEM_FIELDS = Object.freeze(["name", "configuration", "recipeSlug"]);
 
@@ -53,9 +54,14 @@ function calculateDrinkPriceBreakdown(configuration) {
     );
     const baseCents = PRICING_RULES.baseDrinkCents + extraVolumeSteps * PRICING_RULES.volumeStepCents;
 
+    // Only charge for what the base can contain: shots exist only in espresso drinks, and
+    // filter coffee and cold brew have no milk (matching getComposition and the hidden builder fields).
     const extraShotCents =
-        Math.max(0, configuration.shots - PRICING_RULES.includedShots) * PRICING_RULES.extraShotCents;
-    const milkCents = PRICING_RULES.milkSurchargeCents[configuration.milk] || 0;
+        configuration.base === "espresso"
+            ? Math.max(0, configuration.shots - PRICING_RULES.includedShots) * PRICING_RULES.extraShotCents
+            : 0;
+    const hasMilk = BASES_WITH_MILK.includes(configuration.base);
+    const milkCents = hasMilk ? PRICING_RULES.milkSurchargeCents[configuration.milk] || 0 : 0;
     const syrupCents = Object.values(configuration.syrups).reduce(
         (total, pumps) => total + pumps * PRICING_RULES.syrupPumpCents,
         0

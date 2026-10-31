@@ -243,6 +243,12 @@
             button.setAttribute("aria-checked", String(state.toppings[button.dataset.topping]))
         );
         $("#extraction-field").hidden = state.base !== "espresso";
+        // Shots only exist in espresso drinks; filter coffee and cold brew have no milk.
+        // Hidden controls are also not charged for (pricingService).
+        $("#shots-field").hidden = state.base !== "espresso";
+        const hasMilk = state.base === "espresso" || state.base === "matcha";
+        $("#milk-field").hidden = !hasMilk;
+        $("#foam-field").hidden = !hasMilk;
         $("#ice-field").hidden = state.temperature === "hot";
         $("#unit-toggle").setAttribute("aria-checked", String(state.metric));
         $("#unit-label").textContent = state.metric ? "Metric" : "Imperial";

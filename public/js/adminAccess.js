@@ -94,7 +94,7 @@
         );
         // Open the panel and badge its tab when someone is waiting, so approvals aren't missed.
         if (waiting > 0) $("#admin-access").open = true;
-        const badge = $("#admin-access-badge");
+        const badge = $("#admin-tab-accounts-badge");
         badge.hidden = waiting === 0;
         badge.replaceChildren(String(waiting));
         const hint = document.createElement("span");
