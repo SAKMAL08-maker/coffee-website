@@ -408,3 +408,8 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 - **Sold-out switches:** the admin Menu tab lists every base, decaf beans, milk, syrup, sweetener and topping with an Available / Sold out switch per branch. The builder greys sold-out options out ("Sold out"), refuses to add a drink that uses one, and "Order again" skips such drinks. Checkout re-checks on the server and answers 409 naming the drink and the missing ingredient.
 - **Compatibility:** everything works before the migration: no branches means orders behave as before, the admin list falls back quietly, and the Menu tab explains that the migration is needed.
 - **Migration `20261112000000_branches_sold_out.sql`:** additive, plus a one-time backfill of `orders.branch_id`.
+
+### Superadmin sign-in on phones; masked answers
+
+- **Fix:** typing Super_Admin and tapping **Log in** now opens the security-question screen. Before, the empty (required) password box made the browser block the button, and phones have no Enter key to fall back on. The password box is no longer required while Super_Admin is typed, and anything in it is cleared when the superadmin screen opens.
+- **Masked:** birthday, favourite dog and favourite colour are now hidden like the password (they act as passwords). A test keeps all four masked.
