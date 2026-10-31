@@ -135,6 +135,7 @@ const checkoutBody = z
         deliveryCoordinates: coordinates.optional(),
         tipPercent: z.number().finite().min(0).max(100).default(15),
         redeemFreeDrink: z.boolean().optional(),
+        branchId: uuid.optional(),
         customer: z
             .object({
                 name: z.string().trim().min(1).max(80),
@@ -272,7 +273,8 @@ const schemas = {
                     .trim()
                     .max(40)
                     .regex(/^[\p{L}\p{N} -]*$/u)
-                    .optional()
+                    .optional(),
+                branch: uuid.optional()
             })
             .strict()
     },
@@ -287,6 +289,48 @@ const schemas = {
         body: z.object({ bio: z.string().max(2000) }).strict(),
         query: emptyQuery,
         params: emptyParams
+    },
+    menuAvailability: {
+        params: emptyParams,
+        query: z.object({ branch: uuid.optional() }).strict()
+    },
+    menuSoldOut: {
+        params: emptyParams,
+        query: emptyQuery,
+        body: z
+            .object({
+                branchId: uuid,
+                option: z
+                    .string()
+                    .max(40)
+                    .regex(/^[a-z]+:[A-Za-z]+$/),
+                soldOut: z.boolean()
+            })
+            .strict()
+    },
+    branchCreate: {
+        params: emptyParams,
+        query: emptyQuery,
+        body: z
+            .object({
+                name: z.string().trim().min(2).max(80),
+                address: z.string().trim().max(200).optional(),
+                phone: z.string().trim().max(32).optional()
+            })
+            .strict()
+    },
+    branchUpdate: {
+        params: z.object({ branchId: uuid }).strict(),
+        query: emptyQuery,
+        body: z
+            .object({
+                name: z.string().trim().min(2).max(80).optional(),
+                address: z.string().trim().max(200).optional(),
+                phone: z.string().trim().max(32).optional(),
+                isActive: z.boolean().optional()
+            })
+            .strict()
+            .refine((value) => Object.keys(value).length > 0, { message: "Nothing to change." })
     },
     // Lengths are re-checked after cleaning in services/supportService.js.
     supportTicketCreate: {

@@ -100,11 +100,11 @@ test("after the cash migration: one query, cash fields included, no warning", as
 });
 
 test("before the cash migration: falls back, keeps approval columns, omits cashCollectedAt", async () => {
-    fakeSchema.missingColumns = ["payment_method", "cash_collected_at"];
+    fakeSchema.missingColumns = ["branch_id", "payment_method", "cash_collected_at"];
     const body = await callListAdminOrders();
-    assert.equal(fakeSchema.selectedColumnSets.length, 2);
-    assert.match(fakeSchema.selectedColumnSets[1], /pickup_approved_at/);
-    assert.doesNotMatch(fakeSchema.selectedColumnSets[1], /payment_method/);
+    assert.equal(fakeSchema.selectedColumnSets.length, 3);
+    assert.match(fakeSchema.selectedColumnSets[2], /pickup_approved_at/);
+    assert.doesNotMatch(fakeSchema.selectedColumnSets[2], /payment_method/);
     assert.match(body.schemaWarning, /latest Supabase migrations/);
     assert.equal(body.orders[0].paymentMethod, "cash");
     // JSON drops undefined, so the dashboard sees no cashCollectedAt key and hides the button.
@@ -112,9 +112,20 @@ test("before the cash migration: falls back, keeps approval columns, omits cashC
 });
 
 test("before the receipt/approval migrations too: falls back to the base columns", async () => {
-    fakeSchema.missingColumns = ["payment_method", "receipt_status"];
+    fakeSchema.missingColumns = ["branch_id", "payment_method", "receipt_status"];
     const body = await callListAdminOrders();
-    assert.equal(fakeSchema.selectedColumnSets.length, 3);
+    assert.equal(fakeSchema.selectedColumnSets.length, 4);
     assert.equal(body.orders.length, 1);
     assert.equal(body.orders[0].receiptStatus, "unavailable");
+});
+
+test("before the branches migration only: one quiet fallback, cash fields kept, no warning", async () => {
+    fakeSchema.missingColumns = ["branch_id"];
+    const body = await callListAdminOrders();
+    assert.equal(fakeSchema.selectedColumnSets.length, 2);
+    assert.match(fakeSchema.selectedColumnSets[0], /branch:branches\(name\)/);
+    assert.match(fakeSchema.selectedColumnSets[1], /payment_method/);
+    assert.equal(body.schemaWarning, null);
+    assert.equal(body.orders[0].branchName, null);
+    assert.ok("cashCollectedAt" in body.orders[0]);
 });

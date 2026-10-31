@@ -70,6 +70,30 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal((await fetch(`${baseUrl}/api/orders/admin/all?view=everything`)).status, 400);
         assert.equal((await fetch(`${baseUrl}/api/orders/admin/all?view=active&q=CL-AB12`)).status, 401);
         assert.equal((await fetch(`${baseUrl}/api/superadmin/accounts`)).status, 401);
+        // Branches and sold-out switches: reading is public, changing needs an admin (branches: superadmin).
+        const branchId = "c5c0c718-6e68-4a0f-b490-eaa4897bb4b1";
+        const menuWrite = (method, url, body) =>
+            fetch(`${baseUrl}${url}`, {
+                method,
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(body)
+            });
+        assert.equal(
+            (await menuWrite("PUT", "/api/menu/admin/sold-out", { branchId, option: "milk:oat", soldOut: true }))
+                .status,
+            401
+        );
+        assert.equal((await menuWrite("POST", "/api/menu/admin/branches", { name: "Makati" })).status, 401);
+        assert.equal(
+            (await menuWrite("PATCH", `/api/menu/admin/branches/${branchId}`, { isActive: false })).status,
+            401
+        );
+        assert.equal((await fetch(`${baseUrl}/api/menu/admin`)).status, 401);
+        assert.equal((await fetch(`${baseUrl}/api/menu/availability?branch=not-a-uuid`)).status, 400);
+        assert.equal((await fetch(`${baseUrl}/api/orders/rewards`)).status, 401);
+        assert.match(html, /id="branch-picker"[^>]*hidden/);
+        assert.match(html, /id="admin-tab-menu"/);
+        assert.match(html, /id="checkout-reward-field"[^>]*hidden/);
         const incompleteSuperadminLogin = await fetch(`${baseUrl}/api/users/superadmin/login`, {
             method: "POST",
             headers: { "content-type": "application/json" },

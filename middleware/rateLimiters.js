@@ -70,6 +70,8 @@ module.exports = {
     // An open chat polls every 5 s and the ticket list every 30 s.
     supportReadLimiter: createLimiter(60 * 1000, 120, "supportReadLimiter"),
     rewardsLimiter: createLimiter(60 * 1000, 60, "rewardsLimiter"),
+    menuReadLimiter: createLimiter(60 * 1000, 120, "menuReadLimiter"),
+    menuWriteLimiter: createLimiter(60 * 1000, 60, "menuWriteLimiter"),
     supportWriteLimiter: createLimiter(60 * 1000, 30, "supportWriteLimiter"),
     supportTicketLimiter: createLimiter(60 * 60 * 1000, 10, "supportTicketLimiter")
 };
