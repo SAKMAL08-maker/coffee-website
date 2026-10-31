@@ -879,6 +879,17 @@
     $("#order-history-nav-button").addEventListener("click", () => setCustomerView("history"));
     $("#profile-nav-button").addEventListener("click", () => setCustomerView("profile"));
     $("#support-nav-button").addEventListener("click", () => setCustomerView("support"));
+
+    // On very narrow phones the nav scrolls sideways; fade the edge that has more buttons behind it.
+    const customerNav = $("#customer-nav");
+    function updateNavFade() {
+        const hidden = customerNav.scrollWidth - customerNav.clientWidth;
+        const left = customerNav.scrollLeft;
+        customerNav.dataset.more = hidden <= 1 ? "" : left <= 1 ? "end" : left >= hidden - 1 ? "start" : "both";
+    }
+    customerNav.addEventListener("scroll", updateNavFade, { passive: true });
+    // Also fires when the nav is first shown after sign-in.
+    new ResizeObserver(updateNavFade).observe(customerNav);
     $("#refresh-order-history-button").addEventListener("click", loadOrderHistory);
     $("#order-history-list").addEventListener("click", (event) => {
         const againButton = event.target.closest("[data-order-again-id]");

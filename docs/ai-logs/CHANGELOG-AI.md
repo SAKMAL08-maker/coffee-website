@@ -426,3 +426,16 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 ### Admin orders: newest first
 
 - The admin Orders tab now lists newest first in every view. "Active" used to list oldest first, like a work queue. The age badge still flags orders that have waited too long.
+
+### Branches tab; UI/UX review fixes
+
+- **Branches tab (superadmin only):** opening, renaming and closing branches moved out of the Menu tab into its own tab. Regular admins don't see it; a remembered Branches tab falls back to Orders for them. Menu keeps the sold-out switches for every admin.
+- **Fix:** the Menu and Branches tabs stayed blank when they were already open on page load (remembered tab); they now load straight away.
+- **Admin orders:** columns line up on every row (fixed-width status and action columns, full-width action buttons); on phones the age column is fixed too.
+- **Branch rows:** the same columns on every row, the "Add branch" row included.
+- **Phones:** the "Coffee Lab" name no longer breaks onto two lines, and the customer nav stays on one line (it scrolls sideways if needed) instead of wrapping labels like "Order history".
+- **Builder:** removed the stray "Crafted to your taste." line above the basket buttons (the footer already says it); the buttons sit on the right.
+- **Admin subtitle** now mentions the menu and branches.
+- **Follow-up (risks from the review):**
+    - On screens 761–1000 px wide, the admin order's drinks summary moves to its own line under the customer's name instead of being squeezed by the fixed status and action columns.
+    - On phones up to 520 px, the customer nav uses short labels ("Customize", "Orders", "Support", "Profile") and fits on one line down to 360 px. On narrower phones it scrolls, and the edge with more buttons fades out as a visible hint.

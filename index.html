@@ -311,10 +311,10 @@
                     type="button"
                     aria-current="page"
                 >
-                    Customize coffee
+                    Customize<span class="nav-long"> coffee</span>
                 </button>
                 <button class="button customer-nav-button" id="order-history-nav-button" type="button">
-                    Order history
+                    <span class="nav-long">Order history</span><span class="nav-short">Orders</span>
                 </button>
                 <button class="button customer-nav-button" id="support-nav-button" type="button">
                     Support <span class="admin-tab-badge" id="support-nav-badge" hidden></span>
@@ -936,7 +936,6 @@
                     </div>
                 </section>
                 <footer class="actions-footer">
-                    <p class="field-help">Crafted to your taste.</p>
                     <div class="footer-actions">
                         <button class="button button-primary" id="add-to-cart-button" type="button">
                             ＋ Add to order basket
@@ -1037,7 +1036,9 @@
                     <div>
                         <p class="eyebrow">Coffee Lab operations</p>
                         <h1 id="admin-title" tabindex="-1">Admin dashboard</h1>
-                        <p>Manage orders, see how the shop is doing, and manage accounts.</p>
+                        <p>
+                            Run today's orders, see how the shop is doing, and manage the menu, branches and accounts.
+                        </p>
                     </div>
                     <button class="button button-primary" id="admin-refresh-button" type="button">Refresh</button>
                 </div>
@@ -1086,6 +1087,17 @@
                         data-admin-tab="menu"
                     >
                         Menu
+                    </button>
+                    <button
+                        class="admin-tab"
+                        id="admin-tab-branches"
+                        type="button"
+                        role="tab"
+                        aria-controls="admin-panel-branches"
+                        data-admin-tab="branches"
+                        hidden
+                    >
+                        Branches
                     </button>
                     <button
                         class="admin-tab"
@@ -1232,6 +1244,16 @@
                 <div class="admin-panel" id="admin-panel-menu" role="tabpanel" aria-labelledby="admin-tab-menu" hidden>
                     <h2 class="sr-only">Menu</h2>
                     <div class="admin-menu-root" id="admin-menu-root"></div>
+                </div>
+                <div
+                    class="admin-panel"
+                    id="admin-panel-branches"
+                    role="tabpanel"
+                    aria-labelledby="admin-tab-branches"
+                    hidden
+                >
+                    <h2 class="sr-only">Branches</h2>
+                    <div class="admin-menu-root" id="admin-branches-root"></div>
                 </div>
                 <div
                     class="admin-panel"

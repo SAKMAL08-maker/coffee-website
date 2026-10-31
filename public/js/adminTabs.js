@@ -1,9 +1,11 @@
 (() => {
     const STORAGE_KEY = "coffee-lab-admin-tab";
     const tabs = [...document.querySelectorAll("[data-admin-tab]")];
+    // Hidden tabs (Branches, for admins who aren't the superadmin) can't be chosen or arrowed to.
+    const visibleTabs = () => tabs.filter((tab) => !tab.hidden);
 
     function select(name, { focus = false, remember = true } = {}) {
-        const tab = tabs.find((candidate) => candidate.dataset.adminTab === name) || tabs[0];
+        const tab = visibleTabs().find((candidate) => candidate.dataset.adminTab === name) || tabs[0];
         for (const candidate of tabs) {
             const isSelected = candidate === tab;
             candidate.setAttribute("aria-selected", String(isSelected));
@@ -25,14 +27,15 @@
     document.querySelector("#admin-tabs").addEventListener("keydown", (event) => {
         if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
         event.preventDefault();
-        const index = tabs.indexOf(document.activeElement);
+        const shown = visibleTabs();
+        const index = shown.indexOf(document.activeElement);
         const next =
             event.key === "Home"
                 ? 0
                 : event.key === "End"
-                  ? tabs.length - 1
-                  : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
-        select(tabs[next].dataset.adminTab, { focus: true });
+                  ? shown.length - 1
+                  : (index + (event.key === "ArrowRight" ? 1 : -1) + shown.length) % shown.length;
+        select(shown[next].dataset.adminTab, { focus: true });
     });
 
     function start(role) {
@@ -40,6 +43,8 @@
         // Admins see only the Admin access panel there; the superadmin also manages all accounts.
         document.querySelector("#admin-tab-accounts-label").textContent =
             role === "superadmin" ? "Accounts" : "Admin access";
+        // Opening, renaming and closing branches is the superadmin's job.
+        document.querySelector("#admin-tab-branches").hidden = role !== "superadmin";
         let saved = null;
         try {
             saved = sessionStorage.getItem(STORAGE_KEY);

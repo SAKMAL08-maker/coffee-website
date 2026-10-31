@@ -1,10 +1,12 @@
 /**
- * Admin "Menu" tab: sold-out switches per branch (any admin) and branch management (superadmin).
+ * Admin "Menu" tab: sold-out switches per branch (any admin). Admin "Branches" tab (superadmin only):
+ * open, rename and close branches. Both tabs share one data load (GET /api/menu/admin).
  * Each switch saves immediately; customers see the change within a minute (public/js/menu.js), and
  * checkout refuses sold-out drinks at once.
  */
 (() => {
     const root = document.getElementById("admin-menu-root");
+    const branchesRoot = document.getElementById("admin-branches-root");
     if (!root) return;
     let data = { branches: [], options: [] };
     let branchId = null;
@@ -28,10 +30,16 @@
     }
 
     function say(text, kind = "") {
-        const message = root.querySelector(".admin-menu-message");
-        if (!message) return;
-        message.textContent = text;
-        message.dataset.state = kind;
+        for (const message of document.querySelectorAll(".admin-menu-message")) {
+            message.textContent = text;
+            message.dataset.state = kind;
+        }
+    }
+
+    function statusLine() {
+        const message = element("p", "notice admin-menu-message");
+        message.setAttribute("role", "status");
+        return message;
     }
 
     function currentBranch() {
@@ -147,15 +155,14 @@
 
     function render() {
         const isSuperadmin = window.CoffeeLabSession?.role === "superadmin";
-        const message = element("p", "notice admin-menu-message");
-        message.setAttribute("role", "status");
         if (!data.branches.length) {
-            root.replaceChildren(
-                element("p", "field-help", "Menu switches need the latest database migration (branches).")
-            );
+            const missing = "Menu switches and branches need the latest database migration (branches).";
+            root.replaceChildren(element("p", "field-help", missing));
+            branchesRoot?.replaceChildren(element("p", "field-help", missing));
             return;
         }
-        root.replaceChildren(switchesSection(), ...(isSuperadmin ? [branchesSection()] : []), message);
+        root.replaceChildren(switchesSection(), statusLine());
+        if (branchesRoot && isSuperadmin) branchesRoot.replaceChildren(branchesSection(), statusLine());
     }
 
     async function load() {
@@ -166,11 +173,13 @@
             }
             render();
         } catch (error) {
-            root.replaceChildren(element("p", "notice", `The menu couldn't be loaded: ${error.message}`));
+            for (const target of [root, branchesRoot].filter(Boolean)) {
+                target.replaceChildren(element("p", "notice", `This couldn't be loaded: ${error.message}`));
+            }
         }
     }
 
-    root.addEventListener("click", async (event) => {
+    async function onClick(event) {
         const switchButton = event.target.closest("[data-option]");
         if (switchButton) {
             const available = switchButton.getAttribute("aria-checked") === "true";
@@ -212,9 +221,9 @@
                 say(error.message, "error");
             }
         }
-    });
+    }
 
-    root.addEventListener("submit", async (event) => {
+    async function onSubmit(event) {
         const form = event.target.closest(".admin-branch-form");
         if (!form) return;
         event.preventDefault();
@@ -233,9 +242,16 @@
         } catch (error) {
             say(error.message, "error");
         }
-    });
+    }
+
+    for (const target of [root, branchesRoot].filter(Boolean)) {
+        target.addEventListener("click", onClick);
+        target.addEventListener("submit", onSubmit);
+    }
 
     document.addEventListener("coffeelab:admin-tab", (event) => {
-        if (event.detail?.name === "menu") load();
+        if (event.detail?.name === "menu" || event.detail?.name === "branches") load();
     });
+    // The tab may already be open (remembered from earlier this session) before this script ran.
+    if ([root, branchesRoot].some((target) => target && !target.closest("[hidden]"))) load();
 })();

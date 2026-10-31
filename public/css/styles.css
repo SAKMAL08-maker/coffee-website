@@ -85,8 +85,10 @@ a:focus-visible {
 }
 .brand {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     gap: 10px;
+    white-space: nowrap;
     color: inherit;
     text-decoration: none;
     font-weight: 800;
@@ -114,7 +116,40 @@ a:focus-visible {
     display: flex;
     gap: 8px;
     padding: 12px 0;
+    overflow-x: auto;
     border-bottom: 1px solid var(--line);
+    scrollbar-width: none;
+}
+.customer-nav-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+.customer-nav .nav-short {
+    display: none;
+}
+.customer-nav[data-more="end"] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
+.customer-nav[data-more="start"] {
+    mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent);
+}
+.customer-nav[data-more="both"] {
+    mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+}
+@media (max-width: 520px) {
+    /* Short labels so all four pages fit on one line on most phones. */
+    .customer-nav .nav-long {
+        display: none;
+    }
+    .customer-nav .nav-short {
+        display: inline;
+    }
+    .customer-nav {
+        gap: 5px;
+    }
+    .customer-nav .customer-nav-button {
+        padding-inline: 9px;
+    }
 }
 .customer-nav-button.is-active {
     border-color: var(--coffee);
@@ -771,7 +806,7 @@ input[type="range"] {
 }
 .actions-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: 12px;
     margin-top: 18px;
@@ -2711,7 +2746,7 @@ dialog::backdrop {
 }
 .order-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 176px;
     align-items: start;
     border-bottom: 1px solid var(--line);
 }
@@ -2726,7 +2761,7 @@ dialog::backdrop {
 }
 .order-summary {
     display: grid;
-    grid-template-columns: 64px minmax(110px, 1.1fr) 70px minmax(0, 2fr) 92px auto;
+    grid-template-columns: 64px minmax(110px, 1.1fr) 70px minmax(0, 2fr) 92px 128px;
     align-items: center;
     gap: 6px 12px;
     min-height: 52px;
@@ -2858,6 +2893,8 @@ dialog::backdrop {
     padding: 8px 14px 8px 4px;
 }
 .order-next .button {
+    width: 100%;
+    justify-content: center;
     white-space: nowrap;
 }
 .order-done {
@@ -2925,9 +2962,19 @@ dialog::backdrop {
 .order-delete {
     margin-left: auto;
 }
+/* Mid-size screens: the drinks summary gets its own line instead of being squeezed. */
+@media (min-width: 761px) and (max-width: 1000px) {
+    .order-summary {
+        grid-template-columns: 64px minmax(0, 1fr) 70px 92px 128px;
+    }
+    .order-drinks-summary {
+        grid-column: 2 / -1;
+        grid-row: 2;
+    }
+}
 @media (max-width: 760px) {
     .order-summary {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: 56px minmax(0, 1fr) auto;
     }
     .order-age {
         grid-column: 1;
@@ -3776,14 +3823,19 @@ dialog::backdrop {
 }
 .admin-branch-form {
     display: grid;
-    grid-template-columns: minmax(140px, 1fr) minmax(160px, 2fr) auto auto auto;
+    grid-template-columns: minmax(140px, 1fr) minmax(160px, 2fr) 60px 64px 120px;
     align-items: center;
     gap: 8px;
 }
 .admin-branch-add {
-    grid-template-columns: minmax(140px, 1fr) minmax(160px, 2fr) auto;
     padding-top: 8px;
     border-top: 1px solid var(--line);
+}
+.admin-branch-add .button {
+    grid-column: 3 / -1;
+}
+.admin-branch-form .button {
+    justify-content: center;
 }
 .admin-branch-form input {
     min-height: 38px;
@@ -3812,6 +3864,9 @@ dialog::backdrop {
     .admin-branch-form,
     .admin-branch-add {
         grid-template-columns: 1fr;
+    }
+    .admin-branch-add .button {
+        grid-column: auto;
     }
 }
 /* Automatic Coffee Lab note after a ticket's first message. */
