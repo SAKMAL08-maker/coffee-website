@@ -156,6 +156,7 @@
         requestController?.abort();
         requestController = new AbortController();
         const days = $("#admin-dashboard-days").value;
+        $("#admin-export-csv").href = `/api/admin/orders.csv?days=${encodeURIComponent(days)}`;
         $("#admin-dashboard-status").textContent = "Loading…";
         try {
             const response = await fetch(`/api/admin/metrics?days=${encodeURIComponent(days)}`, {

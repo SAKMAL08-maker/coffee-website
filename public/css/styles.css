@@ -1307,6 +1307,9 @@ dialog::backdrop {
 .admin-orders-title {
     margin-bottom: 12px;
 }
+.admin-dashboard-header h2 {
+    margin-right: auto;
+}
 .admin-dashboard-range {
     display: flex;
     align-items: center;
