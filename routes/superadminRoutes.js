@@ -16,6 +16,15 @@ router.get(
     requireSuperadmin,
     superadminController.getAccounts
 );
+// Customer → admin. They appear in Admin access until their first approved sign-in.
+router.post(
+    "/accounts/:username/make-admin",
+    superadminActionLimiter,
+    validateRequest(schemas.superadminMakeAdmin),
+    authenticate,
+    requireSuperadmin,
+    superadminController.promote
+);
 // Revoke admin rights: the account becomes a customer and its admin sign-in is removed.
 router.post(
     "/accounts/:username/demote",
@@ -24,15 +33,6 @@ router.post(
     authenticate,
     requireSuperadmin,
     superadminController.demote
-);
-// Approve an admin request from the sign-up form. Declining one is the delete below.
-router.post(
-    "/accounts/:username/approve-admin",
-    superadminActionLimiter,
-    validateRequest(schemas.superadminAccountAction),
-    authenticate,
-    requireSuperadmin,
-    superadminController.approveAdmin
 );
 router.delete(
     "/accounts/:username",

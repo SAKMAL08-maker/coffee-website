@@ -2,7 +2,7 @@
 
 This guide covers local development, the Render deployment, Supabase database/authentication setup, Backblaze B2 receipt storage, and the administrator MFA bootstrap process.
 
-> **Secret-handling rule:** Never send or commit passwords, Supabase service-role keys, Backblaze application keys, MFA setup keys, one-time bootstrap tokens, TOTP codes, or production `.env` values.
+> **Secret-handling rule:** Never send or commit passwords, Supabase service-role keys, Backblaze application keys, MFA setup keys, TOTP codes, or production `.env` values.
 
 ## 1. Services and responsibilities
 
@@ -141,7 +141,7 @@ Do not create a second Coffee Lab username if an account already exists and shou
 
 ## 6. Owner-authorized first TOTP enrollment
 
-The bootstrap operation clears existing MFA factors for the linked Supabase Auth user before issuing a new, short-lived setup authorization. This can invalidate the admin’s existing authenticator and active sessions. Run it **only for the intended linked admin**, when you are authorized to reset that user’s MFA.
+Usually you don't need this: the superadmin approves setup in **Admin access** (or by making a customer an admin). The bootstrap script is the terminal fallback. It clears existing MFA factors for the linked Supabase Auth user before approving a new setup. This can invalidate the admin’s existing authenticator and active sessions. Run it **only for the intended linked admin**, when you are authorized to reset that user’s MFA.
 
 From the repository root, with the correct project credentials in the local environment:
 
@@ -155,19 +155,18 @@ Example format (replace the placeholder):
 node scripts\admin-mfa-bootstrap.js julian_admin --confirm-reset
 ```
 
-The script prints the setup authorization once and reports its expiry. Treat this token as a secret:
+The script reports when the approval expires (24 hours). There is no key to pass on:
 
 1. Verify the printed username is correct.
-2. Deliver the token directly to the intended admin over a separate trusted channel.
-3. The admin signs in to Coffee Lab using the Coffee Lab username and the Supabase Auth password.
-4. On the administrator verification screen, enter the setup authorization and select **Authorize authenticator setup**.
-5. Scan the displayed QR code with the admin’s authenticator app. Keep the TOTP setup key private.
-6. Enter the current six-digit authenticator code and select **Verify and continue**.
-7. Confirm the admin can reach the dashboard, then sign out and test a new login using the password and a fresh TOTP code.
+2. The admin signs in to Coffee Lab using the Coffee Lab username and their password.
+3. On the administrator verification screen, they select **Set up authenticator**.
+4. Scan the displayed QR code with the admin’s authenticator app. Keep the TOTP setup key private.
+5. Enter the current six-digit authenticator code and select **Verify and continue**.
+6. Confirm the admin can reach the dashboard, then sign out and test a new login using the password and a fresh TOTP code.
 
-The bootstrap authorization expires after 30 minutes and is consumed after successful enrollment. It is **not** used for future logins. Every subsequent admin sign-in requires the password and a code from the approved authenticator.
+The approval is consumed after successful enrollment and is **not** used for future logins. Every later admin sign-in requires the password and a code from the approved authenticator.
 
-If setup is interrupted or the token expires, the project owner may rerun the script. It deletes any current Auth factors for that user and creates a new authorization, so coordinate with the admin first. Do not paste the token, QR code, setup secret, password, or TOTP code into support chats or logs.
+If setup is interrupted or the approval expires, renew it in **Admin access** or rerun the script. Rerunning deletes any current Auth factors for that user, so coordinate with the admin first. Do not paste the QR code, setup secret, password, or TOTP code into support chats or logs.
 
 ## 7. Backblaze B2 receipt storage
 

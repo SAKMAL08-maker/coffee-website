@@ -1,7 +1,6 @@
 const { getAdminClient } = require("../config/supabase");
 const { startAdminLogin, createMfaSession, enrollAdminTotp, verifyAdminTotp } = require("../services/adminMfa");
 const { signInSuperadmin } = require("../services/superadminService");
-const { PENDING_ADMIN_ROLE, requestAdminAccount } = require("../services/adminSignupService");
 const {
     createRecoveryCode,
     normalizeRecoveryCode,
@@ -64,15 +63,6 @@ async function createSession(response, user, staySignedIn) {
 async function signUp(request, response, next) {
     try {
         const username = normalizedUsername(request.body.username);
-        if (request.body.accountType === "admin") {
-            const result = await requestAdminAccount(getAdminClient(), {
-                username,
-                email: request.body.email,
-                password: request.body.password
-            });
-            console.info(`Admin account requested: ${result.username}.`);
-            return response.status(201).json({ user: result, pendingApproval: true });
-        }
         const recoveryCodes = Array.from({ length: recoveryCodesToIssue }, createRecoveryCode);
         const passwordHash = await hashPassword(request.body.password);
         const { data: userId, error } = await getAdminClient().rpc("create_coffee_account", {
@@ -127,17 +117,6 @@ async function logIn(request, response, next) {
             });
         }
 
-        // A requested admin account waits for the superadmin. Only say so to someone
-        // who knows its password; everyone else gets the usual answer.
-        if (user?.role === PENDING_ADMIN_ROLE) {
-            if (await verifyPassword(request.body.password, user.password_hash)) {
-                return response.status(403).json({
-                    error: "Your admin request is waiting for the superadmin's approval. You can log in once it's approved."
-                });
-            }
-            return response.status(401).json({ error: "Username or password is incorrect." });
-        }
-
         // The superadmin must use its own screen (password + security questions).
         if (user?.role === "superadmin") {
             return response.status(401).json({ error: "Username or password is incorrect." });
@@ -187,8 +166,7 @@ async function enrollAdminMfa(request, response, next) {
     try {
         const result = await enrollAdminTotp(
             readCookie(request, ADMIN_MFA_ACCESS_COOKIE_NAME),
-            readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME),
-            request.body.bootstrapToken
+            readCookie(request, ADMIN_MFA_REFRESH_COOKIE_NAME)
         );
         response.json(result);
     } catch (error) {
@@ -270,7 +248,7 @@ async function resetPassword(request, response, next) {
             .eq("username_key", normalizedUsername(request.body.username))
             .maybeSingle();
         if (accountError) throw accountError;
-        if (account?.role === "admin" || account?.role === "superadmin" || account?.role === PENDING_ADMIN_ROLE) {
+        if (account?.role === "admin" || account?.role === "superadmin") {
             return response.status(400).json({
                 error: "Username or recovery code is invalid or already used. Administrator passwords are managed through Supabase Auth; contact the project owner for a reset."
             });

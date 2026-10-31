@@ -53,27 +53,16 @@
         }
     }
 
-    // Admin requests from the sign-up form's Admin tab. Only the superadmin sees and decides them.
-    async function decideRequest(account, approveIt) {
-        const question = approveIt
-            ? `Approve ${account.username} as an admin? They can log in and set up their authenticator app within 24 hours.`
-            : `Decline ${account.username}'s admin request? The request and its sign-in are deleted.`;
-        if (!window.confirm(question)) return;
+    async function removeAdminRights(account) {
+        if (!window.confirm(`Remove ${account.username}'s admin rights? They go back to being a customer.`)) return;
         showMessage("");
         try {
-            const path = `/api/superadmin/accounts/${encodeURIComponent(account.username)}`;
-            const result = approveIt
-                ? await request(`${path}/approve-admin`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: "{}"
-                  })
-                : await request(path, { method: "DELETE" });
-            showMessage(
-                approveIt
-                    ? `${result.username} is now an admin. Ask them to log in within 24 hours to set up their authenticator.`
-                    : `${result.username}'s admin request was declined.`
-            );
+            await request(`/api/superadmin/accounts/${encodeURIComponent(account.username)}/demote`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: "{}"
+            });
+            showMessage(`${account.username} is a customer again.`);
             document.dispatchEvent(new CustomEvent("coffeelab:accounts-changed"));
             await loadAccounts();
         } catch (error) {
@@ -81,44 +70,11 @@
         }
     }
 
-    function requestButton(label, account, approveIt) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = approveIt ? "button button-small button-primary" : "button button-small account-danger";
-        button.textContent = label;
-        button.addEventListener("click", async () => {
-            button.disabled = true;
-            await decideRequest(account, approveIt);
-            button.disabled = false;
-        });
-        return button;
-    }
-
-    function requestItem(account) {
-        const item = document.createElement("li");
-        item.className = "admin-access-item";
-        item.dataset.pending = "true";
-        const name = document.createElement("strong");
-        name.textContent = account.username;
-        const role = document.createElement("span");
-        role.className = "admin-access-status account-role";
-        role.textContent = "Admin request";
-        const status = document.createElement("span");
-        status.className = "admin-access-status";
-        status.textContent = `${account.email || "no email"} · asked ${timeFormatter.format(new Date(account.createdAt))}`;
-        const actions = document.createElement("span");
-        actions.className = "account-actions";
-        actions.append(requestButton("Approve", account, true), requestButton("Decline", account, false));
-        item.append(name, role, status, actions);
-        return item;
-    }
-
-    function renderAccounts({ accounts, you }, requests = []) {
-        const waiting = accounts.filter((account) => account.state === "needs-approval").length + requests.length;
+    function renderAccounts({ accounts, you }) {
+        const waiting = accounts.filter((account) => account.state === "needs-approval").length;
         $("#admin-access-badge").hidden = waiting === 0;
         $("#admin-access-badge").textContent = `${waiting} waiting`;
         $("#admin-access-list").replaceChildren(
-            ...requests.map(requestItem),
             ...accounts.map((account) => {
                 const state = STATES[account.state] || STATES["not-linked"];
                 const item = document.createElement("li");
@@ -151,6 +107,19 @@
                     });
                     item.append(button);
                 }
+                // Not set up yet: the superadmin can still take the admin rights back.
+                if (isSuperadmin && !isYou && account.state !== "active") {
+                    const undo = document.createElement("button");
+                    undo.type = "button";
+                    undo.className = "button button-small account-danger";
+                    undo.textContent = "Remove admin rights";
+                    undo.addEventListener("click", async () => {
+                        undo.disabled = true;
+                        await removeAdminRights(account);
+                        undo.disabled = false;
+                    });
+                    item.append(undo);
+                }
                 return item;
             })
         );
@@ -167,11 +136,7 @@
 
     async function loadAccounts() {
         try {
-            const [admins, all] = await Promise.all([
-                request("/api/admin/accounts"),
-                isSuperadmin ? request("/api/superadmin/accounts") : null
-            ]);
-            renderAccounts(admins, all ? all.accounts.filter((account) => account.role === "pending_admin") : []);
+            renderAccounts(await request("/api/admin/accounts"));
         } catch (error) {
             showMessage(`Could not load admin accounts: ${error.message}`, true);
         }
@@ -185,6 +150,10 @@
     }
 
     $("#admin-refresh-button").addEventListener("click", () => {
+        if (started) loadAccounts();
+    });
+    // The superadmin made a customer an admin (Accounts list): show them here.
+    document.addEventListener("coffeelab:accounts-changed", () => {
         if (started) loadAccounts();
     });
     document.addEventListener("coffeelab:signed-in", (event) => start(event.detail?.role));

@@ -29,7 +29,35 @@
         return "Not signed in";
     }
 
+    // Customer → admin: the superadmin gives the admin sign-in an email. The customer keeps
+    // their username and password and finishes setting up at their first admin sign-in.
+    async function makeAdmin(account) {
+        const email = window.prompt(
+            `Make ${account.username} an admin? Enter an email for their admin sign-in. They keep logging in with their username and current password, then set up an authenticator app within 24 hours.`
+        );
+        if (email === null) return;
+        showMessage("");
+        try {
+            const result = await request(
+                `/api/superadmin/accounts/${encodeURIComponent(account.username)}/make-admin`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: email.trim() })
+                }
+            );
+            showMessage(
+                `${result.username} is now an admin. They're listed in Admin access until they log in and set up their authenticator.`
+            );
+            document.dispatchEvent(new CustomEvent("coffeelab:accounts-changed"));
+            await loadAccounts();
+        } catch (error) {
+            showMessage(`Could not make ${account.username} an admin: ${error.message}`, true);
+        }
+    }
+
     async function runAction(account, action) {
+        if (action === "promote") return makeAdmin(account);
         const isDelete = action === "delete";
         const question = isDelete
             ? `Delete ${account.username}? Their saved drinks and sign-in are removed for good. Their past orders stay, without a name attached.`
@@ -66,12 +94,12 @@
     }
 
     function render() {
-        // Admin requests are handled in Admin access (adminAccess.js), not listed here.
-        const accounts = data.accounts
-            .filter((account) => account.role !== "pending_admin")
-            .filter((account) =>
-                filter === "admins" ? ADMIN_ROLES.has(account.role) : !ADMIN_ROLES.has(account.role)
-            );
+        // New admins stay in Admin access until their first approved sign-in (setupComplete).
+        const isOfficialAdmin = (account) =>
+            ADMIN_ROLES.has(account.role) && !(account.role === "admin" && account.setupComplete === false);
+        const accounts = data.accounts.filter((account) =>
+            filter === "admins" ? isOfficialAdmin(account) : !ADMIN_ROLES.has(account.role)
+        );
         const signedIn = accounts.filter((account) => account.active).length;
         $("#account-summary").textContent = `${accounts.length} ${filter} · ${signedIn} signed in now`;
         document.querySelectorAll("[data-account-filter]").forEach((button) => {
@@ -97,6 +125,9 @@
                     actions.className = "account-actions";
                     if (account.role === "admin" || account.role === "staff") {
                         actions.append(actionButton("Remove admin rights", account, "demote", false));
+                    }
+                    if (account.role === "customer") {
+                        actions.append(actionButton("Make admin", account, "promote", false));
                     }
                     actions.append(actionButton("Delete", account, "delete", true));
                     item.append(actions);
@@ -137,7 +168,7 @@
     $("#admin-refresh-button").addEventListener("click", () => {
         if (started) loadAccounts();
     });
-    // An approved admin request becomes a real admin account; show it.
+    // Admin access changed an account (e.g. removed a new admin's rights).
     document.addEventListener("coffeelab:accounts-changed", () => {
         if (started) loadAccounts();
     });

@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const { getAdminClient } = require("../config/supabase");
-const { provisionAdminSetup, SCRIPT_SETUP_TTL_MS } = require("../services/adminApprovalService");
+const { provisionAdminSetup } = require("../services/adminApprovalService");
 
 async function bootstrapAdminMfa(username) {
     const normalizedUsername = username.trim().toLowerCase();
@@ -20,7 +20,7 @@ async function bootstrapAdminMfa(username) {
         throw new Error("That username is not a linked Coffee Lab administrator.");
     }
 
-    return provisionAdminSetup(supabase, account, { preapproved: false, ttlMs: SCRIPT_SETUP_TTL_MS });
+    return provisionAdminSetup(supabase, account);
 }
 
 async function main() {
@@ -30,9 +30,8 @@ async function main() {
     }
     const result = await bootstrapAdminMfa(username);
     console.log(`Authenticator factors removed: ${result.removedFactors}`);
-    console.log(`Setup authorization for ${result.username} (expires ${result.expiresAt}):`);
-    console.log(result.setupToken);
-    console.log("Deliver this token only to the administrator over a separate trusted channel.");
+    console.log(`Setup approved for ${result.username} until ${result.expiresAt}.`);
+    console.log("At their next sign-in they scan a QR code with their authenticator app; there is no key to type.");
 }
 
 if (require.main === module) {

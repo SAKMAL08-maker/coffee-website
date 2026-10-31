@@ -161,18 +161,12 @@
     });
 
     let adminMfaFactorId = "";
-    let adminMfaPreapproved = false;
 
     async function startAdminMfa(result) {
         adminMfaFactorId = result.factorId || "";
-        adminMfaPreapproved = Boolean(result.setupRequired && result.setupPreapproved);
-        $("#admin-mfa-key-fields").hidden = adminMfaPreapproved;
-        $("#admin-mfa-enroll").textContent = adminMfaPreapproved
-            ? "Set up authenticator"
-            : "Authorize authenticator setup";
-        $("#admin-mfa-bootstrap-token").value = "";
-        $("#admin-mfa-bootstrap-token").hidden = false;
-        $("#admin-mfa-enroll").disabled = false;
+        // The superadmin approves setup; there is no key to type.
+        const setupApproved = Boolean(result.setupRequired && result.setupPreapproved);
+        $("#admin-mfa-enroll").disabled = !setupApproved;
         $("#admin-mfa-qr").hidden = true;
         $("#admin-mfa-secret").hidden = true;
         $("#admin-mfa-secret").textContent = "";
@@ -181,15 +175,14 @@
         $("#admin-mfa-verify").disabled = true;
         $("#admin-mfa-enroll").hidden = false;
         showScreen("admin-mfa");
-        $("#admin-mfa-description").textContent = adminMfaPreapproved
+        $("#admin-mfa-description").textContent = setupApproved
             ? `Welcome, ${result.username}. Your setup was approved. Tap below, then scan the QR code with your authenticator app.`
             : result.setupRequired
-              ? `Welcome, ${result.username}. Your project owner must provide a one-time setup authorization before you can register an authenticator.`
+              ? `Welcome, ${result.username}. Your authenticator setup isn't approved yet. Ask the superadmin to approve it in Admin access, then log in again.`
               : result.setupInProgress
                 ? `Finish the authenticator setup for ${result.username} using the app where you saved the setup key.`
                 : `Enter the current authenticator code for ${result.username}.`;
         $("#admin-mfa-setup").hidden = !result.setupRequired;
-        $("#admin-mfa-bootstrap-token").required = result.setupRequired && !adminMfaPreapproved;
         if (result.factorId) {
             $("#admin-mfa-code").disabled = false;
             $("#admin-mfa-verify").disabled = false;
@@ -202,12 +195,6 @@
 
     $("#admin-mfa-enroll").addEventListener("click", async () => {
         const button = $("#admin-mfa-enroll");
-        const bootstrapToken = $("#admin-mfa-bootstrap-token").value.trim();
-        if (!adminMfaPreapproved && bootstrapToken.length < 32) {
-            showMessage("Enter the one-time setup authorization from the project owner.");
-            $("#admin-mfa-bootstrap-token").focus();
-            return;
-        }
         button.disabled = true;
         showMessage("");
         try {
@@ -215,7 +202,7 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "same-origin",
-                body: JSON.stringify(adminMfaPreapproved ? {} : { bootstrapToken })
+                body: "{}"
             });
             const enrollment = await readResponse(response);
             adminMfaFactorId = enrollment.factorId;
@@ -223,15 +210,12 @@
             $("#admin-mfa-qr").hidden = false;
             $("#admin-mfa-secret").textContent = enrollment.secret;
             $("#admin-mfa-secret").hidden = false;
-            $("#admin-mfa-bootstrap-token").value = "";
-            $("#admin-mfa-bootstrap-token").required = false;
-            $("#admin-mfa-bootstrap-token").hidden = true;
             button.hidden = true;
             $("#admin-mfa-code").disabled = false;
             $("#admin-mfa-verify").disabled = false;
             $("#admin-mfa-code").focus();
         } catch (error) {
-            showMessage(`Could not authorize authenticator setup: ${error.message}`);
+            showMessage(`Could not start authenticator setup: ${error.message}`);
         } finally {
             button.disabled = false;
         }
@@ -259,7 +243,6 @@
             const result = await readResponse(response);
             adminMfaFactorId = "";
             $("#admin-mfa-form").reset();
-            $("#admin-mfa-bootstrap-token").hidden = false;
             $("#admin-mfa-enroll").hidden = false;
             $("#admin-mfa-code").disabled = true;
             $("#admin-mfa-verify").disabled = true;
@@ -287,53 +270,12 @@
         } finally {
             adminMfaFactorId = "";
             $("#admin-mfa-form").reset();
-            $("#admin-mfa-bootstrap-token").hidden = false;
             $("#admin-mfa-enroll").hidden = false;
             $("#admin-mfa-code").disabled = true;
             $("#admin-mfa-verify").disabled = true;
             showScreen("login");
         }
         if (signOutError) showMessage(`Could not complete sign out: ${signOutError.message}`);
-    });
-
-    // Sign-up tabs: Customer (the default) or Admin, which sends a request the superadmin approves.
-    let signupType = "customer";
-    function setSignupType(type, { focus = false } = {}) {
-        signupType = type;
-        const isAdmin = type === "admin";
-        document.querySelectorAll("[data-account-type]").forEach((tab) => {
-            const isSelected = tab.dataset.accountType === type;
-            tab.setAttribute("aria-selected", String(isSelected));
-            tab.tabIndex = isSelected ? 0 : -1;
-            if (isSelected && focus) tab.focus();
-        });
-        $("#signup-admin-note").hidden = !isAdmin;
-        $("#signup-email-field").hidden = !isAdmin;
-        $("#signup-email").required = isAdmin;
-        $("#signup-password-help").textContent = isAdmin
-            ? "Use at least 12 characters. Admin passwords can't be recovered with codes; if you forget it, the project owner resets it in Supabase."
-            : "Use at least 12 characters. Password recovery requires a saved recovery code; there is no email or phone recovery.";
-        $("#signup-submit").textContent = isAdmin ? "Request admin account" : "Create account";
-    }
-    document.querySelectorAll("[data-account-type]").forEach((tab) => {
-        tab.addEventListener("click", () => setSignupType(tab.dataset.accountType));
-        tab.addEventListener("keydown", (event) => {
-            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-            event.preventDefault();
-            const next =
-                event.key === "Home"
-                    ? "customer"
-                    : event.key === "End"
-                      ? "admin"
-                      : signupType === "admin"
-                        ? "customer"
-                        : "admin";
-            setSignupType(next, { focus: true });
-        });
-    });
-    // Every visit to the sign-up screen starts on the Customer tab.
-    document.querySelectorAll('[data-show-auth="signup"]').forEach((link) => {
-        link.addEventListener("click", () => setSignupType("customer"));
     });
 
     $("#signup-form").addEventListener("submit", async (event) => {
@@ -352,25 +294,12 @@
                 credentials: "same-origin",
                 body: JSON.stringify({
                     username: $("#signup-username").value.trim(),
-                    password,
-                    ...(signupType === "admin" && { accountType: "admin", email: $("#signup-email").value.trim() })
+                    password
                 })
             });
             return readResponse(response);
         });
         if (!result) return;
-
-        if (result.pendingApproval) {
-            $("#signup-form").reset();
-            setSignupType("customer");
-            showScreen("login");
-            showMessage(
-                "Admin request sent. You can log in once the superadmin approves it; there are no recovery codes for admin accounts.",
-                false
-            );
-            $("#login-username").value = result.user.username;
-            return;
-        }
 
         createdUsername = result.user.username;
         recoveryCodes = result.recoveryCodes;

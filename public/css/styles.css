@@ -1363,39 +1363,6 @@ dialog::backdrop {
     background: var(--coffee);
     color: var(--paper);
 }
-.signup-type {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-}
-.signup-type-tab {
-    padding: 8px 12px;
-    border: 0;
-    border-radius: 999px;
-    background: transparent;
-    color: var(--muted);
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-}
-.signup-type-tab[aria-selected="true"] {
-    background: var(--coffee);
-    color: var(--paper);
-}
-.signup-type-tab:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-}
-.admin-access-item[data-pending="true"] {
-    border: 1px dashed var(--accent);
-}
-.admin-access-item[data-pending="true"] .account-role {
-    color: var(--accent);
-    font-weight: 700;
-}
 .admin-chart-tab:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -1526,10 +1493,6 @@ dialog::backdrop {
 .auth-form {
     display: grid;
     gap: 12px;
-}
-/* The admin-only email field lays out like the fields around it (hidden still wins). */
-#signup-email-field {
-    display: contents;
 }
 .auth-form label:not(.auth-checkbox) {
     margin-top: 4px;
@@ -2617,6 +2580,10 @@ dialog::backdrop {
 }
 .admin-access-item .button {
     margin-left: auto;
+}
+/* A second button (Remove admin rights) sits right next to the first. */
+.admin-access-item .button + .button {
+    margin-left: 0;
 }
 .admin-access-status {
     color: var(--muted);
