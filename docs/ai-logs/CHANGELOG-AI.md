@@ -413,3 +413,8 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 
 - Right after the customer's opening message, the chat shows a note from Coffee Lab: "Thank you for using Coffee Lab! You'll be connected with an admin shortly, and they'll reply right here in this chat." Staff see it too, so they know what the customer was told.
 - It's drawn by the page rather than saved as a message, so it never marks a ticket as answered, never counts as an admin's support reply, and also appears on tickets opened before this change. No database change.
+
+### Superadmin sign-in on phones; masked answers
+
+- **Fix:** typing Super_Admin and tapping **Log in** now opens the security-question screen. Before, the empty (required) password box made the browser block the button, and phones have no Enter key to fall back on. The password box is no longer required while Super_Admin is typed, and anything in it is cleared when the superadmin screen opens.
+- **Masked:** birthday, favourite dog and favourite colour are now hidden like the password (they act as passwords). A test keeps all four masked.
