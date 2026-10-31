@@ -334,6 +334,10 @@
                     </button>
                 </section>
                 <section class="fulfillment-bar" aria-label="Delivery preferences">
+                    <div class="branch-picker" id="branch-picker" hidden>
+                        <label for="branch-select">Branch</label>
+                        <select id="branch-select"></select>
+                    </div>
                     <div class="fulfillment-options" role="group" aria-label="Fulfillment method">
                         <button class="fulfillment-option" id="delivery-option" type="button" aria-pressed="true">
                             🛵 Delivery
@@ -1034,6 +1038,16 @@
                     </button>
                     <button
                         class="admin-tab"
+                        id="admin-tab-menu"
+                        type="button"
+                        role="tab"
+                        aria-controls="admin-panel-menu"
+                        data-admin-tab="menu"
+                    >
+                        Menu
+                    </button>
+                    <button
+                        class="admin-tab"
                         id="admin-tab-support"
                         type="button"
                         role="tab"
@@ -1068,6 +1082,10 @@
                                 All <span class="order-view-count"></span>
                             </button>
                         </div>
+                        <label class="sr-only" for="order-branch-filter">Branch</label>
+                        <select class="order-branch-filter" id="order-branch-filter" hidden>
+                            <option value="">All branches</option>
+                        </select>
                         <label class="sr-only" for="order-search">Search orders</label>
                         <input
                             class="order-search"
@@ -1169,6 +1187,10 @@
                         <ul class="admin-access-list" id="admin-access-list"></ul>
                         <p class="notice" id="admin-access-message" role="status" aria-live="polite"></p>
                     </details>
+                </div>
+                <div class="admin-panel" id="admin-panel-menu" role="tabpanel" aria-labelledby="admin-tab-menu" hidden>
+                    <h2 class="sr-only">Menu</h2>
+                    <div class="admin-menu-root" id="admin-menu-root"></div>
                 </div>
                 <div
                     class="admin-panel"
@@ -1481,6 +1503,8 @@
         <script src="/js/caffeineGuardian.js" defer></script>
         <script src="/js/profile.js" defer></script>
         <script src="/js/support.js" defer></script>
+        <script src="/js/menu.js" defer></script>
+        <script src="/js/adminMenu.js" defer></script>
         <script src="/js/app.js" defer></script>
         <script src="/js/pwa.js" defer></script>
     </body>

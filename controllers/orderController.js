@@ -24,6 +24,7 @@ const {
     deleteStoredReceipt
 } = require("../services/receiptService");
 const { enqueueReceipt } = require("../services/receiptQueue");
+const { resolveOrderBranch, getSoldOut, assertAvailable } = require("../services/menuService");
 const {
     FREE_DRINK_POINTS,
     getLoyaltyBalance,
@@ -83,7 +84,8 @@ async function checkout(request, response, next) {
             "tipPercent",
             "customer",
             "notes",
-            "redeemFreeDrink"
+            "redeemFreeDrink",
+            "branchId"
         ];
         if (
             !request.body ||
@@ -101,7 +103,8 @@ async function checkout(request, response, next) {
             tipPercent = 15,
             customer,
             notes,
-            redeemFreeDrink = false
+            redeemFreeDrink = false,
+            branchId
         } = request.body;
         if (redeemFreeDrink && !request.user) {
             throw badRequest("Sign in to use loyalty points.");
@@ -151,6 +154,9 @@ async function checkout(request, response, next) {
         });
         const trackingCode = crypto.randomBytes(24).toString("hex");
         const supabase = getAdminClient();
+        // Which branch makes it, and is everything in the basket in stock there?
+        const branch = await resolveOrderBranch(supabase, branchId);
+        if (branch) assertAvailable(lineItems, await getSoldOut(supabase, branch.id), branch);
         // Server-side royalty decision (exact recipe match, no self-royalty). Saved on the
         // order items in the same transaction as the order, so it can never be counted twice.
         const royalties = await resolveRecipeRoyalties(supabase, items, request.user?.id || null);
@@ -171,6 +177,7 @@ async function checkout(request, response, next) {
                 ...(fulfillmentMethod === "delivery" ? { delivery_address: deliveryAddress.trim() } : {}),
                 ...(coordinates ? { delivery_coordinates: coordinates } : {}),
                 ...(notes ? { notes: notes.trim() } : {}),
+                ...(branch ? { branch_id: branch.id } : {}),
                 pricing
             },
             item_data: itemsWithRoyalties
@@ -335,6 +342,11 @@ function hasMissingOptionalOrderColumns(error) {
     );
 }
 
+// PostgREST can't embed branches(...) until the table exists.
+function isMissingBranchesTable(error) {
+    return error?.code === "PGRST200" || /relationship between 'orders' and 'branches'/i.test(error?.message || "");
+}
+
 function isMissingOrdersTable(error) {
     return (
         ["42P01", "PGRST205"].includes(error?.code) ||
@@ -351,7 +363,16 @@ const ADMIN_ORDER_APPROVAL_COLUMNS = "receipt_status, delivery_reported_at, deli
 const ADMIN_ORDER_PAYMENT_COLUMNS = "payment_method, cash_collected_at";
 // Newest schema first. Each fallback drops the columns a later migration added,
 // so the dashboard keeps working (with less detail) if code ships before a migration.
+// The first set adds the branch (20261112000000_branches_sold_out.sql); older schemas fall back.
+const ADMIN_ORDER_BRANCH_COLUMNS = "branch_id, branch:branches(name)";
 const ADMIN_ORDER_COLUMN_SETS = [
+    [
+        ADMIN_ORDER_BASE_COLUMNS,
+        ADMIN_ORDER_APPROVAL_COLUMNS,
+        ADMIN_ORDER_PAYMENT_COLUMNS,
+        ADMIN_ORDER_BRANCH_COLUMNS,
+        ADMIN_ORDER_ITEM_COLUMNS
+    ],
     [ADMIN_ORDER_BASE_COLUMNS, ADMIN_ORDER_APPROVAL_COLUMNS, ADMIN_ORDER_PAYMENT_COLUMNS, ADMIN_ORDER_ITEM_COLUMNS],
     [ADMIN_ORDER_BASE_COLUMNS, ADMIN_ORDER_APPROVAL_COLUMNS, ADMIN_ORDER_ITEM_COLUMNS],
     [ADMIN_ORDER_BASE_COLUMNS, ADMIN_ORDER_ITEM_COLUMNS]
@@ -378,8 +399,9 @@ const ADMIN_ORDER_VIEWS = {
     all: (query) => query
 };
 
-function applyAdminOrderFilters(query, { view, search }, hasPaymentColumns) {
+function applyAdminOrderFilters(query, { view, search, branch }, hasPaymentColumns) {
     let filtered = ADMIN_ORDER_VIEWS[view](query, hasPaymentColumns);
+    if (branch) filtered = filtered.eq("branch_id", branch);
     if (search) {
         // "CL-AB12CD" and "ab12cd" both match the tracking code; any other text matches the name.
         const code = search.replace(/^cl-?/i, "").toLowerCase();
@@ -388,9 +410,9 @@ function applyAdminOrderFilters(query, { view, search }, hasPaymentColumns) {
     return filtered;
 }
 
-async function countAdminOrders(supabase, view, search, hasPaymentColumns) {
+async function countAdminOrders(supabase, view, search, hasPaymentColumns, branch) {
     const query = supabase.from("orders").select("id", { count: "exact", head: true });
-    const { count, error } = await applyAdminOrderFilters(query, { view, search }, hasPaymentColumns);
+    const { count, error } = await applyAdminOrderFilters(query, { view, search, branch }, hasPaymentColumns);
     return error ? null : count || 0;
 }
 
@@ -400,24 +422,31 @@ async function listAdminOrders(request, response, next) {
         const page = Number(request.query.page) || 1;
         const view = request.query.view || "all";
         const search = request.query.q || "";
+        const requestedBranch = request.query.branch || null;
+        let branch = requestedBranch;
         const supabase = getAdminClient();
         let data;
         let error;
         let count;
         let schemaWarning = null;
         for (const [setIndex, columns] of ADMIN_ORDER_COLUMN_SETS.entries()) {
-            const hasPaymentColumns = setIndex === 0;
+            const hasPaymentColumns = setIndex <= 1;
+            // Without the branch column (older schema) the branch filter can't apply.
+            branch = setIndex === 0 ? requestedBranch : null;
             ({ data, error, count } = await applyAdminOrderFilters(
                 supabase.from("orders").select(columns, { count: "exact" }),
-                { view, search },
+                { view, search, branch },
                 hasPaymentColumns
             )
                 // Active orders are a queue (oldest first); history reads newest first.
                 .order("created_at", { ascending: view === "active" })
                 .range((page - 1) * pageSize, page * pageSize - 1));
             const isLastFallback = setIndex === ADMIN_ORDER_COLUMN_SETS.length - 1;
-            if (!error || !hasMissingOptionalOrderColumns(error) || isLastFallback) break;
+            if (!error || !(hasMissingOptionalOrderColumns(error) || isMissingBranchesTable(error)) || isLastFallback)
+                break;
             console.warn("Admin orders query is falling back to an older schema; apply the latest migrations.");
+            // Only the branch is missing: everything else still works, so no warning banner.
+            if (setIndex === 0) continue;
             schemaWarning =
                 "Some order details (receipts, approvals, or cash collection) are unavailable until the latest Supabase migrations are applied.";
         }
@@ -431,7 +460,9 @@ async function listAdminOrders(request, response, next) {
         const hasPaymentColumns = !schemaWarning;
         const [activeCount, doneCount, allCount] = await Promise.all(
             ["active", "done", "all"].map((countView) =>
-                countView === view ? count || 0 : countAdminOrders(supabase, countView, search, hasPaymentColumns)
+                countView === view
+                    ? count || 0
+                    : countAdminOrders(supabase, countView, search, hasPaymentColumns, branch)
             )
         );
         response.json({
@@ -457,6 +488,7 @@ async function listAdminOrders(request, response, next) {
                 paymentMethod: order.payment_method || DEFAULT_PAYMENT_METHOD,
                 // Omitted (undefined) when the cash migration isn't applied, so the dashboard hides the button.
                 cashCollectedAt: "cash_collected_at" in order ? order.cash_collected_at : undefined,
+                branchName: order.branch?.name || null,
                 createdAt: order.created_at,
                 items: order.order_items
             }))

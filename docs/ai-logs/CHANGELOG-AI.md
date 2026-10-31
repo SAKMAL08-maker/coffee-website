@@ -401,3 +401,10 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 - **Order again:** every past order in Order history has "Order again" (puts its drinks back in the basket exactly as made, at today's prices). The profile's most-ordered drink card has "Order it again".
 - **Fix:** cancelled orders no longer show as "pending" recipe royalties.
 - **Migration `20261111000000_loyalty_rewards.sql`** (additive).
+
+### Branches and sold-out switches
+
+- **Branches:** a `branches` table with "Coffee Lab Main" created and every existing order assigned to it. While only one branch is open nothing changes for customers. With two or more, the delivery bar shows a Branch picker (remembered on the device), checkout sends it, and admin orders get a branch filter and a branch label. The superadmin opens, renames and closes branches on the admin Menu tab; the last open branch can't be closed.
+- **Sold-out switches:** the admin Menu tab lists every base, decaf beans, milk, syrup, sweetener and topping with an Available / Sold out switch per branch. The builder greys sold-out options out ("Sold out"), refuses to add a drink that uses one, and "Order again" skips such drinks. Checkout re-checks on the server and answers 409 naming the drink and the missing ingredient.
+- **Compatibility:** everything works before the migration: no branches means orders behave as before, the admin list falls back quietly, and the Menu tab explains that the migration is needed.
+- **Migration `20261112000000_branches_sold_out.sql`:** additive, plus a one-time backfill of `orders.branch_id`.

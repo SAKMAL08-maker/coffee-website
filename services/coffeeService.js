@@ -208,6 +208,8 @@ module.exports = {
     BASES,
     MILKS,
     SYRUPS,
+    // Every menu option (menuService builds the sold-out switches from these).
+    MENU: Object.freeze({ BASES, MILKS, SYRUPS, SWEETENERS }),
     DEFAULT_CONFIGURATION,
     normalizeConfiguration,
     getComposition,

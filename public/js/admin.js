@@ -15,6 +15,8 @@
     let searchTimer = null;
     let pendingRefresh = false;
     let lastSignature = "";
+    let branchFilter = "";
+    let hasSeveralBranches = false;
     let lastOrders = [];
     let newestSeenAt = null;
     let unseenNewOrders = 0;
@@ -183,6 +185,7 @@
             order.fulfillmentMethod === "delivery" ? "Address" : "Pickup",
             order.deliveryAddress || "At the counter"
         );
+        if (order.branchName) detailRow(info, "Branch", order.branchName);
         detailRow(info, "Placed", formatTime(order.createdAt));
         if (order.notes) detailRow(info, "Notes", order.notes);
         if (order.deliveryReportedAt) detailRow(info, "Customer says delivered", formatTime(order.deliveryReportedAt));
@@ -321,7 +324,13 @@
             element("strong", "order-code", orderCode(order)),
             element("span", "order-name", order.customer?.name || "Guest")
         );
-        const method = element("span", "order-method", order.fulfillmentMethod === "delivery" ? "Delivery" : "Pickup");
+        const method = element(
+            "span",
+            "order-method",
+            `${order.fulfillmentMethod === "delivery" ? "Delivery" : "Pickup"}${
+                hasSeveralBranches && order.branchName ? ` · ${order.branchName}` : ""
+            }`
+        );
         const drinks = element("span", "order-drinks-summary", drinksSummary(order.items));
         const total = element("span", "order-total", formatMoney(order.pricing?.total_cents));
         const status = element("span", "order-status", order.status);
@@ -428,6 +437,7 @@
         try {
             const params = new URLSearchParams({ page: String(currentPage), view: currentView });
             if (searchText) params.set("q", searchText);
+            if (branchFilter) params.set("branch", branchFilter);
             const response = await fetch(`/api/orders/admin/all?${params}`, { credentials: "same-origin" });
             let result;
             try {
@@ -505,6 +515,7 @@
         }
         isAdminAuthenticated = true;
         currentPage = 1;
+        loadBranchFilter();
         startAutomaticRefresh();
     }
 
@@ -626,6 +637,28 @@
             });
             reloadFromStart();
         });
+    });
+    // Branch filter: shown only once a second branch opens.
+    async function loadBranchFilter() {
+        try {
+            const response = await fetch("/api/menu/branches");
+            const result = await response.json();
+            if (!response.ok) return;
+            const select = $("#order-branch-filter");
+            hasSeveralBranches = result.branches.length > 1;
+            select.replaceChildren(
+                new Option("All branches", ""),
+                ...result.branches.map((branch) => new Option(branch.name, branch.id))
+            );
+            select.value = branchFilter;
+            select.hidden = !hasSeveralBranches;
+        } catch {
+            // Without the list the filter stays hidden; every order still shows.
+        }
+    }
+    $("#order-branch-filter").addEventListener("change", (event) => {
+        branchFilter = event.target.value;
+        reloadFromStart();
     });
     $("#order-search").addEventListener("input", (event) => {
         window.clearTimeout(searchTimer);

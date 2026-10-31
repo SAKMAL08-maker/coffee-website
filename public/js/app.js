@@ -377,7 +377,16 @@
         };
     }
 
+    // Names what's sold out at the chosen branch (public/js/menu.js), or "" if the drink can be made.
+    function soldOutMessage(configuration) {
+        const missing = window.CoffeeLabMenu?.soldOutIn(configuration) || [];
+        if (!missing.length) return "";
+        return `${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} sold out at ${window.CoffeeLabMenu.branchName()} right now. Choose something else.`;
+    }
+
     function addCurrentDrinkToCart() {
+        const unavailable = soldOutMessage(getDrinkConfiguration());
+        if (unavailable) return setNotice(unavailable);
         const composition = getComposition();
         const name =
             getDrinkName(composition) === "Custom Concoction"
@@ -406,8 +415,10 @@
     // "Order again": puts saved drinks back in the basket exactly as they were made. The editor's
     // current drink is set aside and restored, so nothing the customer was building is lost.
     function orderAgain(drinks) {
-        const saved = drinks.filter((drink) => drink?.configuration);
+        const withRecipe = drinks.filter((drink) => drink?.configuration);
+        const saved = withRecipe.filter((drink) => !soldOutMessage(drink.configuration));
         const room = MAX_BASKET_DRINKS - state.cartItems.length;
+        if (withRecipe.length && !saved.length) return setNotice(soldOutMessage(withRecipe[0].configuration));
         if (!saved.length) return setNotice("That order can't be repeated automatically. Build it again below.");
         if (room <= 0) return setNotice(`Your basket is full (${MAX_BASKET_DRINKS} drinks). Check out first.`);
         const editorDrink = getDrinkConfiguration();
@@ -505,6 +516,7 @@
         const count = state.cartItems.length;
         const summary = $("#checkout-summary");
         const rows = [[`${count} drink${count === 1 ? "" : "s"}`, getEstimatedEta(state, count)]];
+        if (window.CoffeeLabMenu?.hasChoice()) rows.push(["Branch", window.CoffeeLabMenu.branchName()]);
         const pricing = latestCartQuote?.pricing;
         if (pricing) {
             rows.push(["Drinks", moneyFromCents(pricing.subtotalCents)]);
@@ -1343,6 +1355,7 @@
                     ...(state.fulfillmentMethod === "delivery" ? { deliveryAddress: state.deliveryAddress } : {}),
                     tipPercent: state.tipPercent === "custom" ? state.customTipPercent : state.tipPercent,
                     ...(state.redeemFreeDrink ? { redeemFreeDrink: true } : {}),
+                    ...(window.CoffeeLabMenu?.branchId() ? { branchId: window.CoffeeLabMenu.branchId() } : {}),
                     customer: {
                         name: $("#customer-name").value.trim(),
                         phone: $("#customer-phone").value.trim()
