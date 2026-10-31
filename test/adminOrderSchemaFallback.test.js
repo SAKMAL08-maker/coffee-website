@@ -20,12 +20,18 @@ function createFakeSupabaseClient() {
         from() {
             let columns = "";
             const query = {
-                select(selectedColumns) {
+                select(selectedColumns, options) {
                     columns = selectedColumns;
-                    fakeSchema.selectedColumnSets.push(selectedColumns);
+                    // Head-only count queries (the view counts) aren't part of the schema fallback.
+                    if (!options?.head) fakeSchema.selectedColumnSets.push(selectedColumns);
                     return query;
                 },
                 order: () => query,
+                or: () => query,
+                not: () => query,
+                in: () => query,
+                // Count queries are awaited directly.
+                then: (resolve) => resolve({ count: 1, error: null }),
                 async range() {
                     const missing = fakeSchema.missingColumns.find((column) => columns.includes(column));
                     if (missing) {

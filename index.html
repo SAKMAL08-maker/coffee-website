@@ -989,6 +989,8 @@
                         data-admin-tab="orders"
                     >
                         Orders
+                        <!-- Active order count (set by admin.js). -->
+                        <span class="admin-tab-badge" id="admin-tab-orders-badge" hidden></span>
                     </button>
                     <button
                         class="admin-tab"
@@ -1010,14 +1012,36 @@
                     >
                         <span id="admin-tab-accounts-label">Admin access</span>
                         <!-- Number of admins waiting for authenticator approval (set by adminAccess.js). -->
-                        <span class="admin-tab-badge" id="admin-access-badge" hidden></span>
+                        <span class="admin-tab-badge" id="admin-tab-accounts-badge" hidden></span>
                     </button>
                 </div>
                 <div class="admin-panel" id="admin-panel-orders" role="tabpanel" aria-labelledby="admin-tab-orders">
-                    <h2 class="admin-orders-title">Orders</h2>
+                    <h2 class="sr-only">Orders</h2>
+                    <div class="order-toolbar">
+                        <div class="order-views" role="group" aria-label="Show orders">
+                            <button class="admin-chart-tab" type="button" data-order-view="active" aria-pressed="true">
+                                Active <span class="order-view-count"></span>
+                            </button>
+                            <button class="admin-chart-tab" type="button" data-order-view="done" aria-pressed="false">
+                                Done <span class="order-view-count"></span>
+                            </button>
+                            <button class="admin-chart-tab" type="button" data-order-view="all" aria-pressed="false">
+                                All <span class="order-view-count"></span>
+                            </button>
+                        </div>
+                        <label class="sr-only" for="order-search">Search orders</label>
+                        <input
+                            class="order-search"
+                            id="order-search"
+                            type="search"
+                            placeholder="Search code or name"
+                            maxlength="40"
+                            autocomplete="off"
+                        />
+                    </div>
                     <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
                     <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
-                    <nav class="admin-pagination" aria-label="Order pages">
+                    <nav class="admin-pagination" id="admin-pagination" aria-label="Order pages" hidden>
                         <button class="button" id="admin-previous-page" type="button" disabled>Previous</button>
                         <span id="admin-page-label">Page 1</span>
                         <button class="button" id="admin-next-page" type="button" disabled>Next</button>

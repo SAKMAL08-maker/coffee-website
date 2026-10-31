@@ -9,6 +9,7 @@ const {
     receiptLimiter,
     deliveryReportLimiter,
     adminOrderLimiter,
+    adminOrderListLimiter,
     orderQuoteLimiter,
     orderStatusLimiter,
     cashCollectionLimiter
@@ -60,7 +61,7 @@ router.post(
 );
 router.get(
     "/admin/all",
-    adminOrderLimiter,
+    adminOrderListLimiter,
     validateRequest(schemas.adminOrders),
     authenticate,
     requireAdmin,

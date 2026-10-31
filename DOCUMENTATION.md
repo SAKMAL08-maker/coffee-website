@@ -127,6 +127,13 @@ Nutrition, recipe labels, service fees, taxes, and other displayed calculations 
 - **Lockout:** three wrong attempts set `locked = true` in Supabase → **Table editor → superadmin_security**. Set it back to `false` to unlock (the attempt count resets automatically), or set it to `true` to lock the account by hand. The login is also rate-limited to 5 tries per 15 minutes per IP.
 - Set up or reset with `scripts/create-superadmin.js` (see the runbook). Only scrypt hashes are stored.
 
+### Admin orders list
+
+- One compact row per order: age (amber after 10 min, red after 20), order code and name, pickup/delivery, drinks, total, a coloured status, and flags (Cash due, Note, Customer says delivered, Receipt failed). Click a row for phone, address, each drink in plain words, fees, receipts and Delete.
+- Each row has one **next step** button that follows the status rules in `services/orderStatusMachine.js`: Start crafting → Out for delivery → Arrived → Approve delivered (pickup: Start crafting → Ready for pickup), then **Cash collected**. Final and money actions ask for confirmation.
+- **Active** (default, oldest first: still being made, or cash not yet collected), **Done** and **All** views with counts, and a search by order code or customer name (`GET /api/orders/admin/all?view=active&q=...`). The Orders tab shows the active count, and the browser tab title shows "(n) New order" when orders arrive while you're elsewhere.
+- The list refreshes every 15 s but only redraws when something changed, so an open row or receipt stays open.
+
 ### Admin and staff capabilities
 
 - **Staff authorization:** Staff and administrators can use the order-status endpoint for the allowed preparation states.

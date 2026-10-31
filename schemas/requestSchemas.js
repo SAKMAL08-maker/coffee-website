@@ -258,7 +258,21 @@ const schemas = {
     },
     adminOrders: {
         params: emptyParams,
-        query: z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict()
+        query: z
+            .object({
+                page: z.coerce.number().int().min(1).max(100000).default(1),
+                // active = still needs work (not final, or cash not yet collected); done = finished.
+                view: z.enum(["active", "done", "all"]).default("all"),
+                // Order code or customer name. Letters, digits, spaces and hyphens only, because
+                // the value goes into a PostgREST or() filter where , . ( ) * : are syntax.
+                q: z
+                    .string()
+                    .trim()
+                    .max(40)
+                    .regex(/^[\p{L}\p{N} -]*$/u)
+                    .optional()
+            })
+            .strict()
     },
     status: {
         body: z.object({ status: z.enum(["Received", "Crafting", "Out for Delivery", "Arrived"]) }).strict(),
