@@ -317,3 +317,14 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 **Why:** the owner found the single long admin page inconvenient.
 
 **Mistake caught:** the first version saved "Orders" on page load before reading the saved tab, so the remembered tab was always lost. The headless preview showed it, and it was fixed before the PR.
+
+### Accessibility and visual polish (from the review)
+
+- The closed cart drawer is `inert`, so Tab no longer lands on its invisible buttons; while it is open, the page behind it is `inert`.
+- Contrast was measured with the WCAG formula, not by eye:
+    - The focus ring went from 2.95:1 to 4.4:1 and now also covers `summary` and `[tabindex]`.
+    - Muted text went from 4.37:1 to 4.99:1, and the eyebrow labels to 5.1:1.
+    - Dark-theme pairs that used white or light-theme reds were fixed: complete status, active nav, cart count, errors, Delete and Remove are now 6.4–8.9:1.
+- Restored the focus ring on the dashboard's day columns, made sign-in screen switches move focus to the heading, and turned the Admins/Customers switch into toggle buttons (it claimed to be tabs without tab panels).
+- The logo link and "Download CSV" no longer render as default blue underlined links. The cart's Edit and Remove buttons are 32 px tall.
+- Removed 21 dead CSS rules (an old tracking timeline and driver card that nothing uses), each checked with grep across the HTML, JS and tests.

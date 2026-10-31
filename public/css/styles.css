@@ -12,7 +12,7 @@
     background: #f7f3ed;
     font-synthesis: none;
     --ink: #28241f;
-    --muted: #777168;
+    --muted: #6e685f;
     --line: #e8e1d7;
     --paper: #fffefa;
     --cream: #f7f3ed;
@@ -59,9 +59,15 @@ button {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
 a:focus-visible {
-    outline: 3px solid #c57d52;
+    outline: 3px solid #a65f36;
     outline-offset: 3px;
+}
+:root[data-theme="dark"] :focus-visible {
+    outline-color: #e09a6c;
 }
 
 .shell {
@@ -81,6 +87,8 @@ a:focus-visible {
     display: flex;
     align-items: center;
     gap: 10px;
+    color: inherit;
+    text-decoration: none;
     font-weight: 800;
     letter-spacing: -0.04em;
 }
@@ -256,7 +264,7 @@ a:focus-visible {
 }
 .eyebrow {
     margin: 0 0 8px;
-    color: var(--accent);
+    color: #9c5530;
     font-size: 0.73rem;
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -967,7 +975,8 @@ dialog::backdrop {
     place-items: center;
     padding: 0 5px;
     border-radius: 12px;
-    background: var(--accent);
+    background: var(--coffee);
+    color: var(--paper);
     color: white;
     font-size: 0.7rem;
 }
@@ -1101,91 +1110,6 @@ dialog::backdrop {
     border-radius: 18px;
     background: var(--paper);
     box-shadow: var(--shadow);
-}
-.tracking-steps {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    margin: 26px 0 18px;
-}
-.tracking-step {
-    position: relative;
-    display: grid;
-    justify-items: center;
-    gap: 9px;
-    color: #a59d92;
-    text-align: center;
-}
-.tracking-step:not(:last-child)::after {
-    position: absolute;
-    top: 17px;
-    left: calc(50% + 22px);
-    width: calc(100% - 44px);
-    height: 2px;
-    background: var(--line);
-    content: "";
-}
-.tracking-step.complete:not(:last-child)::after {
-    background: var(--green);
-}
-.step-icon {
-    z-index: 1;
-    display: grid;
-    width: 36px;
-    height: 36px;
-    place-items: center;
-    border: 2px solid var(--line);
-    border-radius: 50%;
-    background: white;
-    font-size: 0.9rem;
-}
-.tracking-step.complete,
-.tracking-step.current {
-    color: var(--coffee);
-}
-.tracking-step.complete .step-icon,
-.tracking-step.current .step-icon {
-    border-color: var(--green);
-    background: var(--green);
-    color: white;
-}
-.tracking-step.current .step-icon {
-    box-shadow: 0 0 0 5px #e9eee3;
-}
-.step-label {
-    max-width: 130px;
-    font-size: 0.75rem;
-    font-weight: 800;
-}
-.driver-card {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: #fbf8f3;
-}
-.driver-avatar {
-    display: grid;
-    width: 52px;
-    height: 52px;
-    flex: 0 0 auto;
-    place-items: center;
-    border-radius: 50%;
-    background: #e8d8c6;
-    font-size: 1.6rem;
-}
-.driver-info {
-    flex: 1;
-}
-.driver-info strong,
-.driver-info span {
-    display: block;
-}
-.driver-info span {
-    margin-top: 4px;
-    color: var(--muted);
-    font-size: 0.78rem;
 }
 .tracking-actions {
     display: flex;
@@ -1369,7 +1293,7 @@ dialog::backdrop {
 }
 .admin-column:hover,
 .admin-column:focus-visible {
-    outline: none;
+    outline-offset: -2px;
     background: var(--cream);
 }
 .admin-column-fill {
@@ -1401,7 +1325,8 @@ dialog::backdrop {
     font-weight: 650;
     cursor: pointer;
 }
-.admin-chart-tab[aria-selected="true"] {
+.admin-chart-tab[aria-selected="true"],
+.admin-chart-tab[aria-pressed="true"] {
     border-color: var(--coffee);
     background: var(--coffee);
     color: var(--paper);
@@ -1799,8 +1724,7 @@ dialog::backdrop {
 :root[data-theme="dark"] .legend td {
     border-color: #39342e;
 }
-:root[data-theme="dark"] .toggle-row,
-:root[data-theme="dark"] .driver-card {
+:root[data-theme="dark"] .toggle-row {
     border-color: var(--line);
     background: #2a2621;
 }
@@ -1815,23 +1739,6 @@ dialog::backdrop {
 }
 :root[data-theme="dark"] .cart-drawer {
     border-color: var(--line);
-}
-:root[data-theme="dark"] .step-icon {
-    border-color: var(--line);
-    background: #302c27;
-}
-:root[data-theme="dark"] .tracking-step.complete .step-icon,
-:root[data-theme="dark"] .tracking-step.current .step-icon {
-    background: #596b4c;
-}
-:root[data-theme="dark"] .tracking-step.current .step-icon {
-    box-shadow: 0 0 0 5px #313b2a;
-}
-:root[data-theme="dark"] .tracking-step.complete:not(:last-child)::after {
-    background: #849a70;
-}
-:root[data-theme="dark"] .delivery-button {
-    color: var(--ink);
 }
 :root[data-theme="dark"] .auth-form input:not([type="checkbox"]) {
     border-color: var(--line);
@@ -1995,14 +1902,6 @@ dialog::backdrop {
     }
     .tracking-card {
         padding: 17px;
-    }
-    .step-label {
-        max-width: 80px;
-        font-size: 0.66rem;
-    }
-    .tracking-step:not(:last-child)::after {
-        left: calc(50% + 18px);
-        width: calc(100% - 36px);
     }
     .tracking-actions {
         flex-direction: column;
@@ -2902,4 +2801,36 @@ dialog::backdrop {
 }
 .admin-tab-badge[hidden] {
     display: none;
+}
+/* Dark-theme contrast fixes: these pairs used white or light-theme reds on dark-theme fills. */
+:root[data-theme="dark"] .eyebrow {
+    color: var(--accent);
+}
+:root[data-theme="dark"] .order-history-status.is-complete,
+:root[data-theme="dark"] .fulfillment-progress.is-complete .fulfillment-progress-icon,
+:root[data-theme="dark"] .customer-nav-button.is-active {
+    color: #171512;
+}
+:root[data-theme="dark"] .auth-message,
+:root[data-theme="dark"] .delete-recipe,
+:root[data-theme="dark"] .button-danger {
+    border-color: #ff9b8f;
+    color: #ff9b8f;
+}
+:root[data-theme="dark"] .auth-message[data-state="success"] {
+    color: var(--green);
+}
+:root[data-theme="dark"] .cup-capacity {
+    color: var(--muted);
+}
+/* Download CSV is a link styled as a button. */
+a.button {
+    color: var(--ink);
+    text-decoration: none;
+}
+/* Cart Edit/Remove were 23 px tall. */
+.recipe-link,
+.delete-recipe {
+    min-height: 32px;
+    padding: 4px 8px;
 }

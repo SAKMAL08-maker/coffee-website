@@ -417,6 +417,9 @@
         const drawer = $("#cart-drawer");
         drawer.setAttribute("open", "");
         drawer.setAttribute("aria-hidden", "false");
+        // Modal: the drawer becomes reachable and the page behind it does not.
+        drawer.inert = false;
+        $(".shell").inert = true;
         $("#drawer-backdrop").hidden = false;
         requestAnimationFrame(() => $("#drawer-backdrop").classList.add("visible"));
         $("#close-cart-button").focus();
@@ -426,6 +429,9 @@
         const drawer = $("#cart-drawer");
         drawer.removeAttribute("open");
         drawer.setAttribute("aria-hidden", "true");
+        // Closed: its buttons leave the Tab order (it is only slid off-screen).
+        drawer.inert = true;
+        $(".shell").inert = false;
         $("#drawer-backdrop").classList.remove("visible");
         window.setTimeout(() => {
             $("#drawer-backdrop").hidden = true;

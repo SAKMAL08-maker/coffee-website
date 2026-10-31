@@ -20,7 +20,7 @@
                 >
                 <div class="auth-card">
                     <p class="eyebrow">A little coffee, just for you</p>
-                    <h1 id="auth-title">Welcome to Coffee Lab</h1>
+                    <h1 id="auth-title" tabindex="-1">Welcome to Coffee Lab</h1>
                     <p class="auth-intro">
                         Sign in or create an account to build and order your coffee. Administrator accounts use Supabase
                         Auth and require an authenticator code.
@@ -1071,15 +1071,20 @@
                     >
                         <div class="admin-dashboard-header">
                             <h2 id="account-dashboard-title">Accounts</h2>
-                            <div class="account-filter" role="tablist" aria-label="Account type">
-                                <button class="admin-chart-tab" type="button" role="tab" data-account-filter="admins">
+                            <div class="account-filter" role="group" aria-label="Account type">
+                                <button
+                                    class="admin-chart-tab"
+                                    type="button"
+                                    data-account-filter="admins"
+                                    aria-pressed="true"
+                                >
                                     Admins
                                 </button>
                                 <button
                                     class="admin-chart-tab"
                                     type="button"
-                                    role="tab"
                                     data-account-filter="customers"
+                                    aria-pressed="false"
                                 >
                                     Customers
                                 </button>
@@ -1113,6 +1118,7 @@
             aria-modal="true"
             aria-hidden="true"
             role="dialog"
+            inert
         >
             <div class="drawer-head">
                 <h2 id="cart-title">Your order <span id="drawer-count">(0)</span></h2>
