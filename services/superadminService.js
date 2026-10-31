@@ -96,12 +96,16 @@ async function listAccounts(supabase, now = Date.now()) {
     // Admins sign in through Supabase Auth; use its last sign-in time. Looked up in parallel
     // (one request per linked admin), so the page doesn't wait for them one after another.
     const adminSignIns = new Map();
+    const requestEmails = new Map();
     const linked = accounts.filter((candidate) => candidate.supabase_auth_user_id);
     const lookups = await Promise.all(
         linked.map((account) => supabase.auth.admin.getUserById(account.supabase_auth_user_id))
     );
     lookups.forEach(({ data, error: authError }, index) => {
         if (!authError && data?.user?.last_sign_in_at) adminSignIns.set(linked[index].id, data.user.last_sign_in_at);
+        if (!authError && linked[index].role === "pending_admin") {
+            requestEmails.set(linked[index].id, data?.user?.email);
+        }
     });
 
     return accounts.map((account) => {
@@ -115,7 +119,8 @@ async function listAccounts(supabase, now = Date.now()) {
             role: account.role,
             createdAt: account.created_at,
             active: Boolean(sessionStart) || adminActive,
-            lastSignInAt: lastSignIn
+            lastSignInAt: lastSignIn,
+            ...(account.role === "pending_admin" && { email: requestEmails.get(account.id) || null })
         };
     });
 }

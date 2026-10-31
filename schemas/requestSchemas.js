@@ -48,12 +48,19 @@ const username = z
     .max(24)
     .regex(/^[a-zA-Z0-9_]+$/);
 
+// The Admin tab sends accountType "admin" and an email (admins sign in through Supabase Auth).
 const signupBody = z
     .object({
         username,
-        password
+        password,
+        accountType: z.enum(["customer", "admin"]).default("customer"),
+        email: z.string().trim().toLowerCase().email().max(254).optional()
     })
-    .strict();
+    .strict()
+    .refine((body) => body.accountType !== "admin" || body.email, {
+        message: "An admin request needs an email address.",
+        path: ["email"]
+    });
 
 const loginBody = z
     .object({

@@ -1,5 +1,6 @@
 const { getAdminClient } = require("../config/supabase");
 const { listAccounts, demoteAdmin, deleteAccount } = require("../services/superadminService");
+const { approveAdminRequest } = require("../services/adminSignupService");
 
 async function getAccounts(request, response, next) {
     try {
@@ -32,4 +33,14 @@ async function remove(request, response, next) {
     }
 }
 
-module.exports = { getAccounts, demote, remove };
+async function approveAdmin(request, response, next) {
+    try {
+        const result = await approveAdminRequest(getAdminClient(), { username: request.params.username });
+        console.info(`Superadmin ${request.user.username} approved the admin request from ${result.username}.`);
+        response.json(result);
+    } catch (error) {
+        next(error);
+    }
+}
+
+module.exports = { getAccounts, demote, remove, approveAdmin };

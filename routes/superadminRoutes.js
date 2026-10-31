@@ -25,6 +25,15 @@ router.post(
     requireSuperadmin,
     superadminController.demote
 );
+// Approve an admin request from the sign-up form. Declining one is the delete below.
+router.post(
+    "/accounts/:username/approve-admin",
+    superadminActionLimiter,
+    validateRequest(schemas.superadminAccountAction),
+    authenticate,
+    requireSuperadmin,
+    superadminController.approveAdmin
+);
 router.delete(
     "/accounts/:username",
     superadminActionLimiter,
