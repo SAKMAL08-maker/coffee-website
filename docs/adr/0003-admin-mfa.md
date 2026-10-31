@@ -13,6 +13,9 @@ Admins can see every order (names, addresses), approve deliveries, delete orders
 - Every admin API (`requireAdmin`) requires a Supabase session at **AAL2**, meaning password plus a verified TOTP code.
 - The account must have **exactly one** verified TOTP factor, and its ID must match the factor the project approved (`admin_mfa_factor_id`). Extra or unknown factors make access **fail closed**.
 - First enrollment needs a **one-time setup authorization** issued by the project owner with `scripts/admin-mfa-bootstrap.js`. It expires after 30 minutes and is consumed on success, so someone who steals the password cannot enroll their own authenticator.
+- **Update (2026-10-31):** an MFA-verified admin can instead **approve** setup from the admin page (`POST /api/admin/accounts/:username/approve-setup`). That stores the same kind of authorization, flagged `admin_mfa_setup_preapproved`, for 24 hours, and the new admin enrolls by scanning a QR code with no typed key.
+    - **Trade-off:** during that window, the password alone is enough to enroll. That's acceptable because a human approved it on purpose and the window is short.
+    - `ADMIN_APPROVER_USERNAMES` can limit who approves. Admins can't approve themselves.
 
 ## Alternatives considered
 

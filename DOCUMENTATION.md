@@ -113,6 +113,11 @@ Nutrition, recipe labels, service fees, taxes, and other displayed calculations 
 - **Half-caf nudge:** when a regular-caffeine drink would go over the guide or is built after the cutoff, the panel offers **Make it half-caf** with the exact milligrams saved. One tap switches the drink.
 - Decided on the server (`services/caffeineGuardianService.js`, `POST /api/caffeine/check`) from the same nutrition function checkout stores on each order item. "Today" and the cutoff use **Asia/Manila** time regardless of the server's clock. The browser can't supply its own total.
 
+### Admin dashboard
+
+- At the top of the admin page: totals (orders, drinks, sales, average order) for the last 7, 30 or 90 days, and a bar chart per tab: orders per day, sales per day, drink type, coffee base, milk, hot/iced/blended, add-ons (syrups, toppings, sweeteners), caffeine mode, pickup vs delivery, and order status.
+- Computed on the server (`services/adminMetricsService.js`, `GET /api/admin/metrics?days=30`, admin with MFA only). Days use **Asia/Manila** time. Charts are plain HTML/CSS (no chart library); category charts are tables, so screen readers get the numbers.
+
 ### Admin and staff capabilities
 
 - **Staff authorization:** Staff and administrators can use the order-status endpoint for the allowed preparation states.

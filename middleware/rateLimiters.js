@@ -45,6 +45,7 @@ module.exports = {
     receiptLimiter: createLimiter(60 * 1000, 10, "receiptLimiter"),
     deliveryReportLimiter: createLimiter(60 * 60 * 1000, 5, "deliveryReportLimiter"),
     adminOrderLimiter: createLimiter(60 * 1000, 30, "adminOrderLimiter"),
+    adminApprovalLimiter: createLimiter(15 * 60 * 1000, 10, "adminApprovalLimiter"),
     healthLimiter: createLimiter(60 * 1000, 30, "healthLimiter"),
     // The browser re-quotes (debounced) as ingredients change, so this is looser than checkout.
     orderQuoteLimiter: createLimiter(60 * 1000, 120, "orderQuoteLimiter"),

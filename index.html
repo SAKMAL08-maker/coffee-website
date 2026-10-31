@@ -78,7 +78,8 @@
                             By creating an account, you acknowledge that Coffee Lab uses account and security
                             information to operate your account. Read our
                             <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for
-                            details and how to contact us about your information.
+                            details and how to contact us about your information, and you agree to our
+                            <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Use</a>.
                         </p>
                         <label for="signup-password">Create a password</label>
                         <input
@@ -188,17 +189,20 @@
                         <h2 id="admin-mfa-title">Administrator verification</h2>
                         <p id="admin-mfa-description" class="field-help"></p>
                         <div id="admin-mfa-setup" hidden>
-                            <p class="field-help">
-                                Enter the one-time setup authorization issued by your trusted project owner. A password
-                                alone cannot register an authenticator.
-                            </p>
-                            <label for="admin-mfa-bootstrap-token">One-time setup authorization</label>
-                            <input
-                                id="admin-mfa-bootstrap-token"
-                                type="password"
-                                autocomplete="off"
-                                spellcheck="false"
-                            />
+                            <!-- Hidden when the owner approved this admin in the admin page. -->
+                            <div id="admin-mfa-key-fields">
+                                <p class="field-help">
+                                    Enter the one-time setup authorization issued by your trusted project owner. A
+                                    password alone cannot register an authenticator.
+                                </p>
+                                <label for="admin-mfa-bootstrap-token">One-time setup authorization</label>
+                                <input
+                                    id="admin-mfa-bootstrap-token"
+                                    type="password"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                />
+                            </div>
                             <button class="button auth-submit" id="admin-mfa-enroll" type="button">
                                 Authorize authenticator setup
                             </button>
@@ -236,7 +240,9 @@
 
                     <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
                 </div>
-                <p class="privacy-global-link"><a href="/privacy.html">Privacy Policy</a></p>
+                <p class="privacy-global-link">
+                    <a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms of Use</a>
+                </p>
             </section>
 
             <header class="topbar" id="app-header" hidden>
@@ -246,6 +252,7 @@
                 <div class="top-actions">
                     <span class="signed-in-user" id="signed-in-user"></span>
                     <a class="privacy-nav-link" href="/privacy.html">Privacy Policy</a>
+                    <a class="privacy-nav-link" href="/terms.html">Terms of Use</a>
                     <div class="unit-control">
                         <span id="unit-label">Metric</span
                         ><button
@@ -848,7 +855,10 @@
                 </section>
                 <footer class="actions-footer">
                     <p class="field-help">Crafted to your taste.</p>
-                    <a class="privacy-footer-link" href="/privacy.html">Privacy Policy</a>
+                    <span class="legal-footer-links">
+                        <a class="privacy-footer-link" href="/privacy.html">Privacy Policy</a> ·
+                        <a class="privacy-footer-link" href="/terms.html">Terms of Use</a>
+                    </span>
                     <div class="footer-actions">
                         <button class="button button-primary" id="add-to-cart-button" type="button">
                             ＋ Add to order basket
@@ -930,13 +940,41 @@
                 <div class="admin-heading">
                     <div>
                         <p class="eyebrow">Coffee Lab operations</p>
-                        <h1 id="admin-title" tabindex="-1">Order administration</h1>
-                        <p>Review customer delivery reports, verify receipts, and manage orders.</p>
+                        <h1 id="admin-title" tabindex="-1">Admin dashboard</h1>
+                        <p>See how the shop is doing, then review and manage orders.</p>
                     </div>
-                    <button class="button button-primary" id="admin-refresh-button" type="button">
-                        Refresh orders
-                    </button>
+                    <button class="button button-primary" id="admin-refresh-button" type="button">Refresh</button>
                 </div>
+                <section class="admin-dashboard" id="admin-dashboard" aria-labelledby="admin-dashboard-title">
+                    <div class="admin-dashboard-header">
+                        <h2 id="admin-dashboard-title">Dashboard</h2>
+                        <label class="admin-dashboard-range">
+                            <span>Show</span>
+                            <select id="admin-dashboard-days">
+                                <option value="7">Last 7 days</option>
+                                <option value="30" selected>Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="admin-kpis" id="admin-kpis"></div>
+                    <div class="admin-chart-tabs" id="admin-chart-tabs" role="tablist" aria-label="Metrics"></div>
+                    <div class="admin-chart" id="admin-chart" role="tabpanel"></div>
+                    <p class="field-help" id="admin-dashboard-status" role="status"></p>
+                </section>
+                <details class="admin-access" id="admin-access">
+                    <summary>
+                        <span class="admin-access-title">Admin access</span>
+                        <span class="admin-access-badge" id="admin-access-badge" hidden></span>
+                    </summary>
+                    <p class="field-help">
+                        Approve a new admin here instead of running the setup script. They then sign in and scan a QR
+                        code with their authenticator app, with no setup key to type. An approval lasts 24 hours.
+                    </p>
+                    <ul class="admin-access-list" id="admin-access-list"></ul>
+                    <p class="notice" id="admin-access-message" role="status" aria-live="polite"></p>
+                </details>
+                <h2 class="admin-orders-title">Orders</h2>
                 <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
                 <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
                 <nav class="admin-pagination" aria-label="Order pages">
@@ -986,7 +1024,8 @@
                     We use your name, phone number, order details, and delivery address when applicable to manage this
                     order. Location is optional. See our
                     <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a> for storage,
-                    retention, and privacy requests.
+                    retention, and privacy requests. Placing an order means you agree to our
+                    <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Use</a>.
                 </p>
                 <div class="checkout-summary" id="checkout-summary"></div>
                 <p class="checkout-payment-note" id="checkout-payment-note" role="note"></p>
@@ -1029,6 +1068,8 @@
         </dialog>
 
         <script src="/js/admin.js" defer></script>
+        <script src="/js/adminDashboard.js" defer></script>
+        <script src="/js/adminAccess.js" defer></script>
         <script src="/js/auth.js" defer></script>
         <script src="/js/state.js" defer></script>
         <script src="/js/pricing.js" defer></script>
