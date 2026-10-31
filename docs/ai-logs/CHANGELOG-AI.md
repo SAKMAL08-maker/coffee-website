@@ -288,3 +288,19 @@ Append-only. Format and rules: [README.md](README.md).
 - Option A's first test fake had no `rpc`; the old paging test was turned into the "before the migration" fallback test.
 
 **Human checks needed:** read the Terms text; apply the migrations you choose; approve Arthur from the admin page after #23 merges; change Arthur's password after first sign-in, since it was shared in a chat; consider `ADMIN_APPROVER_USERNAMES`.
+
+## 2026-10-31 · Superadmin, account dashboard, sign-in flash fix
+
+- **Tool:** Claude Code (Claude Opus 5.5)
+- **Branch:** `superadmin-accounts`
+
+**What changed**
+
+- New role `superadmin` (one account, `Super_Admin`). It signs in with a password and three security questions, with no authenticator. Typing the username and pressing Enter opens that screen. Three wrong attempts lock it. The owner unlocks it in Supabase (`superadmin_security.locked`).
+- Superadmin-only **Accounts** section (Admins / Customers): signed-in status and last sign-in, remove admin rights, delete account. API: `/api/superadmin/accounts`.
+- Fixed the login page briefly showing for signed-in visitors. It now stays hidden behind an "Opening Coffee Lab…" line until the saved session is checked.
+- Migration `20261107000000_superadmin`, dry-run on the live database in a rolled-back transaction: the counter goes 1, 2, 3 and locks on the third; a success while locked changes nothing; a manual unlock resets the count; a second superadmin is refused.
+
+**Why:** the owner asked for one account above the admins that manages accounts and can be locked from Supabase.
+
+**Security trade-offs, told to the owner:** this account has no second factor, and the answers are personal facts that were shared in a chat. They are stored only as scrypt hashes, set from shell variables, and appear in no file or commit. Mitigations: lockout after 3 attempts, IP rate limit, a 12-hour session, and the normal login and password reset refuse the account.

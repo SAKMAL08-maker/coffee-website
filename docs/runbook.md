@@ -83,6 +83,11 @@ Every customer will need to sign in again. Passwords are unaffected.
 
 **Terminal fallback:** follow [guide.md §6](../instructions/guide.md#6-owner-authorized-first-totp-enrollment): run `node scripts/admin-mfa-bootstrap.js <admin-username> --confirm-reset` locally. It deletes the admin's existing factors and prints a 30-minute setup authorization for re-enrollment. Also change that admin's Supabase Auth password (Supabase → **Authentication → Users**).
 
+### Superadmin (create, reset, unlock)
+
+- **Unlock or lock:** Supabase → **Table editor → superadmin_security** → set `locked` to `false` (unlock) or `true` (lock).
+- **Create or reset** (new password or answers; also unlocks): set `SUPERADMIN_PASSWORD`, `SUPERADMIN_BIRTHDAY`, `SUPERADMIN_DOG` and `SUPERADMIN_COLOR` in your shell, run `node scripts/create-superadmin.js`, then clear them. Never put them in `.env` or a commit.
+
 ## 4. Keep-alive (free tiers)
 
 Free Render services sleep after ~15 minutes idle (first request then takes ~30–60 s), and free Supabase projects pause after about a week without database activity. `/healthz` runs a real one-row query, so one external ping prevents both.

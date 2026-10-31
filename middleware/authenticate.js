@@ -171,7 +171,9 @@ async function authenticate(request, response, next) {
 
         request.user = user;
         request.sessionId = session.id;
-        request.authMethod = "coffee-session";
+        // The superadmin signs in with password + security questions (no authenticator),
+        // so its session is marked separately; requireAdmin accepts only this method for it.
+        request.authMethod = user.role === "superadmin" ? "superadmin-session" : "coffee-session";
         next();
     } catch (error) {
         next(error);
@@ -185,19 +187,32 @@ async function optionalAuthenticate(request, response, next) {
 
 function requireStaff(request, response, next) {
     if (!request.user) return response.status(401).json({ error: "Authentication is required." });
-    if (!["staff", "admin"].includes(request.user.role)) {
+    if (!["staff", "admin", "superadmin"].includes(request.user.role)) {
         return response.status(403).json({ error: "Staff access is required." });
     }
     next();
 }
 
+function isSuperadminSession(request) {
+    return request.user?.role === "superadmin" && request.authMethod === "superadmin-session";
+}
+
 function requireAdmin(request, response, next) {
     if (!request.user) return response.status(401).json({ error: "Authentication is required." });
+    if (isSuperadminSession(request)) return next();
     if (request.user.role !== "admin") {
         return response.status(403).json({ error: "Administrator access is required." });
     }
     if (request.authMethod !== "supabase-mfa" || request.aal !== "aal2") {
         return response.status(403).json({ error: "Administrator multi-factor verification is required." });
+    }
+    next();
+}
+
+function requireSuperadmin(request, response, next) {
+    if (!request.user) return response.status(401).json({ error: "Authentication is required." });
+    if (!isSuperadminSession(request)) {
+        return response.status(403).json({ error: "Superadmin access is required." });
     }
     next();
 }
@@ -218,5 +233,6 @@ module.exports = {
     authenticate,
     optionalAuthenticate,
     requireStaff,
-    requireAdmin
+    requireAdmin,
+    requireSuperadmin
 };

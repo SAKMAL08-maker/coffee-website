@@ -46,6 +46,9 @@ module.exports = {
     deliveryReportLimiter: createLimiter(60 * 60 * 1000, 5, "deliveryReportLimiter"),
     adminOrderLimiter: createLimiter(60 * 1000, 30, "adminOrderLimiter"),
     adminApprovalLimiter: createLimiter(15 * 60 * 1000, 10, "adminApprovalLimiter"),
+    // Superadmin sign-in also locks after 3 wrong answers; this slows guessing per IP.
+    superadminLoginLimiter: createLimiter(15 * 60 * 1000, 5, "superadminLoginLimiter"),
+    superadminActionLimiter: createLimiter(60 * 1000, 30, "superadminActionLimiter"),
     healthLimiter: createLimiter(60 * 1000, 30, "healthLimiter"),
     // The browser re-quotes (debounced) as ingredients change, so this is looser than checkout.
     orderQuoteLimiter: createLimiter(60 * 1000, 120, "orderQuoteLimiter"),

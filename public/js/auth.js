@@ -22,10 +22,20 @@
         heading.focus?.();
     }
 
+    const SUPERADMIN_USERNAME = "super_admin";
+
+    // Reveals the login page only once we know there's no saved session.
+    function showAuthPage() {
+        $("#session-loading").hidden = true;
+        authPage.hidden = false;
+    }
+
     function showCoffeeLab(user) {
+        $("#session-loading").hidden = true;
         authPage.hidden = true;
         $("#app-header").hidden = false;
-        const isAdmin = user.role === "admin";
+        // The superadmin gets the admin page plus the account dashboard.
+        const isAdmin = user.role === "admin" || user.role === "superadmin";
         $("#customizer-page").hidden = isAdmin;
         $("#customer-nav").hidden = isAdmin;
         $("#order-history-page").hidden = true;
@@ -71,8 +81,53 @@
         button.addEventListener("click", () => showScreen(button.dataset.showAuth));
     });
 
+    function isSuperadminUsername() {
+        return $("#login-username").value.trim().toLowerCase() === SUPERADMIN_USERNAME;
+    }
+
+    function openSuperadminScreen() {
+        $("#superadmin-form").reset();
+        showScreen("superadmin");
+        $("#superadmin-password").focus();
+    }
+
+    // Typing Super_Admin and pressing Enter opens the security-question screen.
+    $("#login-username").addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && isSuperadminUsername()) {
+            event.preventDefault();
+            openSuperadminScreen();
+        }
+    });
+
+    $("#superadmin-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const result = await submitForm(form, async () => {
+            const response = await fetch("/api/users/superadmin/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify({
+                    password: $("#superadmin-password").value,
+                    birthday: $("#superadmin-birthday").value.trim(),
+                    favoriteDog: $("#superadmin-dog").value.trim(),
+                    favoriteColor: $("#superadmin-color").value.trim()
+                })
+            });
+            return readResponse(response);
+        });
+        if (result) {
+            form.reset();
+            showCoffeeLab(result.user);
+        }
+    });
+
     $("#login-form").addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (isSuperadminUsername()) {
+            openSuperadminScreen();
+            return;
+        }
         const form = event.currentTarget;
         const result = await submitForm(form, async () => {
             const response = await fetch("/api/users/login", {
@@ -348,14 +403,14 @@
         try {
             const response = await fetch("/api/users/me", { credentials: "same-origin" });
             if (response.status === 401) {
-                authPage.hidden = false;
+                showAuthPage();
                 showScreen("login");
                 return;
             }
             const result = await readResponse(response);
             showCoffeeLab(result.user);
         } catch (error) {
-            authPage.hidden = false;
+            showAuthPage();
             showScreen("login");
             showMessage(`Could not verify your session: ${error.message} Try logging in or reload this page.`);
         }

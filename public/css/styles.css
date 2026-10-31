@@ -2788,3 +2788,64 @@ dialog::backdrop {
     color: var(--accent);
     font-weight: 700;
 }
+.session-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 60vh;
+    margin: 0;
+    color: var(--muted);
+    font-weight: 650;
+}
+.session-loading[hidden] {
+    display: none;
+}
+.account-dashboard {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 28px;
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--paper);
+    box-shadow: var(--shadow);
+}
+.account-dashboard[hidden] {
+    display: none;
+}
+.account-dashboard h2 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+.account-filter {
+    display: flex;
+    gap: 6px;
+}
+.account-dashboard .admin-access-list {
+    margin: 0;
+}
+.account-status {
+    font-variant-numeric: tabular-nums;
+}
+.admin-access-item[data-active="true"] .account-status {
+    color: #2f8a4f;
+    font-weight: 700;
+}
+:root[data-theme="dark"] .admin-access-item[data-active="true"] .account-status {
+    color: #6fcf8f;
+}
+.account-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-left: auto;
+}
+.account-danger {
+    border-color: #b3261e;
+    color: #b3261e;
+}
+:root[data-theme="dark"] .account-danger {
+    border-color: #f2b8b5;
+    color: #f2b8b5;
+}

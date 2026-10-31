@@ -1078,7 +1078,7 @@
         saveCaffeineCutoff(null);
     });
     function startCaffeineGuardian(role) {
-        isCaffeineGuardianActive = role !== "admin";
+        isCaffeineGuardianActive = role !== "admin" && role !== "superadmin";
         $("#caffeine-guardian").hidden = true;
         if (isCaffeineGuardianActive) caffeineChecker.checkNow(getCaffeineCheckRequest());
     }

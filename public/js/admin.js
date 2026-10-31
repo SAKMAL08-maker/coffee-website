@@ -269,7 +269,7 @@
     }
 
     function startForUser(user) {
-        if (user?.role !== "admin") return;
+        if (user?.role !== "admin" && user?.role !== "superadmin") return;
         if (isAdminAuthenticated) {
             loadOrders();
             return;

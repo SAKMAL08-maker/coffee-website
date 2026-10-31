@@ -1,5 +1,6 @@
 const { getAdminClient } = require("../config/supabase");
 const { startAdminLogin, createMfaSession, enrollAdminTotp, verifyAdminTotp } = require("../services/adminMfa");
+const { signInSuperadmin } = require("../services/superadminService");
 const {
     createRecoveryCode,
     normalizeRecoveryCode,
@@ -116,6 +117,11 @@ async function logIn(request, response, next) {
             });
         }
 
+        // The superadmin must use its own screen (password + security questions).
+        if (user?.role === "superadmin") {
+            return response.status(401).json({ error: "Username or password is incorrect." });
+        }
+
         const storedPasswordHash =
             user?.password_hash ||
             (await (dummyPasswordHash ||= hashPassword("Coffee Lab invalid-account timing value")));
@@ -126,6 +132,31 @@ async function logIn(request, response, next) {
 
         await createSession(response, user, request.body.staySignedIn);
         response.json({ user: { id: user.id, username: user.username, role: user.role } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function logInSuperadmin(request, response, next) {
+    try {
+        const result = await signInSuperadmin(getAdminClient(), request.body);
+        if (result.user) {
+            // Never "stay signed in": a superadmin session ends after 12 hours.
+            await createSession(response, result.user, false);
+            return response.json({ user: { id: result.user.id, username: result.user.username, role: "superadmin" } });
+        }
+        if (result.locked) {
+            return response.status(423).json({
+                error: "This account is locked after too many failed attempts. Unlock it in Supabase (superadmin_security → locked)."
+            });
+        }
+        const left = result.attemptsLeft;
+        return response.status(401).json({
+            error:
+                left === null
+                    ? "Those details don't match."
+                    : `Those details don't match. ${left} attempt${left === 1 ? "" : "s"} left before the account locks.`
+        });
     } catch (error) {
         next(error);
     }
@@ -218,7 +249,7 @@ async function resetPassword(request, response, next) {
             .eq("username_key", normalizedUsername(request.body.username))
             .maybeSingle();
         if (accountError) throw accountError;
-        if (account?.role === "admin") {
+        if (account?.role === "admin" || account?.role === "superadmin") {
             return response.status(400).json({
                 error: "Username or recovery code is invalid or already used. Administrator passwords are managed through Supabase Auth; contact the project owner for a reset."
             });
@@ -295,6 +326,7 @@ async function removeSavedRecipe(request, response, next) {
 module.exports = {
     signUp,
     logIn,
+    logInSuperadmin,
     enrollAdminMfa,
     verifyAdminMfa,
     getCurrentUser,

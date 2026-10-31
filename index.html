@@ -10,7 +10,11 @@
     </head>
     <body>
         <div class="shell">
-            <section class="auth-page" id="auth-page" aria-labelledby="auth-title">
+            <!-- Shown while the saved session is checked, so signed-in visitors never see the login screen flash. -->
+            <p class="session-loading" id="session-loading" role="status">
+                <span class="brand-mark" aria-hidden="true">☕</span><span>Opening Coffee Lab…</span>
+            </p>
+            <section class="auth-page" id="auth-page" aria-labelledby="auth-title" hidden>
                 <a class="brand auth-brand" href="/" aria-label="Coffee Lab home"
                     ><span class="brand-mark" aria-hidden="true">☕</span><span>Coffee Lab</span></a
                 >
@@ -57,6 +61,35 @@
                         <button class="auth-link auth-recovery-link" type="button" data-show-auth="recovery">
                             Forgot your password?
                         </button>
+                    </form>
+
+                    <!-- Reached by typing Super_Admin as the username and pressing Enter. -->
+                    <form class="auth-form" id="superadmin-form" data-auth-screen="superadmin" hidden>
+                        <h2 tabindex="-1">Superadmin sign-in</h2>
+                        <p class="field-help">Answer all three questions. Three wrong attempts lock this account.</p>
+                        <label for="superadmin-password">Password</label>
+                        <input
+                            id="superadmin-password"
+                            type="password"
+                            autocomplete="current-password"
+                            maxlength="128"
+                            required
+                        />
+                        <label for="superadmin-birthday">Birthday</label>
+                        <input
+                            id="superadmin-birthday"
+                            inputmode="numeric"
+                            autocomplete="off"
+                            placeholder="MMDDYYYY"
+                            maxlength="32"
+                            required
+                        />
+                        <label for="superadmin-dog">Favorite dog</label>
+                        <input id="superadmin-dog" autocomplete="off" maxlength="64" required />
+                        <label for="superadmin-color">Favorite color</label>
+                        <input id="superadmin-color" autocomplete="off" maxlength="64" required />
+                        <button class="button button-primary auth-submit" type="submit">Sign in</button>
+                        <button class="auth-link" type="button" data-show-auth="login">Back to normal sign-in</button>
                     </form>
 
                     <form class="auth-form" id="signup-form" data-auth-screen="signup" hidden>
@@ -970,6 +1003,27 @@
                     <div class="admin-chart" id="admin-chart" role="tabpanel"></div>
                     <p class="field-help" id="admin-dashboard-status" role="status"></p>
                 </section>
+                <section
+                    class="account-dashboard"
+                    id="account-dashboard"
+                    hidden
+                    aria-labelledby="account-dashboard-title"
+                >
+                    <div class="admin-dashboard-header">
+                        <h2 id="account-dashboard-title">Accounts</h2>
+                        <div class="account-filter" role="tablist" aria-label="Account type">
+                            <button class="admin-chart-tab" type="button" role="tab" data-account-filter="admins">
+                                Admins
+                            </button>
+                            <button class="admin-chart-tab" type="button" role="tab" data-account-filter="customers">
+                                Customers
+                            </button>
+                        </div>
+                    </div>
+                    <p class="field-help" id="account-summary"></p>
+                    <ul class="admin-access-list" id="account-list"></ul>
+                    <p class="notice" id="account-message" role="status" aria-live="polite"></p>
+                </section>
                 <details class="admin-access" id="admin-access">
                     <summary>
                         <span class="admin-access-title">Admin access</span>
@@ -1078,6 +1132,7 @@
         <script src="/js/admin.js" defer></script>
         <script src="/js/adminDashboard.js" defer></script>
         <script src="/js/adminAccess.js" defer></script>
+        <script src="/js/accountDashboard.js" defer></script>
         <script src="/js/auth.js" defer></script>
         <script src="/js/state.js" defer></script>
         <script src="/js/pricing.js" defer></script>
