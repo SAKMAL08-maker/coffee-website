@@ -107,7 +107,14 @@ app.use((error, request, response, next) => {
             409: "The request conflicts with the current resource state."
         };
         const status = [400, 401, 403, 404, 409].includes(error.statusCode) ? error.statusCode : 400;
-        return response.status(status).json({ error: safeMessages[status] });
+        // 4xx messages are written for the user (our services, or http-errors, which marks a
+        // message that must stay private with expose: false). Showing them tells people what to
+        // fix, e.g. "Demote it instead"; the generic text is only a fallback.
+        const message =
+            error.expose !== false && typeof error.message === "string" && error.message.trim()
+                ? error.message.slice(0, 300)
+                : safeMessages[status];
+        return response.status(status).json({ error: message });
     }
 
     console.error("Request failed:", {

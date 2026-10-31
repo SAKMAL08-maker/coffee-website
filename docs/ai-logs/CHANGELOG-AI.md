@@ -350,3 +350,11 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 - Restored the focus ring on the dashboard's day columns, made sign-in screen switches move focus to the heading, and turned the Admins/Customers switch into toggle buttons (it claimed to be tabs without tab panels).
 - The logo link and "Download CSV" no longer render as default blue underlined links. The cart's Edit and Remove buttons are 32 px tall.
 - Removed 21 dead CSS rules (an old tracking timeline and driver card that nothing uses), each checked with grep across the HTML, JS and tests.
+
+### Server messages and receipts (from the review)
+
+- **Error messages:** the error handler replaced every 4xx message with a generic one, so users saw "The request conflicts with the current resource state." instead of "…Demote it instead." It now passes the message through unless the error is marked `expose: false`, which is the convention of the `http-errors` package that Express uses. 5xx errors stay generic.
+- **Receipt numbers:** receipts printed `CL-` plus the first 8 characters of the order id, while every screen shows `CL-` plus the last 6 of the tracking code. Both receipts now use the shared `services/orderCode.js`.
+- **Receipt time:** the PDF receipt printed its time in UTC, 8 hours off; it now uses Manila time, like the image receipt.
+- **Superadmin accounts:** the account list now looks up admin sign-in times in parallel instead of one after another.
+- **Not changed, on purpose:** long-lived browser caching of static files. The files have no content hashes in their names, so after a deploy browsers could run old scripts against new HTML. ETag revalidation (304 responses) already avoids re-downloading unchanged files.

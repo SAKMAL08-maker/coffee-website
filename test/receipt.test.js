@@ -81,3 +81,20 @@ test("accepts no B2 configuration but rejects partial or unsafe endpoints", () =
     assert.equal(config.bucket, "r3c3ipts");
     assert.equal(config.endpoint, "https://s3.us-west-004.backblazeb2.com");
 });
+
+test("receipts use the same order number as the screens: CL- plus the tracking code's last 6", () => {
+    const { displayOrderCode } = require("../services/orderCode");
+    const order = { id: "c5c0c718-6e68-4a0f-b490-eaa4897bb4b1", tracking_code: "f".repeat(42) + "ab12cd" };
+    assert.equal(displayOrderCode(order), "CL-AB12CD");
+    // Older data without a tracking code keeps the previous id-based number.
+    assert.equal(displayOrderCode({ id: order.id }), "CL-C5C0C718");
+    const image = createReceiptImage({
+        ...order,
+        customer: { name: "A" },
+        fulfillment_method: "pickup",
+        created_at: "2026-10-26T12:00:00.000Z",
+        pricing: { total_cents: 100 },
+        order_items: []
+    }).toString("utf8");
+    assert.match(image, /CL-AB12CD/);
+});

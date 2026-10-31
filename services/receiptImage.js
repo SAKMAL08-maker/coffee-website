@@ -1,3 +1,4 @@
+const { displayOrderCode } = require("./orderCode");
 const { describePaymentInstruction } = require("./paymentService");
 
 function escapeXml(value) {
@@ -33,9 +34,7 @@ function createReceiptImage(order) {
     const items = order.order_items || [];
     const pricing = order.pricing || {};
     const customer = order.customer || {};
-    const orderCode = `CL-${String(order.id || "")
-        .slice(0, 8)
-        .toUpperCase()}`;
+    const orderCode = displayOrderCode(order);
     const lines = [];
     let y = 440;
 

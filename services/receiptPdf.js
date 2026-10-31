@@ -1,3 +1,4 @@
+const { displayOrderCode } = require("./orderCode");
 const PDFDocument = require("pdfkit");
 const { describePaymentInstruction } = require("./paymentService");
 
@@ -16,7 +17,6 @@ function createReceiptPdf(order) {
 
         const customer = order.customer || {};
         const pricing = order.pricing || {};
-        const orderNumber = order.id.slice(0, 8).toUpperCase();
 
         document.fontSize(22).font("Helvetica-Bold").text("Coffee Lab");
         document.moveDown(0.3).fontSize(15).text("Digital order receipt");
@@ -24,8 +24,9 @@ function createReceiptPdf(order) {
             .moveDown()
             .fontSize(10)
             .font("Helvetica")
-            .text(`Order: CL-${orderNumber}`)
-            .text(`Date: ${new Date(order.created_at).toLocaleString("en-PH", { timeZone: "UTC" })}`)
+            .text(`Order: ${displayOrderCode(order)}`)
+            // Manila time, matching the receipt image and the screens (was UTC, 8 hours off).
+            .text(`Date: ${new Date(order.created_at).toLocaleString("en-PH", { timeZone: "Asia/Manila" })}`)
             .text(`Fulfillment: ${order.fulfillment_method === "pickup" ? "Pickup" : "Delivery"}`)
             .text(`Payment: ${describePaymentInstruction(order.fulfillment_method, order.payment_method)}`)
             .text(`Customer: ${String(customer.name || "Coffee Lab customer").slice(0, 80)}`);
