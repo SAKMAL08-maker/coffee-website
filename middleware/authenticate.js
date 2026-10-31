@@ -197,6 +197,13 @@ function isSuperadminSession(request) {
     return request.user?.role === "superadmin" && request.authMethod === "superadmin-session";
 }
 
+/** True for an MFA-verified admin or the superadmin: the same rule as requireAdmin, as a check. */
+function hasAdminAccess(request) {
+    if (!request.user) return false;
+    if (isSuperadminSession(request)) return true;
+    return request.user.role === "admin" && request.authMethod === "supabase-mfa" && request.aal === "aal2";
+}
+
 function requireAdmin(request, response, next) {
     if (!request.user) return response.status(401).json({ error: "Authentication is required." });
     if (isSuperadminSession(request)) return next();
@@ -234,5 +241,6 @@ module.exports = {
     optionalAuthenticate,
     requireStaff,
     requireAdmin,
+    hasAdminAccess,
     requireSuperadmin
 };

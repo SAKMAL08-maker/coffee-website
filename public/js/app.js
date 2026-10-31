@@ -521,6 +521,12 @@
             button: "#profile-nav-button",
             heading: "#profile-page-title",
             onShow: () => window.CoffeeLabProfile?.load($("#customer-profile-root"))
+        },
+        support: {
+            page: "#support-page",
+            button: "#support-nav-button",
+            heading: "#support-page-title",
+            onShow: () => window.CoffeeLabSupport?.show("customer")
         }
     };
 
@@ -751,6 +757,7 @@
     $("#customizer-nav-button").addEventListener("click", () => setCustomerView("customizer"));
     $("#order-history-nav-button").addEventListener("click", () => setCustomerView("history"));
     $("#profile-nav-button").addEventListener("click", () => setCustomerView("profile"));
+    $("#support-nav-button").addEventListener("click", () => setCustomerView("support"));
     $("#refresh-order-history-button").addEventListener("click", loadOrderHistory);
     $("#order-history-list").addEventListener("click", (event) => {
         const button = event.target.closest("[data-history-order-id]");
