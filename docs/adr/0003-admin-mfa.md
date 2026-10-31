@@ -16,6 +16,8 @@ Admins can see every order (names, addresses), approve deliveries, delete orders
 - **Update (2026-10-31):** an MFA-verified admin can instead **approve** setup from the admin page (`POST /api/admin/accounts/:username/approve-setup`). That stores the same kind of authorization, flagged `admin_mfa_setup_preapproved`, for 24 hours, and the new admin enrolls by scanning a QR code with no typed key.
     - **Trade-off:** during that window, the password alone is enough to enroll. That's acceptable because a human approved it on purpose and the window is short.
     - `ADMIN_APPROVER_USERNAMES` can limit who approves. Admins can't approve themselves.
+- **Update (2026-10-31, PR #55):** the typed one-time key is **removed**. Every first enrollment now needs an approval like the one above. It comes from Admin access, from the superadmin's **Make admin** (customer → admin, approved for 24 hours), or from `scripts/admin-mfa-bootstrap.js`, which now approves setup the same way instead of printing a key. Accounts are no longer created as admins at sign-up; sign-up makes customers only.
+    - A customer made an admin keeps their Coffee Lab password: on their first admin sign-in only (the Supabase sign-in has never been used), the typed password is checked against it and becomes their Supabase password.
 
 ## Alternatives considered
 
@@ -31,5 +33,5 @@ Admins can see every order (names, addresses), approve deliveries, delete orders
 - ✅ Password theft alone does not grant admin access; TOTP verification logic is maintained by Supabase.
 - ✅ Factor pinning blocks an attacker who briefly gets a session from silently adding their own authenticator.
 - ⚠️ Two auth systems coexist: custom for customers ([ADR-0004](0004-custom-customer-auth.md)), Supabase Auth for admins.
-- ⚠️ Lost authenticator = the owner must rerun the bootstrap script (it deletes existing factors). See the [runbook](../runbook.md).
+- ⚠️ Lost authenticator = an admin or the superadmin clicks **Reset** in Admin access (or the owner reruns the bootstrap script). Either deletes existing factors. See the [runbook](../runbook.md).
 - ⚠️ TOTP is not phishing-resistant; passkeys/WebAuthn would be the next step up.
