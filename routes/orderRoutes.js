@@ -1,6 +1,12 @@
 const express = require("express");
 const orderController = require("../controllers/orderController");
-const { authenticate, optionalAuthenticate, requireStaff, requireAdmin } = require("../middleware/authenticate");
+const {
+    authenticate,
+    optionalAuthenticate,
+    requireStaff,
+    requireAdmin,
+    requireSuperadmin
+} = require("../middleware/authenticate");
 const { validateRequest } = require("../middleware/validateRequest");
 const schemas = require("../schemas/requestSchemas");
 const {
@@ -116,12 +122,21 @@ router.patch(
     requireAdmin,
     orderController.markCashCollected
 );
+router.patch(
+    "/:orderId/admin/cancel",
+    adminOrderLimiter,
+    validateRequest(schemas.orderId),
+    authenticate,
+    requireAdmin,
+    orderController.cancelAdminOrder
+);
+// Permanent delete removes the order from sales history, so only the superadmin can do it.
 router.delete(
     "/:orderId/admin",
     adminOrderLimiter,
     validateRequest(schemas.orderId),
     authenticate,
-    requireAdmin,
+    requireSuperadmin,
     orderController.deleteAdminOrder
 );
 router.patch(

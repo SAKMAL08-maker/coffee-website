@@ -3137,3 +3137,10 @@ a.button {
     min-height: 32px;
     padding: 4px 8px;
 }
+/* Cancelled orders: muted and struck through, so they read as "not happening". */
+.order-status[data-status="cancelled"] {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    text-decoration: line-through;
+}

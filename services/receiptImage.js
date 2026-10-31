@@ -59,7 +59,8 @@ function createReceiptImage(order) {
         ["Drinks subtotal", pricing.subtotal_cents],
         ["Delivery", pricing.delivery_fee_cents],
         ["Service fee", pricing.service_fee_cents],
-        ["Tax", pricing.tax_cents],
+        // Newer orders include VAT in the prices; it is shown for information, not added.
+        [pricing.vat_inclusive ? "VAT included (12%)" : "Tax", pricing.tax_cents],
         ["Tip", pricing.tip_cents]
     ];
     totals.forEach(([label, amount]) => {

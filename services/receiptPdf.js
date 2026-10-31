@@ -49,7 +49,7 @@ function createReceiptPdf(order) {
             .text(`Drinks subtotal: ${formatMoney(pricing.subtotal_cents || 0)}`)
             .text(`Delivery: ${formatMoney(pricing.delivery_fee_cents || 0)}`)
             .text(`Service fee: ${formatMoney(pricing.service_fee_cents || 0)}`)
-            .text(`Tax: ${formatMoney(pricing.tax_cents || 0)}`)
+            .text(`${pricing.vat_inclusive ? "VAT included (12%)" : "Tax"}: ${formatMoney(pricing.tax_cents || 0)}`)
             .text(`Tip: ${formatMoney(pricing.tip_cents || 0)}`);
         document
             .moveDown(0.3)

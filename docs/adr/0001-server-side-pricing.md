@@ -5,7 +5,7 @@
 
 ## Context
 
-Customers build drinks in the browser, and the browser shows a live price. Anything the browser sends can be edited with developer tools, so a total computed in the browser cannot be trusted. Prices are in Philippine pesos with a 12% tax line, an 8% service fee, optional tip, and a ₱49 delivery fee. Floating-point arithmetic (`0.1 + 0.2 !== 0.3`) causes off-by-a-centavo errors in money.
+Customers build drinks in the browser, and the browser shows a live price. Anything the browser sends can be edited with developer tools, so a total computed in the browser cannot be trusted. Prices are in Philippine pesos and include 12% VAT (since 2026-10-31; earlier orders added it on top and lack `pricing.vat_inclusive`), an 8% service fee, optional tip, and a ₱49 delivery fee. Floating-point arithmetic (`0.1 + 0.2 !== 0.3`) causes off-by-a-centavo errors in money.
 
 ## Decision
 

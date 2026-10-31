@@ -3,7 +3,8 @@
     const AGE_WARN_MINUTES = 10;
     const AGE_LATE_MINUTES = 20;
     const POLL_INTERVAL_MS = 15000;
-    const FINAL_STATUSES = ["Delivered", "Ready for Pickup"];
+    const FINAL_STATUSES = ["Delivered", "Ready for Pickup", "Cancelled"];
+    let isSuperadmin = false;
     let currentPage = 1;
     let currentView = "active";
     let searchText = "";
@@ -50,7 +51,9 @@
 
     function isCashDue(order) {
         // cashCollectedAt is undefined when the cash migration isn't applied; then nothing is "due".
-        return (order.paymentMethod || "cash") === "cash" && order.cashCollectedAt === null;
+        return (
+            (order.paymentMethod || "cash") === "cash" && order.cashCollectedAt === null && order.status !== "Cancelled"
+        );
     }
 
     // Plain-language drink description listing only what differs from a standard hot latte.
@@ -206,12 +209,16 @@
             ["Drinks", pricing.subtotal_cents],
             ["Delivery", pricing.delivery_fee_cents],
             ["Service", pricing.service_fee_cents],
-            ["Tax", pricing.tax_cents],
+            // Older orders added tax on top; newer ones include VAT in the prices (noted after the total).
+            ["Tax", pricing.vat_inclusive ? 0 : pricing.tax_cents],
             ["Tip", pricing.tip_cents]
         ]
             .filter(([, cents]) => Number(cents) > 0)
             .map(([label, cents]) => `${label} ${formatMoney(cents)}`);
-        detail.append(element("p", "order-fees", `${fees.join(" · ")} · Total ${formatMoney(pricing.total_cents)}`));
+        const vatNote = pricing.vat_inclusive ? ` (incl. VAT ${formatMoney(pricing.tax_cents)})` : "";
+        detail.append(
+            element("p", "order-fees", `${fees.join(" · ")} · Total ${formatMoney(pricing.total_cents)}${vatNote}`)
+        );
 
         const actions = element("div", "order-detail-actions");
         const primary = nextStep(order);
@@ -253,16 +260,31 @@
                 })
             );
         }
-        actions.append(
-            actionButton(
-                "Delete order",
-                {
-                    action: "delete",
-                    confirm: `Permanently delete ${code} and its receipt? It also disappears from the dashboard totals. This cannot be undone.`
-                },
-                "button button-small button-danger order-delete"
-            )
-        );
+        // Cancel keeps the record; permanent delete is the superadmin's (the server enforces both).
+        if (!FINAL_STATUSES.includes(order.status)) {
+            actions.append(
+                actionButton(
+                    "Cancel order",
+                    {
+                        action: "cancel",
+                        confirm: `Cancel ${code}? The customer will see it as cancelled and it won't count as a sale.`
+                    },
+                    "button button-small button-danger order-delete"
+                )
+            );
+        }
+        if (isSuperadmin) {
+            actions.append(
+                actionButton(
+                    "Delete permanently",
+                    {
+                        action: "delete",
+                        confirm: `Permanently delete ${code} and its receipt? This erases it from all records and cannot be undone. Cancelling keeps the record.`
+                    },
+                    "button button-small button-danger order-delete"
+                )
+            );
+        }
         detail.append(actions);
 
         const preview = element("img", "admin-receipt-preview");
@@ -476,6 +498,7 @@
 
     function startForUser(user) {
         if (user?.role !== "admin" && user?.role !== "superadmin") return;
+        isSuperadmin = user.role === "superadmin";
         if (isAdminAuthenticated) {
             loadOrders();
             return;
@@ -523,6 +546,12 @@
                     : result.receiptStatus === "failed"
                       ? `The receipt for ${code} could not be made. Try again in a minute; if it keeps failing, check the server logs.`
                       : "Receipt storage isn't set up on this server yet."
+        },
+        cancel: {
+            path: "/admin/cancel",
+            method: "PATCH",
+            description: "cancel the order",
+            successMessage: (result, code) => `${code} cancelled.`
         },
         delete: {
             path: "/admin",

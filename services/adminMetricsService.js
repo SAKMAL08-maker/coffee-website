@@ -26,7 +26,9 @@ function increment(counts, key, amount = 1) {
  * Counts orders and drinks by raw key. Returns the same shape as the
  * admin_order_metrics Postgres function, so both paths share buildMetrics.
  */
-function countRows(orders, items) {
+function countRows(allOrders, items) {
+    // Cancelled orders are not sales (the Postgres function excludes them too).
+    const orders = allOrders.filter((order) => order.status !== "Cancelled");
     const orderIds = new Set(orders.map((order) => order.id));
     const rangedItems = items.filter((item) => orderIds.has(item.order_id));
     const raw = {

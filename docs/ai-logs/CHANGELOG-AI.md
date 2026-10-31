@@ -358,3 +358,9 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 - **Receipt time:** the PDF receipt printed its time in UTC, 8 hours off; it now uses Manila time, like the image receipt.
 - **Superadmin accounts:** the account list now looks up admin sign-in times in parallel instead of one after another.
 - **Not changed, on purpose:** long-lived browser caching of static files. The files have no content hashes in their names, so after a deploy browsers could run old scripts against new HTML. ETag revalidation (304 responses) already avoids re-downloading unchanged files.
+
+### VAT-inclusive prices, cancelled orders, foreign-key indexes (owner decisions D2–D4)
+
+- **VAT (D4, owner: yes):** prices now include 12% VAT, as Philippine menus do. The order shows "VAT included" (amount × 12/112 of drinks, delivery and service fee; tips aren't VAT-able) instead of adding it. New orders carry `pricing.vat_inclusive: true`, so the admin page and receipts still show older orders' added tax correctly. The server's default tip is 0, matching the page (D2, owner: no tip).
+- **Delete policy (D3, owner: "rely on you"):** admins **cancel** orders instead of deleting them. A cancelled order keeps its record, shows as cancelled to the customer, leaves the sales dashboard (both the Postgres function and the Node fallback), and can't be advanced, approved or have cash recorded. Permanent delete is superadmin-only on the server.
+- **Migration `20261108000000_cancelled_orders_fk_indexes.sql`:** allows the Cancelled status, adds the 4 foreign-key indexes the live Supabase advisor flags, and re-creates `admin_order_metrics` with one added filter (diffed against the original). Applying it from here was blocked by the permission system, so the owner applies it.

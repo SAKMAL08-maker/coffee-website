@@ -4,6 +4,7 @@ const { calculateOrderPricing, createOrderQuote: createOrderQuoteService } = req
 const {
     isKnownStatus,
     canStaffAdvance,
+    canCancel,
     canApproveFulfillment,
     getApprovalStatus
 } = require("../services/orderStatusMachine");
@@ -290,6 +291,9 @@ async function reportDelivery(request, response, next) {
         if (order.status === "Delivered") {
             return response.status(409).json({ error: "This order has already been approved as delivered." });
         }
+        if (order.status === "Cancelled") {
+            return response.status(409).json({ error: "This order was cancelled." });
+        }
         if (order.delivery_reported_at) {
             return response.json({ deliveryReported: true });
         }
@@ -340,18 +344,22 @@ const ADMIN_ORDER_COLUMN_SETS = [
 
 // PostgREST filters for the admin list views. "Active" keeps finished orders visible
 // until their cash is collected, so a ready pickup still waiting for payment isn't lost.
-const FINAL_STATUS_LIST = '("Delivered","Ready for Pickup")';
+// Cancelled orders are finished and never wait for cash.
+const FINAL_STATUSES = ["Delivered", "Ready for Pickup", "Cancelled"];
+const FINAL_STATUS_LIST = `(${FINAL_STATUSES.map((status) => `"${status}"`).join(",")})`;
 const ADMIN_ORDER_VIEWS = {
     active: (query, hasPaymentColumns) =>
         hasPaymentColumns
-            ? query.or(`status.not.in.${FINAL_STATUS_LIST},and(payment_method.eq.cash,cash_collected_at.is.null)`)
+            ? query.or(
+                  `status.not.in.${FINAL_STATUS_LIST},and(payment_method.eq.cash,cash_collected_at.is.null,status.neq.Cancelled)`
+              )
             : query.not("status", "in", FINAL_STATUS_LIST),
     done: (query, hasPaymentColumns) =>
         hasPaymentColumns
             ? query
-                  .in("status", ["Delivered", "Ready for Pickup"])
-                  .or("payment_method.neq.cash,cash_collected_at.not.is.null")
-            : query.in("status", ["Delivered", "Ready for Pickup"]),
+                  .in("status", FINAL_STATUSES)
+                  .or("payment_method.neq.cash,cash_collected_at.not.is.null,status.eq.Cancelled")
+            : query.in("status", FINAL_STATUSES),
     all: (query) => query
 };
 
@@ -526,11 +534,14 @@ async function markCashCollected(request, response, next) {
         const supabase = getAdminClient();
         const { data: order, error: readError } = await supabase
             .from("orders")
-            .select("id, payment_method, cash_collected_at")
+            .select("id, status, payment_method, cash_collected_at")
             .eq("id", request.params.orderId)
             .maybeSingle();
         if (readError) throw readError;
         if (!order) return response.status(404).json({ error: "Order not found." });
+        if (order.status === "Cancelled") {
+            return response.status(409).json({ error: "This order was cancelled, so there is no cash to collect." });
+        }
         if (!canMarkCashCollected(order)) {
             return response.status(409).json({ error: "Cash has already been recorded as collected for this order." });
         }
@@ -588,6 +599,37 @@ async function viewAdminReceiptImage(request, response, next) {
     }
 }
 
+// Cancels instead of deleting: the order keeps its record but leaves the sales totals.
+// Race-safe: the update only matches while the status is still the one we checked.
+async function cancelAdminOrder(request, response, next) {
+    try {
+        const supabase = getAdminClient();
+        const { data: order, error: readError } = await supabase
+            .from("orders")
+            .select("id, status")
+            .eq("id", request.params.orderId)
+            .maybeSingle();
+        if (readError) throw readError;
+        if (!order) return response.status(404).json({ error: "Order not found." });
+        if (!canCancel(order.status)) {
+            return response.status(409).json({ error: `This order is already ${order.status.toLowerCase()}.` });
+        }
+        const { data, error } = await supabase
+            .from("orders")
+            .update({ status: "Cancelled", updated_at: new Date().toISOString() })
+            .eq("id", order.id)
+            .eq("status", order.status)
+            .select("id, status")
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        response.json({ order: data });
+    } catch (error) {
+        next(error);
+    }
+}
+
+// Superadmin only (see routes/orderRoutes.js): erases the order and its receipt for good.
 async function deleteAdminOrder(request, response, next) {
     try {
         const supabase = getAdminClient();
@@ -689,6 +731,7 @@ module.exports = {
     retryAdminReceipt,
     downloadAdminReceipt,
     viewAdminReceiptImage,
+    cancelAdminOrder,
     deleteAdminOrder,
     downloadReceipt,
     retryReceipt,

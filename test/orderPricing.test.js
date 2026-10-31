@@ -25,10 +25,12 @@ test("calculates delivery checkout totals in integer cents", () => {
         subtotal_cents: 25000,
         delivery_fee_cents: 4900,
         service_fee_cents: 2000,
-        tax_cents: 3000,
+        // VAT included: (250 + 49 + 20) × 12/112 = ₱34.18, already inside the total.
+        tax_cents: 3418,
+        vat_inclusive: true,
         tip_percent: 15,
         tip_cents: 3750,
-        total_cents: 38650
+        total_cents: 35650
     });
     assert.equal(result.lineItems[0].price_cents, 25000);
     assert.equal(result.lineItems[0].classification, "Latte");
@@ -49,7 +51,8 @@ test("adds premium modifiers and omits delivery fee for pickup", () => {
     assert.equal(result.lineItems[0].price_cents, 39400);
     assert.equal(result.pricing.delivery_fee_cents, 0);
     assert.equal(result.pricing.tip_cents, 0);
-    assert.equal(result.pricing.total_cents, 47280);
+    assert.equal(result.pricing.total_cents, 42552);
+    assert.equal(result.pricing.tax_cents, 4559);
 });
 
 test("rejects unsupported client-supplied price fields", () => {

@@ -460,9 +460,9 @@
             rows.push(["Drinks", moneyFromCents(pricing.subtotalCents)]);
             if (pricing.deliveryFeeCents) rows.push(["Delivery fee", moneyFromCents(pricing.deliveryFeeCents)]);
             rows.push(["Service fee (8%)", moneyFromCents(pricing.serviceFeeCents)]);
-            rows.push(["VAT (12%)", moneyFromCents(pricing.taxCents)]);
             if (pricing.tipCents) rows.push(["Tip", moneyFromCents(pricing.tipCents)]);
             rows.push(["Total", moneyFromCents(pricing.totalCents)]);
+            rows.push(["Includes VAT (12%)", moneyFromCents(pricing.taxCents)]);
         } else rows.push(["Total", "calculating…"]);
         summary.replaceChildren(
             ...rows.flatMap(([label, value]) => {
@@ -499,7 +499,9 @@
         $("#checkout-dialog").showModal();
     }
 
+    // True for finished orders, including cancelled ones (tracking stops polling).
     function isFulfillmentComplete(order) {
+        if (order.status === "Cancelled") return true;
         return order.fulfillmentMethod === "pickup"
             ? order.status === "Ready for Pickup"
             : order.status === "Delivered";
@@ -525,6 +527,7 @@
     }
 
     function getHistoryFulfillmentStatus(order) {
+        if (order.status === "Cancelled") return { label: "Cancelled", complete: false };
         if (order.fulfillmentMethod === "pickup") {
             return order.status === "Ready for Pickup"
                 ? { label: "Ready for pickup", complete: true }
@@ -636,7 +639,8 @@
         const order = state.orderStatus;
         if (!order) return;
         $("#tracking-order-number").textContent = order.number;
-        const isComplete = isFulfillmentComplete(order);
+        const isCancelled = order.status === "Cancelled";
+        const isComplete = isFulfillmentComplete(order) && !isCancelled;
         const isDelivery = order.fulfillmentMethod === "delivery";
         const completionLabel = isDelivery ? "Delivered" : "Ready for pickup";
         const steps = isDelivery ? DELIVERY_STEPS : PICKUP_STEPS;
@@ -654,12 +658,15 @@
             })
         );
         const current = steps[currentIndex];
-        $("#tracking-eyebrow").textContent = current.headline;
-        $("#tracking-eta").textContent = isComplete
-            ? isDelivery
-                ? "Enjoy your coffee!"
-                : "Come by the counter; we'll have it waiting."
-            : "This page updates by itself as your order moves along.";
+        $("#order-steps").hidden = isCancelled;
+        $("#tracking-eyebrow").textContent = isCancelled ? "Order cancelled" : current.headline;
+        $("#tracking-eta").textContent = isCancelled
+            ? "Coffee Lab cancelled this order. If you didn't expect this, please contact the shop."
+            : isComplete
+              ? isDelivery
+                  ? "Enjoy your coffee!"
+                  : "Come by the counter; we'll have it waiting."
+              : "This page updates by itself as your order moves along.";
         $("#fulfillment-progress-card").setAttribute(
             "aria-label",
             isDelivery ? "Delivery confirmation" : "Pickup confirmation"
@@ -671,7 +678,8 @@
         $("#fulfillment-progress-label").textContent = isComplete ? completionLabel : current.label;
         // Only once the order has left the shop does "I've received it" make sense.
         const hasLeftShop = ["Out for Delivery", "Arrived"].includes(order.status);
-        $("#report-delivered-button").hidden = !isDelivery || isComplete || order.deliveryReported || !hasLeftShop;
+        $("#report-delivered-button").hidden =
+            !isDelivery || isComplete || isCancelled || order.deliveryReported || !hasLeftShop;
         $("#report-delivered-button").disabled = Boolean(order.deliveryReportPending);
         $("#tracking-status-message").textContent = isComplete
             ? isDelivery
@@ -747,9 +755,15 @@
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Tracking request failed (${response.status}).`);
             if (
-                !["Received", "Crafting", "Out for Delivery", "Arrived", "Delivered", "Ready for Pickup"].includes(
-                    result.order.status
-                )
+                ![
+                    "Received",
+                    "Crafting",
+                    "Out for Delivery",
+                    "Arrived",
+                    "Delivered",
+                    "Ready for Pickup",
+                    "Cancelled"
+                ].includes(result.order.status)
             ) {
                 throw new Error("The server returned an unknown order status.");
             }

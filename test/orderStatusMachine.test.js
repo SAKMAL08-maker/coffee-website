@@ -6,7 +6,8 @@ const {
     isFinalStatus,
     canStaffAdvance,
     canApproveFulfillment,
-    getApprovalStatus
+    getApprovalStatus,
+    canCancel
 } = require("../services/orderStatusMachine");
 
 const ALL_STATUSES = Object.values(ORDER_STATUS);
@@ -58,4 +59,14 @@ test("unknown statuses, fulfillment methods, and prototype keys are rejected", (
     assert.equal(canStaffAdvance("__proto__", "Received", "Crafting"), false);
     assert.equal(canApproveFulfillment("drone", "Received"), false);
     assert.equal(canApproveFulfillment("toString", "Received"), false);
+});
+
+test("orders can be cancelled until they are finished, and a cancelled order is final", () => {
+    for (const status of ["Received", "Crafting", "Out for Delivery", "Arrived"])
+        assert.equal(canCancel(status), true, status);
+    for (const status of ["Delivered", "Ready for Pickup", "Cancelled", "Bogus"])
+        assert.equal(canCancel(status), false, status);
+    assert.equal(isFinalStatus("Cancelled"), true);
+    assert.equal(canApproveFulfillment("delivery", "Cancelled"), false);
+    assert.equal(canStaffAdvance("delivery", "Cancelled", "Crafting"), false);
 });

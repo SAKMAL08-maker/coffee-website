@@ -24,8 +24,10 @@ const PRICING_RULES = Object.freeze({
     deliveryFeeCents: 4900,
     // Basis points: 800 = 8.00%. Keeps percentage math in integers.
     serviceFeeBasisPoints: 800,
+    // Philippine VAT. Prices already include it (as on PH menus and receipts); the order shows how much of
+    // the total is VAT instead of adding it on top. Applies to drinks, delivery and the service fee, not tips.
     taxBasisPoints: 1200,
-    defaultTipPercent: 15,
+    defaultTipPercent: 0,
     minItemsPerOrder: 1,
     maxItemsPerOrder: 20
 });
@@ -41,6 +43,11 @@ function createBadRequest(message) {
 
 function applyBasisPoints(amountCents, basisPoints) {
     return Math.round((amountCents * basisPoints) / 10000);
+}
+
+// The VAT already inside a VAT-inclusive amount: amount × 12/112.
+function includedVatCents(amountCents, basisPoints) {
+    return Math.round((amountCents * basisPoints) / (10000 + basisPoints));
 }
 
 /**
@@ -126,7 +133,8 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = PRICING_RU
     const subtotalCents = lineItems.reduce((total, item) => total + item.price_cents, 0);
     const deliveryFeeCents = fulfillmentMethod === "delivery" ? PRICING_RULES.deliveryFeeCents : 0;
     const serviceFeeCents = applyBasisPoints(subtotalCents, PRICING_RULES.serviceFeeBasisPoints);
-    const taxCents = applyBasisPoints(subtotalCents, PRICING_RULES.taxBasisPoints);
+    const vatableCents = subtotalCents + deliveryFeeCents + serviceFeeCents;
+    const taxCents = includedVatCents(vatableCents, PRICING_RULES.taxBasisPoints);
     const tipCents = Math.round((subtotalCents * tipPercent) / 100);
 
     return {
@@ -136,9 +144,11 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = PRICING_RU
             delivery_fee_cents: deliveryFeeCents,
             service_fee_cents: serviceFeeCents,
             tax_cents: taxCents,
+            // Orders saved before 2026-10-31 added tax on top; this flag tells displays which rule applies.
+            vat_inclusive: true,
             tip_percent: tipPercent,
             tip_cents: tipCents,
-            total_cents: subtotalCents + deliveryFeeCents + serviceFeeCents + taxCents + tipCents
+            total_cents: vatableCents + tipCents
         }
     };
 }
@@ -165,6 +175,7 @@ function createOrderQuote(items, fulfillmentMethod, tipPercent = PRICING_RULES.d
             deliveryFeeCents: pricing.delivery_fee_cents,
             serviceFeeCents: pricing.service_fee_cents,
             taxCents: pricing.tax_cents,
+            vatInclusive: pricing.vat_inclusive,
             tipPercent: pricing.tip_percent,
             tipCents: pricing.tip_cents,
             totalCents: pricing.total_cents
