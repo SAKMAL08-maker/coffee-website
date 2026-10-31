@@ -96,6 +96,8 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         // Branches is its own tab, shown only to the superadmin (adminTabs.js un-hides it).
         assert.match(html, /id="admin-tab-branches"[^>]*hidden/);
         assert.match(html, /id="admin-branches-root"/);
+        // Phones show short nav labels so the four pages fit on one line.
+        assert.match(html, /<span class="nav-short">Orders<\/span>/);
         assert.match(html, /id="checkout-reward-field"[^>]*hidden/);
         const incompleteSuperadminLogin = await fetch(`${baseUrl}/api/users/superadmin/login`, {
             method: "POST",

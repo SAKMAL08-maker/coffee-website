@@ -124,6 +124,33 @@ a:focus-visible {
     flex: 0 0 auto;
     white-space: nowrap;
 }
+.customer-nav .nav-short {
+    display: none;
+}
+.customer-nav[data-more="end"] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
+.customer-nav[data-more="start"] {
+    mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent);
+}
+.customer-nav[data-more="both"] {
+    mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+}
+@media (max-width: 520px) {
+    /* Short labels so all four pages fit on one line on most phones. */
+    .customer-nav .nav-long {
+        display: none;
+    }
+    .customer-nav .nav-short {
+        display: inline;
+    }
+    .customer-nav {
+        gap: 5px;
+    }
+    .customer-nav .customer-nav-button {
+        padding-inline: 9px;
+    }
+}
 .customer-nav-button.is-active {
     border-color: var(--coffee);
     background: var(--coffee);
@@ -2934,6 +2961,16 @@ dialog::backdrop {
 }
 .order-delete {
     margin-left: auto;
+}
+/* Mid-size screens: the drinks summary gets its own line instead of being squeezed. */
+@media (min-width: 761px) and (max-width: 1000px) {
+    .order-summary {
+        grid-template-columns: 64px minmax(0, 1fr) 70px 92px 128px;
+    }
+    .order-drinks-summary {
+        grid-column: 2 / -1;
+        grid-row: 2;
+    }
 }
 @media (max-width: 760px) {
     .order-summary {
