@@ -14,6 +14,7 @@
         "not-linked": { label: "No sign-in linked yet", action: null }
     };
     let started = false;
+    let isSuperadmin = false;
 
     function showMessage(message, isError = false) {
         $("#admin-access-message").textContent = message;
@@ -52,11 +53,72 @@
         }
     }
 
-    function renderAccounts({ accounts, you }) {
-        const waiting = accounts.filter((account) => account.state === "needs-approval").length;
+    // Admin requests from the sign-up form's Admin tab. Only the superadmin sees and decides them.
+    async function decideRequest(account, approveIt) {
+        const question = approveIt
+            ? `Approve ${account.username} as an admin? They can log in and set up their authenticator app within 24 hours.`
+            : `Decline ${account.username}'s admin request? The request and its sign-in are deleted.`;
+        if (!window.confirm(question)) return;
+        showMessage("");
+        try {
+            const path = `/api/superadmin/accounts/${encodeURIComponent(account.username)}`;
+            const result = approveIt
+                ? await request(`${path}/approve-admin`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: "{}"
+                  })
+                : await request(path, { method: "DELETE" });
+            showMessage(
+                approveIt
+                    ? `${result.username} is now an admin. Ask them to log in within 24 hours to set up their authenticator.`
+                    : `${result.username}'s admin request was declined.`
+            );
+            document.dispatchEvent(new CustomEvent("coffeelab:accounts-changed"));
+            await loadAccounts();
+        } catch (error) {
+            showMessage(`Could not update ${account.username}: ${error.message}`, true);
+        }
+    }
+
+    function requestButton(label, account, approveIt) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = approveIt ? "button button-small button-primary" : "button button-small account-danger";
+        button.textContent = label;
+        button.addEventListener("click", async () => {
+            button.disabled = true;
+            await decideRequest(account, approveIt);
+            button.disabled = false;
+        });
+        return button;
+    }
+
+    function requestItem(account) {
+        const item = document.createElement("li");
+        item.className = "admin-access-item";
+        item.dataset.pending = "true";
+        const name = document.createElement("strong");
+        name.textContent = account.username;
+        const role = document.createElement("span");
+        role.className = "admin-access-status account-role";
+        role.textContent = "Admin request";
+        const status = document.createElement("span");
+        status.className = "admin-access-status";
+        status.textContent = `${account.email || "no email"} · asked ${timeFormatter.format(new Date(account.createdAt))}`;
+        const actions = document.createElement("span");
+        actions.className = "account-actions";
+        actions.append(requestButton("Approve", account, true), requestButton("Decline", account, false));
+        item.append(name, role, status, actions);
+        return item;
+    }
+
+    function renderAccounts({ accounts, you }, requests = []) {
+        const waiting = accounts.filter((account) => account.state === "needs-approval").length + requests.length;
         $("#admin-access-badge").hidden = waiting === 0;
         $("#admin-access-badge").textContent = `${waiting} waiting`;
         $("#admin-access-list").replaceChildren(
+            ...requests.map(requestItem),
             ...accounts.map((account) => {
                 const state = STATES[account.state] || STATES["not-linked"];
                 const item = document.createElement("li");
@@ -105,7 +167,11 @@
 
     async function loadAccounts() {
         try {
-            renderAccounts(await request("/api/admin/accounts"));
+            const [admins, all] = await Promise.all([
+                request("/api/admin/accounts"),
+                isSuperadmin ? request("/api/superadmin/accounts") : null
+            ]);
+            renderAccounts(admins, all ? all.accounts.filter((account) => account.role === "pending_admin") : []);
         } catch (error) {
             showMessage(`Could not load admin accounts: ${error.message}`, true);
         }
@@ -114,6 +180,7 @@
     function start(role) {
         if ((role !== "admin" && role !== "superadmin") || started) return;
         started = true;
+        isSuperadmin = role === "superadmin";
         loadAccounts();
     }
 

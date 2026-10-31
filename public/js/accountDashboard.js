@@ -6,8 +6,7 @@
         hour: "numeric",
         minute: "2-digit"
     });
-    const ADMIN_ROLES = new Set(["admin", "staff", "superadmin", "pending_admin"]);
-    const isPending = (account) => account.role === "pending_admin";
+    const ADMIN_ROLES = new Set(["admin", "staff", "superadmin"]);
     let filter = "admins";
     let data = null;
     let started = false;
@@ -30,38 +29,23 @@
         return "Not signed in";
     }
 
-    const QUESTIONS = {
-        delete: (name) =>
-            `Delete ${name}? Their saved drinks and sign-in are removed for good. Their past orders stay, without a name attached.`,
-        decline: (name) => `Decline ${name}'s admin request? The request and its sign-in are deleted.`,
-        demote: (name) =>
-            `Remove ${name}'s admin rights? They become a customer and their admin sign-in stops working immediately.`,
-        approve: (name) =>
-            `Approve ${name} as an admin? They can log in and set up their authenticator app within 24 hours.`
-    };
-    const DONE = {
-        delete: (name) => `${name} was deleted.`,
-        decline: (name) => `${name}'s admin request was declined.`,
-        demote: (name) => `${name} is now a customer.`,
-        approve: (name) => `${name} is now an admin. Ask them to log in within 24 hours to set up their authenticator.`
-    };
-
     async function runAction(account, action) {
-        if (!window.confirm(QUESTIONS[action](account.username))) return;
+        const isDelete = action === "delete";
+        const question = isDelete
+            ? `Delete ${account.username}? Their saved drinks and sign-in are removed for good. Their past orders stay, without a name attached.`
+            : `Remove ${account.username}'s admin rights? They become a customer and their admin sign-in stops working immediately.`;
+        if (!window.confirm(question)) return;
         showMessage("");
         try {
             const path = `/api/superadmin/accounts/${encodeURIComponent(account.username)}`;
-            const post = (suffix) =>
-                request(`${path}/${suffix}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: "{}"
-                });
-            const result =
-                action === "delete" || action === "decline"
-                    ? await request(path, { method: "DELETE" })
-                    : await post(action === "approve" ? "approve-admin" : "demote");
-            showMessage(DONE[action](result.username));
+            const result = isDelete
+                ? await request(path, { method: "DELETE" })
+                : await request(`${path}/demote`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: "{}"
+                  });
+            showMessage(isDelete ? `${result.username} was deleted.` : `${result.username} is now a customer.`);
             await loadAccounts();
         } catch (error) {
             showMessage(`Could not update ${account.username}: ${error.message}`, true);
@@ -82,15 +66,14 @@
     }
 
     function render() {
-        // Requests waiting for approval go first, so they're hard to miss.
+        // Admin requests are handled in Admin access (adminAccess.js), not listed here.
         const accounts = data.accounts
-            .filter((account) => (filter === "admins" ? ADMIN_ROLES.has(account.role) : !ADMIN_ROLES.has(account.role)))
-            .sort((a, b) => Number(isPending(b)) - Number(isPending(a)));
-        const pending = accounts.filter(isPending).length;
+            .filter((account) => account.role !== "pending_admin")
+            .filter((account) =>
+                filter === "admins" ? ADMIN_ROLES.has(account.role) : !ADMIN_ROLES.has(account.role)
+            );
         const signedIn = accounts.filter((account) => account.active).length;
-        $("#account-summary").textContent =
-            `${accounts.length - pending} ${filter} · ${signedIn} signed in now` +
-            (pending ? ` · ${pending} admin request${pending === 1 ? "" : "s"} waiting for approval` : "");
+        $("#account-summary").textContent = `${accounts.length} ${filter} · ${signedIn} signed in now`;
         document.querySelectorAll("[data-account-filter]").forEach((button) => {
             button.setAttribute("aria-pressed", String(button.dataset.accountFilter === filter));
         });
@@ -99,33 +82,23 @@
                 const item = document.createElement("li");
                 item.className = "admin-access-item";
                 item.dataset.active = String(account.active);
-                item.dataset.pending = String(isPending(account));
                 const name = document.createElement("strong");
                 name.textContent = account.username;
                 const role = document.createElement("span");
-                role.className = "admin-access-status account-role";
-                role.textContent = isPending(account) ? "admin request" : account.role;
+                role.className = "admin-access-status";
+                role.textContent = account.role;
                 const status = document.createElement("span");
                 status.className = "admin-access-status account-status";
-                status.textContent = isPending(account)
-                    ? `${account.email || "no email"} · asked ${timeFormatter.format(new Date(account.createdAt))}`
-                    : statusText(account);
+                status.textContent = statusText(account);
                 item.append(name, role, status);
                 const isYou = account.username.toLowerCase() === String(data.you).toLowerCase();
                 if (!isYou && account.role !== "superadmin") {
                     const actions = document.createElement("span");
                     actions.className = "account-actions";
-                    if (isPending(account)) {
-                        actions.append(
-                            actionButton("Approve", account, "approve", false),
-                            actionButton("Decline", account, "decline", true)
-                        );
-                    } else {
-                        if (account.role === "admin" || account.role === "staff") {
-                            actions.append(actionButton("Remove admin rights", account, "demote", false));
-                        }
-                        actions.append(actionButton("Delete", account, "delete", true));
+                    if (account.role === "admin" || account.role === "staff") {
+                        actions.append(actionButton("Remove admin rights", account, "demote", false));
                     }
+                    actions.append(actionButton("Delete", account, "delete", true));
                     item.append(actions);
                 }
                 return item;
@@ -162,6 +135,10 @@
         });
     });
     $("#admin-refresh-button").addEventListener("click", () => {
+        if (started) loadAccounts();
+    });
+    // An approved admin request becomes a real admin account; show it.
+    document.addEventListener("coffeelab:accounts-changed", () => {
         if (started) loadAccounts();
     });
     document.addEventListener("coffeelab:signed-in", (event) => start(event.detail?.role));
