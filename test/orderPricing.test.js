@@ -65,3 +65,15 @@ test("rejects invalid tip percentages", () => {
         message: /tipPercent/
     });
 });
+
+test("only charges for what is in the cup: no shots outside espresso, no milk in filter or cold brew", () => {
+    const drink = (overrides) => ({ configuration: { ...standardEspresso.configuration, ...overrides } });
+    const subtotal = (overrides) => calculateOrderPricing([drink(overrides)], "pickup", 0).pricing.subtotal_cents;
+    // Espresso still pays for extra shots and oat milk.
+    assert.equal(subtotal({ shots: 4, milk: "oat" }), 25000 + 2 * 5500 + 3900);
+    // A cold brew or filter coffee is the same price however the hidden sliders are set.
+    assert.equal(subtotal({ base: "coldBrew", shots: 4, milk: "oat" }), 25000);
+    assert.equal(subtotal({ base: "drip", shots: 4, milk: "almond" }), 25000);
+    // Matcha has milk but no shots.
+    assert.equal(subtotal({ base: "matcha", shots: 4, milk: "oat" }), 25000 + 3900);
+});

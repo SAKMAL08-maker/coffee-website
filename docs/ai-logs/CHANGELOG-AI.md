@@ -318,6 +318,28 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 
 **Mistake caught:** the first version saved "Orders" on page load before reading the saved tab, so the remembered tab was always lost. The headless preview showed it, and it was fixed before the PR.
 
+## 2026-10-31 · Full app review, then fixes
+
+- **Tool:** Claude Code (Claude Opus 5.5), with four parallel review agents (admin UX, customer UX, accessibility/mobile, code/scalability) and one report writer. Notes and report are kept locally (not committed).
+
+**Fixes so far**
+
+- [#35](https://github.com/SAKMAL08-maker/coffee-website/pull/35): customers were charged for espresso shots on filter coffee, cold brew and matcha, and for milk on filter coffee and cold brew.
+- `admin-orders-compact`: the owner's complaint. Each order was a 650–1,000 px card (raw JSON per drink made it overflow sideways). Now a compact row with one next-step button that finally uses the status endpoint (Received → Crafting → Out for delivery → Arrived), confirmations on final and money actions, Active/Done/All views with counts, search, a new-order title alert, and polling that no longer wipes open rows or focus. Also fixes a duplicate `admin-access-badge` id I introduced in #34.
+
+**Mistakes caught along the way**
+
+- The review report claimed CI skips merges because the default branch is `version_0.1`; checking GitHub showed the default is `main`, so nothing was changed.
+- A shell heredoc stripped the backslashes from the new search pattern (`\p{L}` became `p{L}`), which rejected every search; the new validation test caught it before commit.
+
+### Customer checkout and tracking (from the review)
+
+- The drink price is now on the main builder card; before, it was only behind a small arrow.
+- Tip: "No tip" comes first and is the default. Before, the tip defaulted to 15%, was also charged on pickup, and had no zero option.
+- Checkout lists every fee (drinks, delivery, 8% service, 12% VAT, tip, total) and shows errors inside the dialog; they used to be hidden behind it. The contradictory "prototype, no payment is processed" line next to "Pay in cash" is gone.
+- Tracking shows real steps: Order received → Being made → On the way → Arrived → Delivered, or → Ready for pickup for pickups. This works now that the admin page moves orders through those steps. "I've received my order" appears only once the order has left the shop.
+- The sign-in screen no longer tells customers about Supabase and authenticator codes.
+
 ### Accessibility and visual polish (from the review)
 
 - The closed cart drawer is `inert`, so Tab no longer lands on its invisible buttons; while it is open, the page behind it is `inert`.

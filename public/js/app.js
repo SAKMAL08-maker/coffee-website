@@ -182,6 +182,9 @@
         const drink = quote?.items[0];
         const showCents = (cents) => (quote ? moneyFromCents(cents) : PRICE_PLACEHOLDER);
         $("#drink-price").textContent = drink ? moneyFromCents(drink.basePriceCents) : PRICE_PLACEHOLDER;
+        $("#creation-price").textContent = drink
+            ? moneyFromCents(drink.basePriceCents + drink.modifiersCents)
+            : PRICE_PLACEHOLDER;
         $("#modifier-price").textContent = drink ? moneyFromCents(drink.modifiersCents) : PRICE_PLACEHOLDER;
         $("#delivery-fee").textContent = showCents(quote?.pricing.deliveryFeeCents);
         $("#service-fee").textContent = showCents(quote?.pricing.serviceFeeCents);
@@ -240,6 +243,12 @@
             button.setAttribute("aria-checked", String(state.toppings[button.dataset.topping]))
         );
         $("#extraction-field").hidden = state.base !== "espresso";
+        // Shots only exist in espresso drinks; filter coffee and cold brew have no milk.
+        // Hidden controls are also not charged for (pricingService).
+        $("#shots-field").hidden = state.base !== "espresso";
+        const hasMilk = state.base === "espresso" || state.base === "matcha";
+        $("#milk-field").hidden = !hasMilk;
+        $("#foam-field").hidden = !hasMilk;
         $("#ice-field").hidden = state.temperature === "hot";
         $("#unit-toggle").setAttribute("aria-checked", String(state.metric));
         $("#unit-label").textContent = state.metric ? "Metric" : "Imperial";
@@ -440,14 +449,30 @@
             drawerReturnFocus.focus();
     }
 
-    // Text only, so a quote arriving while the dialog is open never touches the form fields.
+    // Summary only, so a quote arriving while the dialog is open never touches the form fields.
+    // Every fee is listed, so the customer sees exactly what makes up the total before paying.
     function renderCheckoutSummaryText() {
         const count = state.cartItems.length;
-        const pricesText = latestCartQuote
-            ? `${moneyFromCents(latestCartQuote.pricing.subtotalCents)} drinks subtotal · total ${moneyFromCents(latestCartQuote.pricing.totalCents)}`
-            : "calculating total…";
-        $("#checkout-summary").textContent =
-            `${count} drink${count === 1 ? "" : "s"} · ${pricesText} · ${getEstimatedEta(state, count)}`;
+        const summary = $("#checkout-summary");
+        const rows = [[`${count} drink${count === 1 ? "" : "s"}`, getEstimatedEta(state, count)]];
+        const pricing = latestCartQuote?.pricing;
+        if (pricing) {
+            rows.push(["Drinks", moneyFromCents(pricing.subtotalCents)]);
+            if (pricing.deliveryFeeCents) rows.push(["Delivery fee", moneyFromCents(pricing.deliveryFeeCents)]);
+            rows.push(["Service fee (8%)", moneyFromCents(pricing.serviceFeeCents)]);
+            rows.push(["VAT (12%)", moneyFromCents(pricing.taxCents)]);
+            if (pricing.tipCents) rows.push(["Tip", moneyFromCents(pricing.tipCents)]);
+            rows.push(["Total", moneyFromCents(pricing.totalCents)]);
+        } else rows.push(["Total", "calculating…"]);
+        summary.replaceChildren(
+            ...rows.flatMap(([label, value]) => {
+                const term = document.createElement("dt");
+                term.textContent = label;
+                const detail = document.createElement("dd");
+                detail.textContent = value;
+                return [term, detail];
+            })
+        );
         // Wording comes from the server (services/paymentService.js) so it matches the receipt.
         $("#checkout-payment-note").textContent = latestCartQuote?.paymentInstruction || "";
     }
@@ -460,8 +485,15 @@
         $("#checkout-address").value = state.deliveryAddress;
     }
 
+    function showCheckoutError(message) {
+        const error = $("#checkout-error");
+        error.textContent = message;
+        error.hidden = !message;
+    }
+
     function openCheckout() {
         if (!state.cartItems.length) return;
+        showCheckoutError("");
         updateCheckoutSummary();
         closeCart();
         $("#checkout-dialog").showModal();
@@ -586,6 +618,20 @@
         }
     }
 
+    // Customer-facing steps; statuses match services/orderStatusMachine.js.
+    const DELIVERY_STEPS = [
+        { status: "Received", label: "Order received", headline: "Order placed" },
+        { status: "Crafting", label: "Being made", headline: "Your coffee is being made" },
+        { status: "Out for Delivery", label: "On the way", headline: "Your coffee is on its way" },
+        { status: "Arrived", label: "Arrived", headline: "Your coffee has arrived" },
+        { status: "Delivered", label: "Delivered", headline: "Delivered" }
+    ];
+    const PICKUP_STEPS = [
+        { status: "Received", label: "Order received", headline: "Order placed" },
+        { status: "Crafting", label: "Being made", headline: "Your coffee is being made" },
+        { status: "Ready for Pickup", label: "Ready for pickup", headline: "Ready for pickup" }
+    ];
+
     function renderTracking() {
         const order = state.orderStatus;
         if (!order) return;
@@ -593,38 +639,49 @@
         const isComplete = isFulfillmentComplete(order);
         const isDelivery = order.fulfillmentMethod === "delivery";
         const completionLabel = isDelivery ? "Delivered" : "Ready for pickup";
-        $("#tracking-eyebrow").textContent = isDelivery ? "Your coffee is on its way" : "Pickup order";
+        const steps = isDelivery ? DELIVERY_STEPS : PICKUP_STEPS;
+        const currentIndex = Math.max(
+            0,
+            steps.findIndex((step) => step.status === order.status)
+        );
+        $("#order-steps").replaceChildren(
+            ...steps.map((step, index) => {
+                const item = document.createElement("li");
+                item.textContent = step.label;
+                item.dataset.state = index < currentIndex ? "done" : index === currentIndex ? "current" : "todo";
+                if (index === currentIndex) item.setAttribute("aria-current", "step");
+                return item;
+            })
+        );
+        const current = steps[currentIndex];
+        $("#tracking-eyebrow").textContent = current.headline;
         $("#tracking-eta").textContent = isComplete
             ? isDelivery
-                ? "Your delivery has been verified by Coffee Lab."
-                : "Your order is ready for pickup."
-            : isDelivery
-              ? "We’ll update this page once delivery is verified."
-              : "We’ll update this page once your order is ready for pickup.";
+                ? "Enjoy your coffee!"
+                : "Come by the counter; we'll have it waiting."
+            : "This page updates by itself as your order moves along.";
         $("#fulfillment-progress-card").setAttribute(
             "aria-label",
             isDelivery ? "Delivery confirmation" : "Pickup confirmation"
         );
         $("#fulfillment-progress").classList.toggle("is-complete", isComplete);
+        // The steps above already show progress; this line is the final ✓ only.
+        $("#fulfillment-progress").hidden = !isComplete;
         $("#fulfillment-progress-icon").textContent = isComplete ? "✓" : "•";
-        $("#fulfillment-progress-label").textContent = isComplete
-            ? completionLabel
-            : isDelivery
-              ? "Not yet delivered"
-              : "Not yet ready for pickup";
-        $("#report-delivered-button").hidden = !isDelivery || isComplete || order.deliveryReported;
+        $("#fulfillment-progress-label").textContent = isComplete ? completionLabel : current.label;
+        // Only once the order has left the shop does "I've received it" make sense.
+        const hasLeftShop = ["Out for Delivery", "Arrived"].includes(order.status);
+        $("#report-delivered-button").hidden = !isDelivery || isComplete || order.deliveryReported || !hasLeftShop;
         $("#report-delivered-button").disabled = Boolean(order.deliveryReportPending);
         $("#tracking-status-message").textContent = isComplete
             ? isDelivery
-                ? "Your delivery was approved by an administrator."
-                : "An administrator verified that your order is ready for pickup."
+                ? "Coffee Lab confirmed your delivery."
+                : "Your order is ready at the counter."
             : order.deliveryReportError
-              ? `Could not report delivery: ${order.deliveryReportError}`
+              ? `We couldn't save that: ${order.deliveryReportError}`
               : order.deliveryReported
-                ? "Thanks for letting us know. Your delivery report is waiting for administrator verification."
-                : isDelivery
-                  ? "The green checkmark appears after an administrator verifies your delivery."
-                  : "The green checkmark appears after an administrator verifies that your order is ready for pickup.";
+                ? "Thanks for letting us know! We'll confirm it shortly."
+                : "";
         const receiptStatus = order.receiptStatus || "unavailable";
         const receiptMessages = {
             pending: "Your digital receipt is ready to generate.",
@@ -1113,6 +1170,7 @@
             address.setCustomValidity("");
         }
         const submitButton = $("#checkout-form button[type='submit']");
+        showCheckoutError("");
         submitButton.disabled = true;
         submitButton.textContent = "Placing order…";
         try {
@@ -1155,7 +1213,8 @@
             render();
             showTracking();
         } catch (error) {
-            setNotice(`Could not place your order: ${error.message}`);
+            // Shown inside the dialog: the page notice is hidden behind the modal.
+            showCheckoutError(`Your order wasn't placed: ${error.message} Please try again.`);
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = "Place order";

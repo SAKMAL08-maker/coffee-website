@@ -21,10 +21,7 @@
                 <div class="auth-card">
                     <p class="eyebrow">A little coffee, just for you</p>
                     <h1 id="auth-title" tabindex="-1">Welcome to Coffee Lab</h1>
-                    <p class="auth-intro">
-                        Sign in or create an account to build and order your coffee. Administrator accounts use Supabase
-                        Auth and require an authenticator code.
-                    </p>
+                    <p class="auth-intro">Sign in or create an account to build and order your coffee.</p>
 
                     <form class="auth-form" id="login-form" data-auth-screen="login">
                         <label for="login-username">Username</label>
@@ -49,9 +46,6 @@
                             ><input id="stay-signed-in" type="checkbox" /><span
                                 >Stay signed in on this device</span
                             ></label
-                        >
-                        <span class="field-help"
-                            >Administrator sessions are browser-only and require an authenticator code each time.</span
                         >
                         <button class="button button-primary auth-submit" type="submit">Log in</button>
                         <p class="auth-switch">
@@ -382,6 +376,10 @@
                                 <span class="classification" id="drink-classification" aria-live="polite"
                                     >Custom Concoction</span
                                 >
+                                <p class="creation-price">
+                                    <strong id="creation-price">₱250.00</strong>
+                                    <span>per drink, before fees</span>
+                                </p>
                                 <button
                                     class="panel-order-button"
                                     id="creation-view-toggle"
@@ -477,9 +475,12 @@
                                 <div class="price-row">
                                     <span>Estimated VAT (12%)</span><strong id="tax-fee">₱0.00</strong>
                                 </div>
-                                <div class="tip-picker" role="group" aria-label="Delivery tip">
-                                    <span class="field-help">Tip</span>
-                                    <button class="tip-button" type="button" data-tip="15" aria-pressed="true">
+                                <div class="tip-picker" role="group" aria-label="Tip (optional)">
+                                    <span class="field-help">Tip (optional)</span>
+                                    <button class="tip-button" type="button" data-tip="0" aria-pressed="true">
+                                        No tip
+                                    </button>
+                                    <button class="tip-button" type="button" data-tip="15" aria-pressed="false">
                                         15%
                                     </button>
                                     <button class="tip-button" type="button" data-tip="18" aria-pressed="false">
@@ -505,7 +506,7 @@
                                     />
                                 </div>
                                 <div class="price-row">
-                                    <span>Tip (<span id="tip-percent">15</span>%)</span
+                                    <span>Tip (<span id="tip-percent">0</span>%)</span
                                     ><strong id="tip-fee">₱0.00</strong>
                                 </div>
                                 <div class="price-total">
@@ -639,7 +640,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="field">
+                            <div class="field" id="shots-field">
                                 <label class="field-label" for="shot-range"
                                     ><span>Espresso shots</span
                                     ><span class="range-readout" id="shot-readout">2 shots</span></label
@@ -678,7 +679,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="field">
+                            <div class="field" id="milk-field">
                                 <p class="field-label">Milk source <span class="field-help">Choose one</span></p>
                                 <div class="card-grid" data-choice-group="milk">
                                     <button class="option-card" type="button" data-value="whole" aria-pressed="true">
@@ -695,7 +696,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="field">
+                            <div class="field" id="foam-field">
                                 <label class="field-label" for="foam-range"
                                     ><span>Foam aeration</span
                                     ><span class="range-readout" id="foam-readout">25%</span></label
@@ -922,9 +923,9 @@
 
             <main class="tracking-page" id="tracking-page" hidden aria-labelledby="tracking-title">
                 <div class="tracking-heading">
-                    <p class="eyebrow" id="tracking-eyebrow">Your coffee is on its way</p>
+                    <p class="eyebrow" id="tracking-eyebrow">Order placed</p>
                     <h1 id="tracking-title" tabindex="-1">Order <span id="tracking-order-number"></span></h1>
-                    <p id="tracking-eta">We’ll update this page once delivery is verified.</p>
+                    <p id="tracking-eta">This page updates by itself as your order moves along.</p>
                 </div>
                 <section
                     class="tracking-card fulfillment-progress-card"
@@ -932,15 +933,16 @@
                     aria-label="Order progress"
                 >
                     <h2>Order progress</h2>
+                    <ol class="order-steps" id="order-steps"></ol>
                     <div class="fulfillment-progress" id="fulfillment-progress" aria-live="polite">
                         <span class="fulfillment-progress-icon" id="fulfillment-progress-icon" aria-hidden="true"
                             >•</span
                         >
-                        <strong id="fulfillment-progress-label">Not yet delivered</strong>
+                        <strong id="fulfillment-progress-label">Order received</strong>
                     </div>
                     <p class="notice" id="tracking-status-message" role="status" aria-live="polite"></p>
                     <button class="button button-primary" id="report-delivered-button" type="button">
-                        My order has already been delivered
+                        I've received my order
                     </button>
                 </section>
                 <section class="tracking-card receipt-card" aria-labelledby="receipt-title">
@@ -989,6 +991,8 @@
                         data-admin-tab="orders"
                     >
                         Orders
+                        <!-- Active order count (set by admin.js). -->
+                        <span class="admin-tab-badge" id="admin-tab-orders-badge" hidden></span>
                     </button>
                     <button
                         class="admin-tab"
@@ -1010,14 +1014,36 @@
                     >
                         <span id="admin-tab-accounts-label">Admin access</span>
                         <!-- Number of admins waiting for authenticator approval (set by adminAccess.js). -->
-                        <span class="admin-tab-badge" id="admin-access-badge" hidden></span>
+                        <span class="admin-tab-badge" id="admin-tab-accounts-badge" hidden></span>
                     </button>
                 </div>
                 <div class="admin-panel" id="admin-panel-orders" role="tabpanel" aria-labelledby="admin-tab-orders">
-                    <h2 class="admin-orders-title">Orders</h2>
+                    <h2 class="sr-only">Orders</h2>
+                    <div class="order-toolbar">
+                        <div class="order-views" role="group" aria-label="Show orders">
+                            <button class="admin-chart-tab" type="button" data-order-view="active" aria-pressed="true">
+                                Active <span class="order-view-count"></span>
+                            </button>
+                            <button class="admin-chart-tab" type="button" data-order-view="done" aria-pressed="false">
+                                Done <span class="order-view-count"></span>
+                            </button>
+                            <button class="admin-chart-tab" type="button" data-order-view="all" aria-pressed="false">
+                                All <span class="order-view-count"></span>
+                            </button>
+                        </div>
+                        <label class="sr-only" for="order-search">Search orders</label>
+                        <input
+                            class="order-search"
+                            id="order-search"
+                            type="search"
+                            placeholder="Search code or name"
+                            maxlength="40"
+                            autocomplete="off"
+                        />
+                    </div>
                     <p class="notice" id="admin-message" role="status" aria-live="polite"></p>
                     <section class="admin-order-list" id="admin-order-list" aria-label="Orders"></section>
-                    <nav class="admin-pagination" aria-label="Order pages">
+                    <nav class="admin-pagination" id="admin-pagination" aria-label="Order pages" hidden>
                         <button class="button" id="admin-previous-page" type="button" disabled>Previous</button>
                         <span id="admin-page-label">Page 1</span>
                         <button class="button" id="admin-next-page" type="button" disabled>Next</button>
@@ -1143,9 +1169,6 @@
             <form class="dialog-content" id="checkout-form">
                 <h2 id="checkout-title">Complete your order</h2>
                 <p>Review the details and place your coffee order.</p>
-                <p class="field-help">
-                    Prototype checkout only: no payment is processed and no delivery service is contacted.
-                </p>
                 <p class="privacy-notice">
                     We use your name, phone number, order details, and delivery address when applicable to manage this
                     order. Location is optional. See our
@@ -1153,7 +1176,7 @@
                     retention, and privacy requests. Placing an order means you agree to our
                     <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Use</a>.
                 </p>
-                <div class="checkout-summary" id="checkout-summary"></div>
+                <dl class="checkout-summary" id="checkout-summary"></dl>
                 <p class="checkout-payment-note" id="checkout-payment-note" role="note"></p>
                 <label for="customer-name">Name</label>
                 <input id="customer-name" name="customerName" autocomplete="name" maxlength="80" required />
@@ -1163,6 +1186,7 @@
                     <label for="checkout-address">Delivery address</label
                     ><input id="checkout-address" name="checkoutAddress" autocomplete="street-address" required />
                 </div>
+                <p class="checkout-error" id="checkout-error" role="alert" hidden></p>
                 <div class="dialog-actions">
                     <button class="button" id="cancel-checkout" type="button">Keep shopping</button
                     ><button class="button button-primary" type="submit">Place order</button>
