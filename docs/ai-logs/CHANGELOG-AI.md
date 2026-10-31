@@ -418,3 +418,7 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 
 - **Fix:** typing Super_Admin and tapping **Log in** now opens the security-question screen. Before, the empty (required) password box made the browser block the button, and phones have no Enter key to fall back on. The password box is no longer required while Super_Admin is typed, and anything in it is cleared when the superadmin screen opens.
 - **Masked:** birthday, favourite dog and favourite colour are now hidden like the password (they act as passwords). A test keeps all four masked.
+
+### − and + buttons on every builder slider
+
+- Espresso shots and Foam aeration now have − and + buttons like Drink size, for anyone who can't drag a slider (small screens, motor impairments, trackpads). Each button turns off at the slider's end, so a press always does something.

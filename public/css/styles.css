@@ -676,6 +676,10 @@ h1 {
     font-weight: 700;
     cursor: pointer;
 }
+.step-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
 input[type="range"] {
     width: 100%;
     accent-color: var(--accent);

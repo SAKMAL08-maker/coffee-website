@@ -653,7 +653,27 @@
                                     ><span>Espresso shots</span
                                     ><span class="range-readout" id="shot-readout">2 shots</span></label
                                 >
-                                <input id="shot-range" type="range" min="1" max="4" step="1" value="2" />
+                                <div class="volume-control">
+                                    <button
+                                        class="step-button"
+                                        type="button"
+                                        data-adjust="shot"
+                                        data-delta="-1"
+                                        aria-label="Less espresso"
+                                    >
+                                        −
+                                    </button>
+                                    <input id="shot-range" type="range" min="1" max="4" step="1" value="2" />
+                                    <button
+                                        class="step-button"
+                                        type="button"
+                                        data-adjust="shot"
+                                        data-delta="1"
+                                        aria-label="More espresso"
+                                    >
+                                        +
+                                    </button>
+                                </div>
                                 <div class="range-sub"><span>1 shot</span><span>4 shots</span></div>
                             </div>
                         </div>
@@ -709,15 +729,35 @@
                                     ><span>Foam aeration</span
                                     ><span class="range-readout" id="foam-readout">25%</span></label
                                 >
-                                <input
-                                    class="foam-range"
-                                    id="foam-range"
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    step="5"
-                                    value="25"
-                                />
+                                <div class="volume-control">
+                                    <button
+                                        class="step-button"
+                                        type="button"
+                                        data-adjust="foam"
+                                        data-delta="-5"
+                                        aria-label="Less foam"
+                                    >
+                                        −
+                                    </button>
+                                    <input
+                                        class="foam-range"
+                                        id="foam-range"
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        step="5"
+                                        value="25"
+                                    />
+                                    <button
+                                        class="step-button"
+                                        type="button"
+                                        data-adjust="foam"
+                                        data-delta="5"
+                                        aria-label="More foam"
+                                    >
+                                        +
+                                    </button>
+                                </div>
                                 <div class="range-sub"><span>Flat</span><span>Extra airy</span></div>
                             </div>
                         </div>
