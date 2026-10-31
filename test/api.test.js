@@ -100,6 +100,10 @@ test("serves the customizer and validates quote and checkout API requests", asyn
             body: JSON.stringify({ password: "x" })
         });
         assert.equal(incompleteSuperadminLogin.status, 400);
+        // Every superadmin sign-in answer is hidden like a password.
+        for (const id of ["superadmin-password", "superadmin-birthday", "superadmin-dog", "superadmin-color"]) {
+            assert.match(html, new RegExp(`id="${id}"[^>]*type="password"`), `${id} must be masked`);
+        }
         assert.match(html, /id="signup-form"/);
         assert.match(html, /id="login-form"/);
         assert.match(html, /id="admin-mfa-form"/);

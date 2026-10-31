@@ -88,12 +88,21 @@
     }
 
     function openSuperadminScreen() {
+        // Anything typed in the normal password box isn't used here; don't leave it behind.
+        $("#login-password").value = "";
         $("#superadmin-form").reset();
         showScreen("superadmin");
         $("#superadmin-password").focus();
     }
 
-    // Typing Super_Admin and pressing Enter opens the security-question screen.
+    // With Super_Admin typed, the password box isn't needed on this screen. Without this, the
+    // browser's "please fill in this field" check stopped the Log in button (phones have no Enter
+    // key to fall back on), so the security-question screen never opened.
+    $("#login-username").addEventListener("input", () => {
+        $("#login-password").required = !isSuperadminUsername();
+    });
+
+    // Typing Super_Admin and pressing Enter (or Log in, below) opens the security-question screen.
     $("#login-username").addEventListener("keydown", (event) => {
         if (event.key === "Enter" && isSuperadminUsername()) {
             event.preventDefault();

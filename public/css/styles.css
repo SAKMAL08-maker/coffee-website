@@ -3814,3 +3814,22 @@ dialog::backdrop {
         grid-template-columns: 1fr;
     }
 }
+/* Automatic Coffee Lab note after a ticket's first message. */
+.support-system-message {
+    align-self: center;
+    max-width: 90%;
+    padding: 8px 14px;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+}
+.support-system-message strong {
+    display: block;
+    color: var(--ink);
+    font-size: 0.75rem;
+}
+.support-system-message p {
+    margin: 2px 0 0;
+}
