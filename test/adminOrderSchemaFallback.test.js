@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 // Simulates a Supabase project where some migrations haven't been applied yet:
 // any select that mentions a "missing" column fails like PostgREST does.
 const supabaseConfigPath = require.resolve("../config/supabase");
-const fakeSchema = { missingColumns: [], selectedColumnSets: [] };
+const fakeSchema = { missingColumns: [], selectedColumnSets: [], orderCalls: [] };
 const savedOrder = {
     id: "c5c0c718-6e68-4a0f-b490-eaa4897bb4b1",
     tracking_code: "a".repeat(48),
@@ -26,7 +26,10 @@ function createFakeSupabaseClient() {
                     if (!options?.head) fakeSchema.selectedColumnSets.push(selectedColumns);
                     return query;
                 },
-                order: () => query,
+                order: (column, options) => {
+                    fakeSchema.orderCalls.push([column, options]);
+                    return query;
+                },
                 or: () => query,
                 not: () => query,
                 in: () => query,
@@ -64,11 +67,11 @@ require.cache[supabaseConfigPath] = {
 
 const { listAdminOrders } = require("../controllers/orderController");
 
-async function callListAdminOrders() {
+async function callListAdminOrders(query = {}) {
     let body;
     let forwardedError;
     await listAdminOrders(
-        { query: { page: 1 } },
+        { query: { page: 1, ...query } },
         {
             status() {
                 return this;
@@ -128,4 +131,13 @@ test("before the branches migration only: one quiet fallback, cash fields kept, 
     assert.equal(body.schemaWarning, null);
     assert.equal(body.orders[0].branchName, null);
     assert.ok("cashCollectedAt" in body.orders[0]);
+});
+
+test("every view lists the newest orders first", async () => {
+    fakeSchema.missingColumns = [];
+    for (const view of ["active", "done", "all"]) {
+        fakeSchema.orderCalls = [];
+        await callListAdminOrders({ view });
+        assert.deepEqual(fakeSchema.orderCalls, [["created_at", { ascending: false }]], view);
+    }
 });

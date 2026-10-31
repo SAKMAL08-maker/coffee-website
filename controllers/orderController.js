@@ -438,8 +438,8 @@ async function listAdminOrders(request, response, next) {
                 { view, search, branch },
                 hasPaymentColumns
             )
-                // Active orders are a queue (oldest first); history reads newest first.
-                .order("created_at", { ascending: view === "active" })
+                // Newest first in every view (the age badge still flags orders that have waited long).
+                .order("created_at", { ascending: false })
                 .range((page - 1) * pageSize, page * pageSize - 1));
             const isLastFallback = setIndex === ADMIN_ORDER_COLUMN_SETS.length - 1;
             if (!error || !(hasMissingOptionalOrderColumns(error) || isMissingBranchesTable(error)) || isLastFallback)

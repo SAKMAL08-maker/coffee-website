@@ -422,3 +422,7 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 ### − and + buttons on every builder slider
 
 - Espresso shots and Foam aeration now have − and + buttons like Drink size, for anyone who can't drag a slider (small screens, motor impairments, trackpads). Each button turns off at the slider's end, so a press always does something.
+
+### Admin orders: newest first
+
+- The admin Orders tab now lists newest first in every view. "Active" used to list oldest first, like a work queue. The age badge still flags orders that have waited too long.
