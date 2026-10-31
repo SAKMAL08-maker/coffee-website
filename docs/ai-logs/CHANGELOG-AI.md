@@ -409,6 +409,11 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 - **Compatibility:** everything works before the migration: no branches means orders behave as before, the admin list falls back quietly, and the Menu tab explains that the migration is needed.
 - **Migration `20261112000000_branches_sold_out.sql`:** additive, plus a one-time backfill of `orders.branch_id`.
 
+### Support: welcome note on every ticket
+
+- Right after the customer's opening message, the chat shows a note from Coffee Lab: "Thank you for using Coffee Lab! You'll be connected with an admin shortly, and they'll reply right here in this chat." Staff see it too, so they know what the customer was told.
+- It's drawn by the page rather than saved as a message, so it never marks a ticket as answered, never counts as an admin's support reply, and also appears on tickets opened before this change. No database change.
+
 ### Superadmin sign-in on phones; masked answers
 
 - **Fix:** typing Super_Admin and tapping **Log in** now opens the security-question screen. Before, the empty (required) password box made the browser block the button, and phones have no Enter key to fall back on. The password box is no longer required while Super_Admin is typed, and anything in it is cleared when the superadmin screen opens.
