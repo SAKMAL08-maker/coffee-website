@@ -1,62 +1,49 @@
 const PDFDocument = require("pdfkit");
-const { describePaymentInstruction } = require("./paymentService");
+const { RECEIPT_COLUMNS, buildReceiptLines } = require("./receiptModel");
 
-function formatMoney(cents) {
-    return `PHP ${(cents / 100).toFixed(2)}`;
-}
+// 80 mm receipt roll. Courier is a built-in PDF font, so no font files are needed.
+const PAGE_WIDTH = 226.77;
+const MARGIN = 12;
+const FONT_SIZE = (PAGE_WIDTH - 2 * MARGIN) / (RECEIPT_COLUMNS * 0.6);
+const LINE_HEIGHT = FONT_SIZE * 1.45;
 
 function createReceiptPdf(order) {
+    const lines = buildReceiptLines(order);
+    const height = Math.ceil(2 * MARGIN + lines.length * LINE_HEIGHT + LINE_HEIGHT * 2);
     return new Promise((resolve, reject) => {
-        const document = new PDFDocument({ size: "A4", margin: 52 });
+        const document = new PDFDocument({ size: [PAGE_WIDTH, height], margin: MARGIN });
         const chunks = [];
-
         document.on("data", (chunk) => chunks.push(chunk));
         document.once("error", reject);
         document.once("end", () => resolve(Buffer.concat(chunks)));
 
-        const customer = order.customer || {};
-        const pricing = order.pricing || {};
-        const orderNumber = order.id.slice(0, 8).toUpperCase();
-
-        document.fontSize(22).font("Helvetica-Bold").text("Coffee Lab");
-        document.moveDown(0.3).fontSize(15).text("Digital order receipt");
-        document
-            .moveDown()
-            .fontSize(10)
-            .font("Helvetica")
-            .text(`Order: CL-${orderNumber}`)
-            .text(`Date: ${new Date(order.created_at).toLocaleString("en-PH", { timeZone: "UTC" })}`)
-            .text(`Fulfillment: ${order.fulfillment_method === "pickup" ? "Pickup" : "Delivery"}`)
-            .text(`Payment: ${describePaymentInstruction(order.fulfillment_method, order.payment_method)}`)
-            .text(`Customer: ${String(customer.name || "Coffee Lab customer").slice(0, 80)}`);
-
-        if (order.fulfillment_method === "delivery" && order.delivery_address) {
-            document.text(`Delivery address: ${String(order.delivery_address).slice(0, 300)}`);
+        const contentWidth = PAGE_WIDTH - 2 * MARGIN;
+        let y = MARGIN;
+        for (const line of lines) {
+            if (line.rule) {
+                const middle = y + LINE_HEIGHT / 2;
+                document
+                    .save()
+                    .moveTo(MARGIN, middle)
+                    .lineTo(PAGE_WIDTH - MARGIN, middle);
+                if (line.rule === "=") document.lineWidth(1);
+                else document.lineWidth(0.5).dash(2, { space: 2 });
+                document.strokeColor("#222222").stroke().restore();
+            } else if (!line.blank) {
+                const size = line.large ? FONT_SIZE * 1.25 : FONT_SIZE;
+                document
+                    .font(line.bold ? "Courier-Bold" : "Courier")
+                    .fontSize(size)
+                    .fillColor("#111111");
+                const options = { width: contentWidth, lineBreak: false };
+                if (line.align === "center") document.text(line.left, MARGIN, y, { ...options, align: "center" });
+                else {
+                    if (line.left) document.text(line.left, MARGIN, y, options);
+                    if (line.right) document.text(line.right, MARGIN, y, { ...options, align: "right" });
+                }
+            }
+            y += LINE_HEIGHT;
         }
-
-        document.moveDown().font("Helvetica-Bold").text("Items");
-        document.moveDown(0.35);
-        for (const item of order.order_items || []) {
-            document
-                .font("Helvetica")
-                .text(`${String(item.name || "Coffee").slice(0, 80)}  —  ${formatMoney(item.price_cents)}`);
-        }
-
-        document
-            .moveDown()
-            .font("Helvetica")
-            .text(`Drinks subtotal: ${formatMoney(pricing.subtotal_cents || 0)}`)
-            .text(`Delivery: ${formatMoney(pricing.delivery_fee_cents || 0)}`)
-            .text(`Service fee: ${formatMoney(pricing.service_fee_cents || 0)}`)
-            .text(`Tax: ${formatMoney(pricing.tax_cents || 0)}`)
-            .text(`Tip: ${formatMoney(pricing.tip_cents || 0)}`);
-        document
-            .moveDown(0.3)
-            .font("Helvetica-Bold")
-            .fontSize(13)
-            .text(`Total due: ${formatMoney(pricing.total_cents || 0)}`);
-        document.moveDown(2).font("Helvetica").fontSize(9).text("Thank you for ordering from Coffee Lab.");
-
         document.end();
     });
 }

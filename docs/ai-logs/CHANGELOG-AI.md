@@ -317,3 +317,78 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 **Why:** the owner found the single long admin page inconvenient.
 
 **Mistake caught:** the first version saved "Orders" on page load before reading the saved tab, so the remembered tab was always lost. The headless preview showed it, and it was fixed before the PR.
+
+## 2026-10-31 · Full app review, then fixes
+
+- **Tool:** Claude Code (Claude Opus 5.5), with four parallel review agents (admin UX, customer UX, accessibility/mobile, code/scalability) and one report writer. Notes and report are kept locally (not committed).
+
+**Fixes so far**
+
+- [#35](https://github.com/SAKMAL08-maker/coffee-website/pull/35): customers were charged for espresso shots on filter coffee, cold brew and matcha, and for milk on filter coffee and cold brew.
+- `admin-orders-compact`: the owner's complaint. Each order was a 650–1,000 px card (raw JSON per drink made it overflow sideways). Now a compact row with one next-step button that finally uses the status endpoint (Received → Crafting → Out for delivery → Arrived), confirmations on final and money actions, Active/Done/All views with counts, search, a new-order title alert, and polling that no longer wipes open rows or focus. Also fixes a duplicate `admin-access-badge` id I introduced in #34.
+
+**Mistakes caught along the way**
+
+- The review report claimed CI skips merges because the default branch is `version_0.1`; checking GitHub showed the default is `main`, so nothing was changed.
+- A shell heredoc stripped the backslashes from the new search pattern (`\p{L}` became `p{L}`), which rejected every search; the new validation test caught it before commit.
+
+### Customer checkout and tracking (from the review)
+
+- The drink price is now on the main builder card; before, it was only behind a small arrow.
+- Tip: "No tip" comes first and is the default. Before, the tip defaulted to 15%, was also charged on pickup, and had no zero option.
+- Checkout lists every fee (drinks, delivery, 8% service, 12% VAT, tip, total) and shows errors inside the dialog; they used to be hidden behind it. The contradictory "prototype, no payment is processed" line next to "Pay in cash" is gone.
+- Tracking shows real steps: Order received → Being made → On the way → Arrived → Delivered, or → Ready for pickup for pickups. This works now that the admin page moves orders through those steps. "I've received my order" appears only once the order has left the shop.
+- The sign-in screen no longer tells customers about Supabase and authenticator codes.
+
+### Accessibility and visual polish (from the review)
+
+- The closed cart drawer is `inert`, so Tab no longer lands on its invisible buttons; while it is open, the page behind it is `inert`.
+- Contrast was measured with the WCAG formula, not by eye:
+    - The focus ring went from 2.95:1 to 4.4:1 and now also covers `summary` and `[tabindex]`.
+    - Muted text went from 4.37:1 to 4.99:1, and the eyebrow labels to 5.1:1.
+    - Dark-theme pairs that used white or light-theme reds were fixed: complete status, active nav, cart count, errors, Delete and Remove are now 6.4–8.9:1.
+- Restored the focus ring on the dashboard's day columns, made sign-in screen switches move focus to the heading, and turned the Admins/Customers switch into toggle buttons (it claimed to be tabs without tab panels).
+- The logo link and "Download CSV" no longer render as default blue underlined links. The cart's Edit and Remove buttons are 32 px tall.
+- Removed 21 dead CSS rules (an old tracking timeline and driver card that nothing uses), each checked with grep across the HTML, JS and tests.
+
+### Server messages and receipts (from the review)
+
+- **Error messages:** the error handler replaced every 4xx message with a generic one, so users saw "The request conflicts with the current resource state." instead of "…Demote it instead." It now passes the message through unless the error is marked `expose: false`, which is the convention of the `http-errors` package that Express uses. 5xx errors stay generic.
+- **Receipt numbers:** receipts printed `CL-` plus the first 8 characters of the order id, while every screen shows `CL-` plus the last 6 of the tracking code. Both receipts now use the shared `services/orderCode.js`.
+- **Receipt time:** the PDF receipt printed its time in UTC, 8 hours off; it now uses Manila time, like the image receipt.
+- **Superadmin accounts:** the account list now looks up admin sign-in times in parallel instead of one after another.
+- **Not changed, on purpose:** long-lived browser caching of static files. The files have no content hashes in their names, so after a deploy browsers could run old scripts against new HTML. ETag revalidation (304 responses) already avoids re-downloading unchanged files.
+
+### VAT-inclusive prices, cancelled orders, foreign-key indexes (owner decisions D2–D4)
+
+- **VAT (D4, owner: yes):** prices now include 12% VAT, as Philippine menus do. The order shows "VAT included" (amount × 12/112 of drinks, delivery and service fee; tips aren't VAT-able) instead of adding it. New orders carry `pricing.vat_inclusive: true`, so the admin page and receipts still show older orders' added tax correctly. The server's default tip is 0, matching the page (D2, owner: no tip).
+- **Delete policy (D3, owner: "rely on you"):** admins **cancel** orders instead of deleting them. A cancelled order keeps its record, shows as cancelled to the customer, leaves the sales dashboard (both the Postgres function and the Node fallback), and can't be advanced, approved or have cash recorded. Permanent delete is superadmin-only on the server.
+- **Migration `20261108000000_cancelled_orders_fk_indexes.sql`:** allows the Cancelled status, adds the 4 foreign-key indexes the live Supabase advisor flags, and re-creates `admin_order_metrics` with one added filter (diffed against the original). Applying it from here was blocked by the permission system, so the owner applies it.
+
+### Footer, legal page buttons, point-of-sale receipts
+
+- **Footer:** one site footer on the app, Privacy and Terms pages: legal links, contact email, Facebook and Instagram (new tab, labelled for screen readers). Removed the duplicate legal links from the header, sign-in card and builder bar, plus their unused CSS.
+- **Legal page buttons:** "Back to Coffee Lab" was default blue link text (link-buttons had no colour of their own), and my earlier `a.button` fix outranked `.button-primary`, so "Return to Coffee Lab" became dark brown on dark brown. Colour now lives on `.button` itself. The legal pages also follow the dark theme now.
+- **Receipts:** a shared model (`services/receiptModel.js`) drives both the PDF and the image. Layout: an 80 mm, 42-column point-of-sale receipt with business header, receipt number, date (Manila), item rows, VAT breakdown (VATable / VAT / exempt / zero-rated), and paid or unpaid status. The receipt is reissued when cash is collected, so it says PAID. Business name, address, TIN and BIR permit come from `BUSINESS_*` / `BIR_PERMIT_NUMBER`. Until a permit is set, it says it is a system-generated proof of purchase.
+
+### Profiles for customers and admins
+
+- **Profile page:** customers get a nav button and admins/superadmin a tab. It shows the picture, username, role, member-since date and a bio (280 characters, cleaned on the server).
+- **Picture:** the browser crops it to a 256 px square and makes it a JPEG before upload, so it's about 20 KB. The server checks the real type from the bytes (JPEG/PNG/WebP only, no SVG), stores it in the private B2 bucket under `avatars/`, and serves it through `GET /api/profile/avatar/:id?v=<version>`, signed-in only and cached for a year (the URL changes when the picture does).
+- **Customer statistics:** most-ordered drink, loyalty points (earned and pending, from `recipe_royalty_summary`), recipes published, orders, drinks, total spent, and usual pickup or delivery. Computed by `customer_profile_stats` in Postgres.
+- **Admin statistics** (last 30 days and all time): orders accepted, closed and cancelled, and cash collected. Closed and cash come from the existing approved-by and collected-by columns, so they include earlier work. Accepted and cancelled come from the new `order_events` table, which every admin order action now writes to (best effort: a failed insert never fails the action). Computed by `staff_profile_stats`.
+- **Migration `20261109000000_profiles_order_events.sql`** (additive): adds the bio and picture columns, the `order_events` table with indexes and row-level security, and the two statistics functions (service role only).
+
+### Support tickets and chat
+
+- **Customers** (new "Support" nav button with an unread badge) open tickets, with a subject, an optional link to one of their own orders and a first message, and chat with the shop. They see only their own tickets, can close one, and can have at most 5 open.
+- **Admins and the superadmin** (new "Support" tab with a "needs reply" badge) see every ticket (Open / Closed / All), answer, close and reopen. The first admin to reply takes the ticket. Support replies count on the admin's profile.
+- **Access:** checked on the server for every ticket: its customer or an MFA-verified admin or the superadmin (`hasAdminAccess`, the same rule as `requireAdmin`). Everyone else gets 404. Messages are plain text, cleaned on the server and rendered with `textContent`.
+- **Updates:** the open conversation polls `messages?after=<id>` every 5 s while it is on screen, and badges refresh every 30 s. That's enough at this scale; Supabase Realtime is the next step (see the scalability notes).
+- **Migration `20261110000000_support_tickets.sql`** (additive): `support_tickets` and `support_messages` with indexes and row-level security, and `staff_profile_stats` gains `supportReplies` (copied from the profiles migration with that one addition, diffed).
+
+### Installable app, receipts out of checkout, Facebook link
+
+- **Installable on phones (PWA):** `manifest.webmanifest`, app icons (192, 512, maskable, Apple touch), and a service worker (`public/sw.js`) that only falls back to cached CSS/JS/icons and an offline page when there's no connection. Pages and `/api` always come from the network, so deploys are live immediately and no stale data is ever shown. The footer shows "Install app" when the browser offers it; on iPhone it explains Share → Add to Home Screen.
+- **Receipts no longer slow down checkout:** the order is saved and answered immediately with receipt status `pending`; `services/receiptQueue.js` builds the PDF and image in the background (2 at a time, 3 attempts), and the tracking page checks back after 3 s and 8 s. A sweeper re-queues receipts left pending by a restart. The cash-collected reissue uses the same queue.
+- **Footer:** Facebook now links to the real profile.

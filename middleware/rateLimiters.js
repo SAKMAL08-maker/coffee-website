@@ -45,6 +45,8 @@ module.exports = {
     receiptLimiter: createLimiter(60 * 1000, 10, "receiptLimiter"),
     deliveryReportLimiter: createLimiter(60 * 60 * 1000, 5, "deliveryReportLimiter"),
     adminOrderLimiter: createLimiter(60 * 1000, 30, "adminOrderLimiter"),
+    // The order list is polled every 15 s per open admin tab; keep it from eating the action budget.
+    adminOrderListLimiter: createLimiter(60 * 1000, 60, "adminOrderListLimiter"),
     adminApprovalLimiter: createLimiter(15 * 60 * 1000, 10, "adminApprovalLimiter"),
     // Superadmin sign-in also locks after 3 wrong answers; this slows guessing per IP.
     superadminLoginLimiter: createLimiter(15 * 60 * 1000, 5, "superadminLoginLimiter"),
@@ -59,5 +61,14 @@ module.exports = {
     // Public recipe pages and QR codes: generous for real visitors, blocks slug scraping.
     recipeReadLimiter: createLimiter(60 * 1000, 60, "recipeReadLimiter"),
     // Re-checked (debounced) as the customer edits a drink, like price quotes.
-    caffeineCheckLimiter: createLimiter(60 * 1000, 120, "caffeineCheckLimiter")
+    caffeineCheckLimiter: createLimiter(60 * 1000, 120, "caffeineCheckLimiter"),
+    profileReadLimiter: createLimiter(60 * 1000, 60, "profileReadLimiter"),
+    // Bio saves and picture uploads; a person editing their profile needs a handful.
+    profileWriteLimiter: createLimiter(10 * 60 * 1000, 20, "profileWriteLimiter"),
+    // Pictures are cached by the browser, so this only matters for a first visit or abuse.
+    avatarReadLimiter: createLimiter(60 * 1000, 300, "avatarReadLimiter"),
+    // An open chat polls every 5 s and the ticket list every 30 s.
+    supportReadLimiter: createLimiter(60 * 1000, 120, "supportReadLimiter"),
+    supportWriteLimiter: createLimiter(60 * 1000, 30, "supportWriteLimiter"),
+    supportTicketLimiter: createLimiter(60 * 60 * 1000, 10, "supportTicketLimiter")
 };

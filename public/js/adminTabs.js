@@ -11,6 +11,8 @@
             document.getElementById(candidate.getAttribute("aria-controls")).hidden = !isSelected;
         }
         if (focus) tab.focus();
+        // Panels that load on demand (e.g. Profile) listen for this.
+        document.dispatchEvent(new CustomEvent("coffeelab:admin-tab", { detail: { name: tab.dataset.adminTab } }));
         if (!remember) return;
         try {
             sessionStorage.setItem(STORAGE_KEY, tab.dataset.adminTab);

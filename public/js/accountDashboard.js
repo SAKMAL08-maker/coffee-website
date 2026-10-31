@@ -72,7 +72,7 @@
         const signedIn = accounts.filter((account) => account.active).length;
         $("#account-summary").textContent = `${accounts.length} ${filter} · ${signedIn} signed in now`;
         document.querySelectorAll("[data-account-filter]").forEach((button) => {
-            button.setAttribute("aria-selected", String(button.dataset.accountFilter === filter));
+            button.setAttribute("aria-pressed", String(button.dataset.accountFilter === filter));
         });
         $("#account-list").replaceChildren(
             ...accounts.map((account) => {

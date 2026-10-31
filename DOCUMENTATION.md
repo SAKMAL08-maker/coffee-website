@@ -92,7 +92,7 @@ The original blueprint is available in the development conversation, not as a ch
 2. Set the heights of the visual drink layers and update the ingredient legend.
 3. Classify the drink from its base, temperature, milk-to-coffee ratio, foam ratio, and selected extras.
 4. Estimate nutrition using the ingredient lookup values.
-5. Request a price quote from the server (`POST /api/orders/quote`) and display the drink price and delivery/service/tax/tip totals it returns.
+5. Request a price quote from the server (`POST /api/orders/quote`) and display the drink price and delivery/service/tip totals it returns. Prices include 12% VAT; the quote reports the VAT inside the total (`taxCents`, with `vatInclusive: true`) rather than adding it.
 6. Add the current configuration to the cart or edit an existing cart item.
 
 The backend counterpart is `services/coffeeService.js`. It validates and normalizes submitted drink configurations, classifies drinks, and calculates nutrition. The server repeats validation at the API boundary so a modified browser request cannot bypass supported values and bounds.
@@ -127,11 +127,18 @@ Nutrition, recipe labels, service fees, taxes, and other displayed calculations 
 - **Lockout:** three wrong attempts set `locked = true` in Supabase → **Table editor → superadmin_security**. Set it back to `false` to unlock (the attempt count resets automatically), or set it to `true` to lock the account by hand. The login is also rate-limited to 5 tries per 15 minutes per IP.
 - Set up or reset with `scripts/create-superadmin.js` (see the runbook). Only scrypt hashes are stored.
 
+### Admin orders list
+
+- One compact row per order: age (amber after 10 min, red after 20), order code and name, pickup/delivery, drinks, total, a coloured status, and flags (Cash due, Note, Customer says delivered, Receipt failed). Click a row for phone, address, each drink in plain words, fees, receipts and **Cancel order**. Cancelling keeps the order (the customer sees "Order cancelled"; it no longer counts as a sale on the dashboard). **Delete permanently** is shown to the superadmin only, and the server enforces that (`requireSuperadmin`).
+- Each row has one **next step** button that follows the status rules in `services/orderStatusMachine.js`: Start crafting → Out for delivery → Arrived → Approve delivered (pickup: Start crafting → Ready for pickup), then **Cash collected**. Final and money actions ask for confirmation.
+- **Active** (default, oldest first: still being made, or cash not yet collected), **Done** and **All** views with counts, and a search by order code or customer name (`GET /api/orders/admin/all?view=active&q=...`). The Orders tab shows the active count, and the browser tab title shows "(n) New order" when orders arrive while you're elsewhere.
+- The list refreshes every 15 s but only redraws when something changed, so an open row or receipt stays open.
+
 ### Admin and staff capabilities
 
 - **Staff authorization:** Staff and administrators can use the order-status endpoint for the allowed preparation states.
 - **Administrator authorization:** Admin routes require a linked administrator account authenticated through Supabase Auth, an AAL2 (MFA-verified) session, and the administrator-approved TOTP factor.
-- **Order operations:** Administrators can view paginated orders, advance order handling through the dashboard, approve delivery as delivered, verify pickup readiness, and delete orders.
+- **Order operations:** Administrators can view paginated orders, advance order handling through the dashboard, approve delivery as delivered, verify pickup readiness, and cancel orders (the superadmin can also delete them permanently).
 - **Receipt operations:** Administrators can view or download available receipts and retry receipt generation when an order’s receipt is unavailable or failed.
 - **Automatic refresh:** The dashboard polls for orders every 15 seconds and refreshes when the browser tab becomes visible or focused. A manual refresh control is also available. This is polling, not push/realtime delivery.
 

@@ -182,6 +182,9 @@
         const drink = quote?.items[0];
         const showCents = (cents) => (quote ? moneyFromCents(cents) : PRICE_PLACEHOLDER);
         $("#drink-price").textContent = drink ? moneyFromCents(drink.basePriceCents) : PRICE_PLACEHOLDER;
+        $("#creation-price").textContent = drink
+            ? moneyFromCents(drink.basePriceCents + drink.modifiersCents)
+            : PRICE_PLACEHOLDER;
         $("#modifier-price").textContent = drink ? moneyFromCents(drink.modifiersCents) : PRICE_PLACEHOLDER;
         $("#delivery-fee").textContent = showCents(quote?.pricing.deliveryFeeCents);
         $("#service-fee").textContent = showCents(quote?.pricing.serviceFeeCents);
@@ -423,6 +426,9 @@
         const drawer = $("#cart-drawer");
         drawer.setAttribute("open", "");
         drawer.setAttribute("aria-hidden", "false");
+        // Modal: the drawer becomes reachable and the page behind it does not.
+        drawer.inert = false;
+        $(".shell").inert = true;
         $("#drawer-backdrop").hidden = false;
         requestAnimationFrame(() => $("#drawer-backdrop").classList.add("visible"));
         $("#close-cart-button").focus();
@@ -432,6 +438,9 @@
         const drawer = $("#cart-drawer");
         drawer.removeAttribute("open");
         drawer.setAttribute("aria-hidden", "true");
+        // Closed: its buttons leave the Tab order (it is only slid off-screen).
+        drawer.inert = true;
+        $(".shell").inert = false;
         $("#drawer-backdrop").classList.remove("visible");
         window.setTimeout(() => {
             $("#drawer-backdrop").hidden = true;
@@ -440,14 +449,30 @@
             drawerReturnFocus.focus();
     }
 
-    // Text only, so a quote arriving while the dialog is open never touches the form fields.
+    // Summary only, so a quote arriving while the dialog is open never touches the form fields.
+    // Every fee is listed, so the customer sees exactly what makes up the total before paying.
     function renderCheckoutSummaryText() {
         const count = state.cartItems.length;
-        const pricesText = latestCartQuote
-            ? `${moneyFromCents(latestCartQuote.pricing.subtotalCents)} drinks subtotal · total ${moneyFromCents(latestCartQuote.pricing.totalCents)}`
-            : "calculating total…";
-        $("#checkout-summary").textContent =
-            `${count} drink${count === 1 ? "" : "s"} · ${pricesText} · ${getEstimatedEta(state, count)}`;
+        const summary = $("#checkout-summary");
+        const rows = [[`${count} drink${count === 1 ? "" : "s"}`, getEstimatedEta(state, count)]];
+        const pricing = latestCartQuote?.pricing;
+        if (pricing) {
+            rows.push(["Drinks", moneyFromCents(pricing.subtotalCents)]);
+            if (pricing.deliveryFeeCents) rows.push(["Delivery fee", moneyFromCents(pricing.deliveryFeeCents)]);
+            rows.push(["Service fee (8%)", moneyFromCents(pricing.serviceFeeCents)]);
+            if (pricing.tipCents) rows.push(["Tip", moneyFromCents(pricing.tipCents)]);
+            rows.push(["Total", moneyFromCents(pricing.totalCents)]);
+            rows.push(["Includes VAT (12%)", moneyFromCents(pricing.taxCents)]);
+        } else rows.push(["Total", "calculating…"]);
+        summary.replaceChildren(
+            ...rows.flatMap(([label, value]) => {
+                const term = document.createElement("dt");
+                term.textContent = label;
+                const detail = document.createElement("dd");
+                detail.textContent = value;
+                return [term, detail];
+            })
+        );
         // Wording comes from the server (services/paymentService.js) so it matches the receipt.
         $("#checkout-payment-note").textContent = latestCartQuote?.paymentInstruction || "";
     }
@@ -460,39 +485,75 @@
         $("#checkout-address").value = state.deliveryAddress;
     }
 
+    function showCheckoutError(message) {
+        const error = $("#checkout-error");
+        error.textContent = message;
+        error.hidden = !message;
+    }
+
     function openCheckout() {
         if (!state.cartItems.length) return;
+        showCheckoutError("");
         updateCheckoutSummary();
         closeCart();
         $("#checkout-dialog").showModal();
     }
 
+    // True for finished orders, including cancelled ones (tracking stops polling).
     function isFulfillmentComplete(order) {
+        if (order.status === "Cancelled") return true;
         return order.fulfillmentMethod === "pickup"
             ? order.status === "Ready for Pickup"
             : order.status === "Delivered";
     }
 
-    function setCustomerView(view) {
-        window.clearInterval(trackingPollTimer);
-        $("#customizer-page").hidden = view !== "customizer";
-        $("#order-history-page").hidden = view !== "history";
-        $("#tracking-page").hidden = true;
-        $("#customizer-nav-button").classList.toggle("is-active", view === "customizer");
-        $("#order-history-nav-button").classList.toggle("is-active", view === "history");
-        if (view === "history") {
-            $("#order-history-nav-button").setAttribute("aria-current", "page");
-            $("#customizer-nav-button").removeAttribute("aria-current");
-            loadOrderHistory();
-            $("#order-history-title").focus();
-        } else {
-            $("#customizer-nav-button").setAttribute("aria-current", "page");
-            $("#order-history-nav-button").removeAttribute("aria-current");
-            $("#page-title").focus();
+    // Customer pages reachable from the nav. Each one is a <main data-customer-page>.
+    const CUSTOMER_VIEWS = {
+        customizer: { page: "#customizer-page", button: "#customizer-nav-button", heading: "#page-title" },
+        history: {
+            page: "#order-history-page",
+            button: "#order-history-nav-button",
+            heading: "#order-history-title",
+            onShow: () => loadOrderHistory()
+        },
+        profile: {
+            page: "#profile-page",
+            button: "#profile-nav-button",
+            heading: "#profile-page-title",
+            onShow: () => window.CoffeeLabProfile?.load($("#customer-profile-root"))
+        },
+        support: {
+            page: "#support-page",
+            button: "#support-nav-button",
+            heading: "#support-page-title",
+            onShow: () => window.CoffeeLabSupport?.show("customer")
         }
+    };
+
+    function hideCustomerPages() {
+        document.querySelectorAll("[data-customer-page]").forEach((page) => {
+            page.hidden = true;
+        });
+    }
+
+    function setCustomerView(view) {
+        const selected = CUSTOMER_VIEWS[view] || CUSTOMER_VIEWS.customizer;
+        window.clearInterval(trackingPollTimer);
+        hideCustomerPages();
+        $(selected.page).hidden = false;
+        for (const option of Object.values(CUSTOMER_VIEWS)) {
+            const button = $(option.button);
+            if (!button) continue;
+            button.classList.toggle("is-active", option === selected);
+            if (option === selected) button.setAttribute("aria-current", "page");
+            else button.removeAttribute("aria-current");
+        }
+        selected.onShow?.();
+        $(selected.heading).focus();
     }
 
     function getHistoryFulfillmentStatus(order) {
+        if (order.status === "Cancelled") return { label: "Cancelled", complete: false };
         if (order.fulfillmentMethod === "pickup") {
             return order.status === "Ready for Pickup"
                 ? { label: "Ready for pickup", complete: true }
@@ -586,55 +647,89 @@
         }
     }
 
+    // Customer-facing steps; statuses match services/orderStatusMachine.js.
+    const DELIVERY_STEPS = [
+        { status: "Received", label: "Order received", headline: "Order placed" },
+        { status: "Crafting", label: "Being made", headline: "Your coffee is being made" },
+        { status: "Out for Delivery", label: "On the way", headline: "Your coffee is on its way" },
+        { status: "Arrived", label: "Arrived", headline: "Your coffee has arrived" },
+        { status: "Delivered", label: "Delivered", headline: "Delivered" }
+    ];
+    const PICKUP_STEPS = [
+        { status: "Received", label: "Order received", headline: "Order placed" },
+        { status: "Crafting", label: "Being made", headline: "Your coffee is being made" },
+        { status: "Ready for Pickup", label: "Ready for pickup", headline: "Ready for pickup" }
+    ];
+
     function renderTracking() {
         const order = state.orderStatus;
         if (!order) return;
         $("#tracking-order-number").textContent = order.number;
-        const isComplete = isFulfillmentComplete(order);
+        const isCancelled = order.status === "Cancelled";
+        const isComplete = isFulfillmentComplete(order) && !isCancelled;
         const isDelivery = order.fulfillmentMethod === "delivery";
         const completionLabel = isDelivery ? "Delivered" : "Ready for pickup";
-        $("#tracking-eyebrow").textContent = isDelivery ? "Your coffee is on its way" : "Pickup order";
-        $("#tracking-eta").textContent = isComplete
-            ? isDelivery
-                ? "Your delivery has been verified by Coffee Lab."
-                : "Your order is ready for pickup."
-            : isDelivery
-              ? "We’ll update this page once delivery is verified."
-              : "We’ll update this page once your order is ready for pickup.";
+        const steps = isDelivery ? DELIVERY_STEPS : PICKUP_STEPS;
+        const currentIndex = Math.max(
+            0,
+            steps.findIndex((step) => step.status === order.status)
+        );
+        $("#order-steps").replaceChildren(
+            ...steps.map((step, index) => {
+                const item = document.createElement("li");
+                item.textContent = step.label;
+                item.dataset.state = index < currentIndex ? "done" : index === currentIndex ? "current" : "todo";
+                if (index === currentIndex) item.setAttribute("aria-current", "step");
+                return item;
+            })
+        );
+        const current = steps[currentIndex];
+        $("#order-steps").hidden = isCancelled;
+        $("#tracking-eyebrow").textContent = isCancelled ? "Order cancelled" : current.headline;
+        $("#tracking-eta").textContent = isCancelled
+            ? "Coffee Lab cancelled this order. If you didn't expect this, please contact the shop."
+            : isComplete
+              ? isDelivery
+                  ? "Enjoy your coffee!"
+                  : "Come by the counter; we'll have it waiting."
+              : "This page updates by itself as your order moves along.";
         $("#fulfillment-progress-card").setAttribute(
             "aria-label",
             isDelivery ? "Delivery confirmation" : "Pickup confirmation"
         );
         $("#fulfillment-progress").classList.toggle("is-complete", isComplete);
+        // The steps above already show progress; this line is the final ✓ only.
+        $("#fulfillment-progress").hidden = !isComplete;
         $("#fulfillment-progress-icon").textContent = isComplete ? "✓" : "•";
-        $("#fulfillment-progress-label").textContent = isComplete
-            ? completionLabel
-            : isDelivery
-              ? "Not yet delivered"
-              : "Not yet ready for pickup";
-        $("#report-delivered-button").hidden = !isDelivery || isComplete || order.deliveryReported;
+        $("#fulfillment-progress-label").textContent = isComplete ? completionLabel : current.label;
+        // Only once the order has left the shop does "I've received it" make sense.
+        const hasLeftShop = ["Out for Delivery", "Arrived"].includes(order.status);
+        $("#report-delivered-button").hidden =
+            !isDelivery || isComplete || isCancelled || order.deliveryReported || !hasLeftShop;
         $("#report-delivered-button").disabled = Boolean(order.deliveryReportPending);
         $("#tracking-status-message").textContent = isComplete
             ? isDelivery
-                ? "Your delivery was approved by an administrator."
-                : "An administrator verified that your order is ready for pickup."
+                ? "Coffee Lab confirmed your delivery."
+                : "Your order is ready at the counter."
             : order.deliveryReportError
-              ? `Could not report delivery: ${order.deliveryReportError}`
+              ? `We couldn't save that: ${order.deliveryReportError}`
               : order.deliveryReported
-                ? "Thanks for letting us know. Your delivery report is waiting for administrator verification."
-                : isDelivery
-                  ? "The green checkmark appears after an administrator verifies your delivery."
-                  : "The green checkmark appears after an administrator verifies that your order is ready for pickup.";
+                ? "Thanks for letting us know! We'll confirm it shortly."
+                : "";
         const receiptStatus = order.receiptStatus || "unavailable";
         const receiptMessages = {
-            pending: "Your digital receipt is ready to generate.",
+            pending: order.receiptQueuedAt
+                ? "Preparing your receipt… it appears here in a moment."
+                : "Your digital receipt is ready to generate.",
             available: "Your receipt image is ready to view, and the PDF is ready to download.",
             failed: "We could not prepare your receipt. You can try again.",
             unavailable: "This receipt has not been saved yet. You can try generating it again."
         };
         $("#receipt-message").textContent = receiptMessages[receiptStatus] || receiptMessages.failed;
         $("#download-receipt-button").hidden = receiptStatus !== "available";
-        $("#retry-receipt-button").hidden = !["pending", "failed", "unavailable"].includes(receiptStatus);
+        $("#retry-receipt-button").hidden =
+            !["pending", "failed", "unavailable"].includes(receiptStatus) ||
+            (receiptStatus === "pending" && Boolean(order.receiptQueuedAt));
         $("#retry-receipt-button").textContent = receiptStatus === "pending" ? "Generate receipt" : "Try receipt again";
         const receiptPreview = $("#receipt-preview-image");
         if (receiptStatus === "available" && order.id) {
@@ -650,8 +745,7 @@
     }
 
     function showTracking() {
-        $("#customizer-page").hidden = true;
-        $("#order-history-page").hidden = true;
+        hideCustomerPages();
         $("#tracking-page").hidden = false;
         $("#back-to-customizer-button").textContent =
             historyReturnView === "history" ? "Back to order history" : "Back to coffee lab";
@@ -661,11 +755,16 @@
         if (state.orderStatus && !isFulfillmentComplete(state.orderStatus)) {
             refreshTrackingStatus();
             trackingPollTimer = window.setInterval(refreshTrackingStatus, 20000);
+            // A fresh order's receipt is usually ready within seconds; check sooner than the 20 s poll.
+            if (state.orderStatus?.receiptQueuedAt)
+                [3000, 8000].forEach((ms) => window.setTimeout(refreshTrackingStatus, ms));
         }
     }
 
     $("#customizer-nav-button").addEventListener("click", () => setCustomerView("customizer"));
     $("#order-history-nav-button").addEventListener("click", () => setCustomerView("history"));
+    $("#profile-nav-button").addEventListener("click", () => setCustomerView("profile"));
+    $("#support-nav-button").addEventListener("click", () => setCustomerView("support"));
     $("#refresh-order-history-button").addEventListener("click", loadOrderHistory);
     $("#order-history-list").addEventListener("click", (event) => {
         const button = event.target.closest("[data-history-order-id]");
@@ -690,14 +789,27 @@
             const result = await response.json();
             if (!response.ok) throw new Error(result.error || `Tracking request failed (${response.status}).`);
             if (
-                !["Received", "Crafting", "Out for Delivery", "Arrived", "Delivered", "Ready for Pickup"].includes(
-                    result.order.status
-                )
+                ![
+                    "Received",
+                    "Crafting",
+                    "Out for Delivery",
+                    "Arrived",
+                    "Delivered",
+                    "Ready for Pickup",
+                    "Cancelled"
+                ].includes(result.order.status)
             ) {
                 throw new Error("The server returned an unknown order status.");
             }
             state.orderStatus.status = result.order.status;
             state.orderStatus.receiptStatus = result.order.receiptStatus || state.orderStatus.receiptStatus;
+            // Stop saying "preparing" once it's ready, or after a minute (then offer the button).
+            if (
+                state.orderStatus.receiptStatus !== "pending" ||
+                Date.now() - (state.orderStatus.receiptQueuedAt || 0) > 60000
+            ) {
+                state.orderStatus.receiptQueuedAt = null;
+            }
             state.orderStatus.deliveryReported = Boolean(result.order.deliveryReported);
             renderTracking();
             if (isFulfillmentComplete(state.orderStatus)) window.clearInterval(trackingPollTimer);
@@ -1113,6 +1225,7 @@
             address.setCustomValidity("");
         }
         const submitButton = $("#checkout-form button[type='submit']");
+        showCheckoutError("");
         submitButton.disabled = true;
         submitButton.textContent = "Placing order…";
         try {
@@ -1146,6 +1259,8 @@
                 deliveryAddress: state.deliveryAddress,
                 itemCount: result.order.itemCount,
                 receiptStatus: result.order.receiptStatus || "unavailable",
+                // Built in the background; the tracking page checks back until it's ready.
+                receiptQueuedAt: result.order.receiptStatus === "pending" ? Date.now() : null,
                 deliveryReported: false
             };
             historyReturnView = "customizer";
@@ -1155,7 +1270,8 @@
             render();
             showTracking();
         } catch (error) {
-            setNotice(`Could not place your order: ${error.message}`);
+            // Shown inside the dialog: the page notice is hidden behind the modal.
+            showCheckoutError(`Your order wasn't placed: ${error.message} Please try again.`);
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = "Place order";

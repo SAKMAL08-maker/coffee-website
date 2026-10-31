@@ -128,6 +128,26 @@ function buildCarts(drinks, cartCount) {
 
 const drinkMatrix = buildDrinkMatrix();
 
+// Intended changes since the legacy code (2026-10-31): prices include 12% VAT instead of adding it,
+// and the default tip is 0. Everything else (drink prices, fees, tips, validation) must still match.
+function currentRules(legacy) {
+    const { subtotal_cents, delivery_fee_cents, service_fee_cents, tip_percent, tip_cents } = legacy.pricing;
+    const vatable = subtotal_cents + delivery_fee_cents + service_fee_cents;
+    return {
+        lineItems: legacy.lineItems,
+        pricing: {
+            subtotal_cents,
+            delivery_fee_cents,
+            service_fee_cents,
+            tax_cents: Math.round((vatable * TAX_BASIS_POINTS) / (10000 + TAX_BASIS_POINTS)),
+            vat_inclusive: true,
+            tip_percent,
+            tip_cents,
+            total_cents: vatable + tip_cents
+        }
+    };
+}
+
 test("every single drink prices identically to the legacy code, pickup and delivery, all tips", () => {
     let comparisons = 0;
     for (const drink of drinkMatrix)
@@ -135,7 +155,7 @@ test("every single drink prices identically to the legacy code, pickup and deliv
             for (const tipPercent of TIP_PERCENTS) {
                 assert.deepStrictEqual(
                     calculateOrderPricing([drink], fulfillmentMethod, tipPercent),
-                    legacyCalculateOrderPricing([drink], fulfillmentMethod, tipPercent),
+                    currentRules(legacyCalculateOrderPricing([drink], fulfillmentMethod, tipPercent)),
                     `drink ${JSON.stringify(drink.configuration)} ${fulfillmentMethod} tip ${tipPercent}`
                 );
                 comparisons += 1;
@@ -149,14 +169,17 @@ test("multi-drink carts (1-20 items) price identically to the legacy code, picku
             for (const tipPercent of TIP_PERCENTS) {
                 assert.deepStrictEqual(
                     calculateOrderPricing(cart, fulfillmentMethod, tipPercent),
-                    legacyCalculateOrderPricing(cart, fulfillmentMethod, tipPercent)
+                    currentRules(legacyCalculateOrderPricing(cart, fulfillmentMethod, tipPercent))
                 );
             }
 });
 
 test("default tip and validation errors match the legacy code", () => {
     const drink = drinkMatrix[0];
-    assert.deepStrictEqual(calculateOrderPricing([drink], "pickup"), legacyCalculateOrderPricing([drink], "pickup"));
+    assert.deepStrictEqual(
+        calculateOrderPricing([drink], "pickup"),
+        currentRules(legacyCalculateOrderPricing([drink], "pickup", 0))
+    );
     const invalidCalls = [
         [[], "pickup", 15],
         [Array(21).fill(drink), "pickup", 15],
@@ -189,6 +212,7 @@ test("the browser quote reports the same totals checkout will save, with a consi
                 deliveryFeeCents: saved.pricing.delivery_fee_cents,
                 serviceFeeCents: saved.pricing.service_fee_cents,
                 taxCents: saved.pricing.tax_cents,
+                vatInclusive: true,
                 tipPercent: saved.pricing.tip_percent,
                 tipCents: saved.pricing.tip_cents,
                 totalCents: saved.pricing.total_cents

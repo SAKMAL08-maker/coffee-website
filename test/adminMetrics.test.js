@@ -137,3 +137,25 @@ test("other database errors are not hidden by the fallback", async () => {
     const fakeSupabase = { rpc: async () => ({ data: null, error: { code: "57014", message: "timeout" } }) };
     await assert.rejects(getAdminMetrics(fakeSupabase, { days: 7, now: NOW }), { code: "57014" });
 });
+
+test("cancelled orders are not counted as sales", () => {
+    const at = "2026-10-30T02:00:00.000Z";
+    const orders = [
+        {
+            id: "a",
+            created_at: at,
+            status: "Delivered",
+            fulfillment_method: "delivery",
+            pricing: { total_cents: 30000 }
+        },
+        { id: "b", created_at: at, status: "Cancelled", fulfillment_method: "pickup", pricing: { total_cents: 99900 } }
+    ];
+    const items = [
+        { order_id: "a", classification: "Latte", configuration: {} },
+        { order_id: "b", classification: "Mocha", configuration: {} }
+    ];
+    const counted = countRows(orders, items);
+    assert.equal(counted.orders, 1);
+    assert.equal(counted.drinks, 1);
+    assert.equal(counted.revenueCents, 30000);
+});

@@ -61,7 +61,14 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="admin-panel-dashboard"[^>]*hidden/);
         assert.match(html, /id="admin-panel-accounts"[^>]*hidden/);
         assert.match(html, /src="\/js\/adminTabs\.js"/);
-        assert.match(html, /id="admin-access-badge"[^>]*hidden/);
+        assert.match(html, /id="admin-tab-accounts-badge"[^>]*hidden/);
+        assert.match(html, /id="admin-tab-orders-badge"[^>]*hidden/);
+        assert.equal(html.match(/id="admin-access-badge"/g).length, 1, "badge ids must be unique");
+        assert.match(html, /id="order-search"/);
+        // The search goes into a PostgREST or() filter, so its syntax characters are refused up front.
+        assert.equal((await fetch(`${baseUrl}/api/orders/admin/all?q=a,status.eq.x)`)).status, 400);
+        assert.equal((await fetch(`${baseUrl}/api/orders/admin/all?view=everything`)).status, 400);
+        assert.equal((await fetch(`${baseUrl}/api/orders/admin/all?view=active&q=CL-AB12`)).status, 401);
         assert.equal((await fetch(`${baseUrl}/api/superadmin/accounts`)).status, 401);
         const incompleteSuperadminLogin = await fetch(`${baseUrl}/api/users/superadmin/login`, {
             method: "POST",
@@ -77,6 +84,20 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="admin-mfa-enroll"/);
         assert.match(html, /id="recovery-form"/);
         assert.match(html, /id="logout-button"/);
+        // Installable app: manifest, service worker at the root scope, offline page, icons.
+        assert.match(html, /<link rel="manifest" href="\/manifest\.webmanifest"/);
+        const manifestResponse = await fetch(`${baseUrl}/manifest.webmanifest`);
+        assert.equal(manifestResponse.status, 200);
+        assert.match(manifestResponse.headers.get("content-type"), /application\/manifest\+json/);
+        const manifest = await manifestResponse.json();
+        assert.equal(manifest.display, "standalone");
+        assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "maskable"));
+        for (const icon of manifest.icons) assert.equal((await fetch(`${baseUrl}${icon.src}`)).status, 200);
+        const serviceWorker = await fetch(`${baseUrl}/sw.js`);
+        assert.equal(serviceWorker.status, 200);
+        assert.match(serviceWorker.headers.get("content-type"), /javascript/);
+        assert.match(await serviceWorker.text(), /url\.pathname\.startsWith\("\/api\/"\)/, "sw must skip /api");
+        assert.equal((await fetch(`${baseUrl}/offline.html`)).status, 200);
         assert.match(html, /id="receipt-message"/);
         assert.match(html, /id="receipt-preview-image"/);
         assert.match(html, /id="download-receipt-button"/);
@@ -85,10 +106,11 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="fulfillment-progress-card"/);
         assert.match(html, /class="intro" aria-labelledby="page-title"/);
         assert.doesNotMatch(html, /Your delivery partner/);
-        assert.match(html, /id="customizer-page" hidden/);
+        assert.match(html, /<main id="customizer-page"[^>]*\shidden[\s>]/);
         assert.match(html, /id="customer-nav"/);
         assert.match(html, /id="order-history-nav-button"/);
-        assert.match(html, /id="order-history-page" hidden/);
+        assert.match(html, /id="order-history-page"\s+data-customer-page\s+hidden/);
+        assert.match(html, /id="profile-page"\s+data-customer-page\s+hidden/);
         assert.match(html, /id="order-history-list"/);
         assert.match(html, /src="\/js\/auth\.js"/);
         assert.ok(html.indexOf('src="/js/admin.js"') < html.indexOf('src="/js/auth.js"'));
@@ -97,13 +119,18 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         const adminScript = await adminFrontend.text();
         assert.match(adminScript, /window\.CoffeeLabAdmin = \{ startForUser \}/);
         assert.match(adminScript, /Approve delivered/);
-        assert.match(adminScript, /Verify ready for pickup/);
+        assert.match(adminScript, /approve-pickup/);
         assert.match(adminScript, /generate-receipt/);
-        assert.match(adminScript, /View receipt image/);
+        assert.match(adminScript, /View receipt/);
+        // Orders move forward one step at a time through PATCH /status (Start crafting, Out for delivery...).
+        assert.match(adminScript, /Start crafting/);
+        assert.match(adminScript, /path: "\/status"/);
         const appFrontend = await fetch(`${baseUrl}/js/app.js`);
         assert.equal(appFrontend.status, 200);
         const appScript = await appFrontend.text();
-        assert.match(appScript, /Not yet ready for pickup/);
+        // Tracking shows each step, matching services/orderStatusMachine.js.
+        assert.match(appScript, /Being made/);
+        assert.match(appScript, /Out for Delivery/);
         assert.match(appScript, /Ready for Pickup/);
         assert.match(appScript, /\/api\/orders\/mine/);
         assert.match(appScript, /Delivered/);

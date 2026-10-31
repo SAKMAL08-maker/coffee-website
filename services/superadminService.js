@@ -93,12 +93,16 @@ async function listAccounts(supabase, now = Date.now()) {
         if (!latest || session.created_at > latest) activeSessions.set(session.user_id, session.created_at);
     }
 
-    // Admins sign in through Supabase Auth; use its last sign-in time.
+    // Admins sign in through Supabase Auth; use its last sign-in time. Looked up in parallel
+    // (one request per linked admin), so the page doesn't wait for them one after another.
     const adminSignIns = new Map();
-    for (const account of accounts.filter((candidate) => candidate.supabase_auth_user_id)) {
-        const { data, error: authError } = await supabase.auth.admin.getUserById(account.supabase_auth_user_id);
-        if (!authError && data?.user?.last_sign_in_at) adminSignIns.set(account.id, data.user.last_sign_in_at);
-    }
+    const linked = accounts.filter((candidate) => candidate.supabase_auth_user_id);
+    const lookups = await Promise.all(
+        linked.map((account) => supabase.auth.admin.getUserById(account.supabase_auth_user_id))
+    );
+    lookups.forEach(({ data, error: authError }, index) => {
+        if (!authError && data?.user?.last_sign_in_at) adminSignIns.set(linked[index].id, data.user.last_sign_in_at);
+    });
 
     return accounts.map((account) => {
         const sessionStart = activeSessions.get(account.id) || null;

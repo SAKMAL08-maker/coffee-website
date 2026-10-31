@@ -258,14 +258,78 @@ const schemas = {
     },
     adminOrders: {
         params: emptyParams,
-        query: z.object({ page: z.coerce.number().int().min(1).max(100000).default(1) }).strict()
+        query: z
+            .object({
+                page: z.coerce.number().int().min(1).max(100000).default(1),
+                // active = still needs work (not final, or cash not yet collected); done = finished.
+                view: z.enum(["active", "done", "all"]).default("all"),
+                // Order code or customer name. Letters, digits, spaces and hyphens only, because
+                // the value goes into a PostgREST or() filter where , . ( ) * : are syntax.
+                q: z
+                    .string()
+                    .trim()
+                    .max(40)
+                    .regex(/^[\p{L}\p{N} -]*$/u)
+                    .optional()
+            })
+            .strict()
     },
     status: {
         body: z.object({ status: z.enum(["Received", "Crafting", "Out for Delivery", "Arrived"]) }).strict(),
         params: z.object({ orderId: uuid }).strict(),
         query: emptyQuery
     },
-    empty: { query: emptyQuery, params: emptyParams }
+    empty: { query: emptyQuery, params: emptyParams },
+    // The 280-character limit is applied after cleaning (services/profileService.js cleanBio).
+    profileUpdate: {
+        body: z.object({ bio: z.string().max(2000) }).strict(),
+        query: emptyQuery,
+        params: emptyParams
+    },
+    // Lengths are re-checked after cleaning in services/supportService.js.
+    supportTicketCreate: {
+        body: z
+            .object({ subject: z.string().max(400), message: z.string().max(6000), orderId: uuid.optional() })
+            .strict(),
+        query: emptyQuery,
+        params: emptyParams
+    },
+    supportStaffList: {
+        query: z.object({ status: z.enum(["open", "closed", "all"]).default("open") }).strict(),
+        params: emptyParams
+    },
+    supportMessages: {
+        params: z.object({ ticketId: uuid }).strict(),
+        query: z
+            .object({
+                after: z
+                    .string()
+                    .regex(/^\d{1,15}$/)
+                    .optional()
+            })
+            .strict()
+    },
+    supportReply: {
+        params: z.object({ ticketId: uuid }).strict(),
+        query: emptyQuery,
+        body: z.object({ body: z.string().max(6000) }).strict()
+    },
+    supportTicketStatus: {
+        params: z.object({ ticketId: uuid }).strict(),
+        query: emptyQuery,
+        body: z.object({ status: z.enum(["open", "closed"]) }).strict()
+    },
+    avatar: {
+        params: z.object({ userId: uuid }).strict(),
+        query: z
+            .object({
+                v: z
+                    .string()
+                    .regex(/^\d{1,15}$/)
+                    .optional()
+            })
+            .strict()
+    }
 };
 
 module.exports = schemas;

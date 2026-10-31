@@ -7,7 +7,7 @@
  * and anything not listed is rejected.
  *
  * The status names match the orders_status_check constraint in
- * supabase/migrations/20261028000000_pickup_approval.sql.
+ * supabase/migrations/20261108000000_cancelled_orders_fk_indexes.sql.
  */
 const ORDER_STATUS = Object.freeze({
     RECEIVED: "Received",
@@ -15,7 +15,9 @@ const ORDER_STATUS = Object.freeze({
     OUT_FOR_DELIVERY: "Out for Delivery",
     ARRIVED: "Arrived",
     DELIVERED: "Delivered",
-    READY_FOR_PICKUP: "Ready for Pickup"
+    READY_FOR_PICKUP: "Ready for Pickup",
+    // Set by an admin instead of deleting; the record stays, but it isn't a sale.
+    CANCELLED: "Cancelled"
 });
 
 // Moves staff may make through PATCH /api/orders/:orderId/status, one step at a time.
@@ -37,7 +39,7 @@ const APPROVAL_STATUS = Object.freeze({
     pickup: ORDER_STATUS.READY_FOR_PICKUP
 });
 
-const FINAL_STATUSES = Object.freeze([ORDER_STATUS.DELIVERED, ORDER_STATUS.READY_FOR_PICKUP]);
+const FINAL_STATUSES = Object.freeze([ORDER_STATUS.DELIVERED, ORDER_STATUS.READY_FOR_PICKUP, ORDER_STATUS.CANCELLED]);
 
 function isKnownStatus(status) {
     return Object.values(ORDER_STATUS).includes(status);
@@ -63,6 +65,11 @@ function canApproveFulfillment(fulfillmentMethod, fromStatus) {
     return Object.hasOwn(APPROVAL_STATUS, fulfillmentMethod) && !isFinalStatus(fromStatus);
 }
 
+/** An order can be cancelled until it is finished (delivered, ready for pickup, or already cancelled). */
+function canCancel(fromStatus) {
+    return isKnownStatus(fromStatus) && !isFinalStatus(fromStatus);
+}
+
 function getApprovalStatus(fulfillmentMethod) {
     return APPROVAL_STATUS[fulfillmentMethod];
 }
@@ -73,6 +80,7 @@ module.exports = {
     isKnownStatus,
     isFinalStatus,
     canStaffAdvance,
+    canCancel,
     canApproveFulfillment,
     getApprovalStatus
 };
