@@ -1063,11 +1063,6 @@ dialog::backdrop {
     width: 100%;
     margin-top: 12px;
 }
-.checkout-summary {
-    padding: 14px;
-    border-radius: 12px;
-    background: #f8f4ee;
-}
 /* Cash is the only payment method, so make "how to pay" impossible to miss. */
 .checkout-payment-note {
     margin: 10px 0 0;
@@ -2902,4 +2897,118 @@ dialog::backdrop {
 }
 .admin-tab-badge[hidden] {
     display: none;
+}
+/* Price on the main builder card, so it's visible without opening the details view. */
+.creation-price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+.creation-price strong {
+    color: var(--ink);
+    font-size: 1.15rem;
+    font-variant-numeric: tabular-nums;
+}
+/* Itemized checkout total. */
+.checkout-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 16px;
+    margin: 12px 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--cream);
+}
+.checkout-summary dt {
+    color: var(--muted);
+}
+.checkout-summary dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+.checkout-summary dt:first-of-type,
+.checkout-summary dd:first-of-type {
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    font-weight: 700;
+}
+.checkout-summary dt:last-of-type,
+.checkout-summary dd:last-of-type {
+    padding-top: 6px;
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+    font-weight: 800;
+}
+.checkout-error {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border: 1px solid #a3261b;
+    border-radius: 10px;
+    background: #fdecea;
+    color: #8a1f15;
+    font-weight: 600;
+}
+:root[data-theme="dark"] .checkout-error {
+    border-color: #ff9b8f;
+    background: #3a1d1a;
+    color: #ffc9c2;
+}
+.checkout-error[hidden] {
+    display: none;
+}
+/* Order progress steps on the tracking page. */
+.order-steps {
+    display: flex;
+    gap: 6px;
+    margin: 12px 0 16px;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+}
+.order-steps li {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-top: 10px;
+    border-top: 4px solid var(--line);
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    counter-increment: step;
+}
+.order-steps li::before {
+    content: counter(step) ". ";
+}
+.order-steps li[data-state="done"] {
+    border-top-color: var(--green);
+    color: var(--ink);
+}
+.order-steps li[data-state="done"]::before {
+    content: "✓ ";
+}
+.order-steps li[data-state="current"] {
+    border-top-color: var(--coffee);
+    color: var(--ink);
+    font-weight: 800;
+}
+@media (max-width: 480px) {
+    .order-steps {
+        flex-direction: column;
+        gap: 2px;
+    }
+    .order-steps li {
+        padding: 6px 0 6px 10px;
+        border-top: 0;
+        border-left: 4px solid var(--line);
+    }
+    .order-steps li[data-state="done"] {
+        border-left-color: var(--green);
+    }
+    .order-steps li[data-state="current"] {
+        border-left-color: var(--coffee);
+    }
 }

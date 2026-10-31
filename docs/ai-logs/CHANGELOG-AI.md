@@ -317,3 +317,11 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 **Why:** the owner found the single long admin page inconvenient.
 
 **Mistake caught:** the first version saved "Orders" on page load before reading the saved tab, so the remembered tab was always lost. The headless preview showed it, and it was fixed before the PR.
+
+### Customer checkout and tracking (from the review)
+
+- The drink price is now on the main builder card; before, it was only behind a small arrow.
+- Tip: "No tip" comes first and is the default. Before, the tip defaulted to 15%, was also charged on pickup, and had no zero option.
+- Checkout lists every fee (drinks, delivery, 8% service, 12% VAT, tip, total) and shows errors inside the dialog; they used to be hidden behind it. The contradictory "prototype, no payment is processed" line next to "Pay in cash" is gone.
+- Tracking shows real steps: Order received → Being made → On the way → Arrived → Delivered, or → Ready for pickup for pickups. This works now that the admin page moves orders through those steps. "I've received my order" appears only once the order has left the shop.
+- The sign-in screen no longer tells customers about Supabase and authenticator codes.

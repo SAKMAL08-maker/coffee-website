@@ -132,7 +132,7 @@ window.CoffeeLabState = (() => {
         cartItems: [],
         deliveryAddress: "",
         fulfillmentMethod: "delivery",
-        tipPercent: 15,
+        tipPercent: 0,
         customTipPercent: 15,
         orderStatus: null
     };

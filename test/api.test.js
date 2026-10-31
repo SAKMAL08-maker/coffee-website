@@ -103,7 +103,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         const appFrontend = await fetch(`${baseUrl}/js/app.js`);
         assert.equal(appFrontend.status, 200);
         const appScript = await appFrontend.text();
-        assert.match(appScript, /Not yet ready for pickup/);
+        // Tracking shows each step, matching services/orderStatusMachine.js.
+        assert.match(appScript, /Being made/);
+        assert.match(appScript, /Out for Delivery/);
         assert.match(appScript, /Ready for Pickup/);
         assert.match(appScript, /\/api\/orders\/mine/);
         assert.match(appScript, /Delivered/);
