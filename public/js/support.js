@@ -159,6 +159,25 @@
             part("messages").append(item);
         }
 
+        // Automatic note from Coffee Lab, shown right after the customer's opening message in every
+        // ticket (both sides see it, so staff know what the customer was told). Not stored: it isn't a
+        // reply, so it never counts as "answered" or as an admin's support reply.
+        function renderWelcome() {
+            const first = part("messages").firstElementChild;
+            if (!first) return;
+            const item = element("li", "support-system-message");
+            item.setAttribute("aria-label", "Message from Coffee Lab");
+            item.append(
+                element("strong", "", "Coffee Lab"),
+                element(
+                    "p",
+                    "",
+                    "Thank you for using Coffee Lab! You'll be connected with an admin shortly, and they'll reply right here in this chat."
+                )
+            );
+            first.after(item);
+        }
+
         function renderTicket(ticket) {
             part("subject-title").textContent = ticket.subject;
             const who = isStaff && ticket.customer ? `From ${ticket.customer.username} · ` : "";
@@ -206,6 +225,7 @@
                 const result = await request(`/api/support/tickets/${ticketId}/messages`);
                 renderTicket(result.ticket);
                 result.messages.forEach(renderMessage);
+                renderWelcome();
                 part("messages").lastElementChild?.scrollIntoView({ block: "nearest" });
                 state.timer = window.setInterval(pollThread, THREAD_POLL_MS);
                 loadList();
