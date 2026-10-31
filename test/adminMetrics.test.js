@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { summarizeOrders, shopDateKey, getAdminMetrics } = require("../services/adminMetricsService");
+const { summarizeOrders, shopDateKey, getAdminMetrics, countRows } = require("../services/adminMetricsService");
 
 const NOW = new Date("2026-10-31T04:00:00Z"); // noon in Manila
 
@@ -84,10 +84,11 @@ test("an empty range returns zeros instead of dividing by zero", () => {
     assert.equal(result.tabs.find((tab) => tab.id === "orders").bars.length, 30);
 });
 
-test("pages through more than 1000 orders", async () => {
+test("before the migration: falls back to counting in Node and pages past 1000 orders", async () => {
     const allOrders = Array.from({ length: 1500 }, (_, index) => order(`o${index}`, "2026-10-31T01:00:00Z"));
     const requestedRanges = [];
     const fakeSupabase = {
+        rpc: async () => ({ data: null, error: { code: "PGRST202", message: "Could not find admin_order_metrics" } }),
         from(table) {
             const query = {
                 select: () => query,
@@ -105,8 +106,34 @@ test("pages through more than 1000 orders", async () => {
     };
     const result = await getAdminMetrics(fakeSupabase, { days: 7, now: NOW });
     assert.equal(result.totals.orders, 1500);
+    assert.equal(result.source, "node");
     assert.deepEqual(requestedRanges, [
         [0, 999],
         [1000, 1999]
     ]);
+});
+
+test("after the migration: one Postgres call, no rows downloaded, same labels", async () => {
+    const orders = [order("a", "2026-10-31T01:00:00Z")];
+    const items = [item("a", { base: "espresso", milk: "oat", syrups: { caramel: 1 }, sweeteners: ["stevia"] })];
+    let rpcArgs;
+    const fakeSupabase = {
+        rpc: async (name, args) => {
+            rpcArgs = { name, ...args };
+            // The SQL function returns the same raw shape countRows builds.
+            return { data: countRows(orders, items), error: null };
+        },
+        from: () => assert.fail("rows must not be downloaded when the function exists")
+    };
+    const result = await getAdminMetrics(fakeSupabase, { days: 7, now: NOW });
+    assert.equal(result.source, "postgres");
+    assert.equal(rpcArgs.name, "admin_order_metrics");
+    assert.equal(rpcArgs.p_time_zone, "Asia/Manila");
+    assert.equal(rpcArgs.p_since, "2026-10-24T04:00:00.000Z");
+    assert.deepEqual(result, { ...summarizeOrders(orders, items, { days: 7, now: NOW }), source: "postgres" });
+});
+
+test("other database errors are not hidden by the fallback", async () => {
+    const fakeSupabase = { rpc: async () => ({ data: null, error: { code: "57014", message: "timeout" } }) };
+    await assert.rejects(getAdminMetrics(fakeSupabase, { days: 7, now: NOW }), { code: "57014" });
 });

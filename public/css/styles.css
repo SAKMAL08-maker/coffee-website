@@ -2736,3 +2736,55 @@ dialog::backdrop {
         transition: none;
     }
 }
+.admin-access {
+    margin-bottom: 28px;
+    padding: 16px 22px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--paper);
+    box-shadow: var(--shadow);
+}
+.admin-access summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 750;
+}
+.admin-access-title {
+    font-size: 1.05rem;
+}
+.admin-access-badge {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--paper);
+    font-size: 0.75rem;
+}
+.admin-access-list {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+.admin-access-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--cream);
+}
+.admin-access-item .button {
+    margin-left: auto;
+}
+.admin-access-status {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+.admin-access-item[data-state="needs-approval"] .admin-access-status {
+    color: var(--accent);
+    font-weight: 700;
+}

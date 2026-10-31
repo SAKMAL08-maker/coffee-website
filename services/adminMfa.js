@@ -1,5 +1,22 @@
 const { getAdminClient, createServerAuthClient } = require("../config/supabase");
 const { createHash, timingSafeEqual } = require("node:crypto");
+const { isMissingPreapprovalColumn, updateWithPreapproval } = require("./adminApprovalService");
+
+const ADMIN_MFA_COLUMNS =
+    "id, username, role, created_at, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at";
+
+// Reads the admin row, including the in-app approval flag when that migration is
+// applied; before it is, the flag reads as false and only typed keys work.
+async function findAdminAccount(column, value) {
+    const query = (columns) => getAdminClient().from("coffee_users").select(columns).eq(column, value).maybeSingle();
+    let { data, error } = await query(`${ADMIN_MFA_COLUMNS}, admin_mfa_setup_preapproved`);
+    if (isMissingPreapprovalColumn(error)) {
+        ({ data, error } = await query(ADMIN_MFA_COLUMNS));
+        if (data) data.admin_mfa_setup_preapproved = false;
+    }
+    if (error) throw error;
+    return data;
+}
 
 function hashSetupToken(token) {
     return createHash("sha256").update(token).digest("hex");
@@ -25,6 +42,11 @@ function hasActiveSetupAuthorization(account, now = Date.now()) {
     return Boolean(account.admin_mfa_setup_token_hash) && Number.isFinite(expiresAt) && expiresAt > now;
 }
 
+// Approved in the admin page: setup needs no typed key while the authorization is active.
+function hasPreapprovedSetup(account, now = Date.now()) {
+    return account.admin_mfa_setup_preapproved === true && hasActiveSetupAuthorization(account, now);
+}
+
 function isOnlyTrustedFactor(factors, factorId, status = "verified") {
     return (
         factors.length === 1 &&
@@ -39,14 +61,7 @@ function isInvalidPasswordError(error) {
 }
 
 async function startAdminLogin(username, password) {
-    const { data: account, error: accountError } = await getAdminClient()
-        .from("coffee_users")
-        .select(
-            "id, username, role, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at"
-        )
-        .eq("username_key", username.trim().toLowerCase())
-        .maybeSingle();
-    if (accountError) throw accountError;
+    const account = await findAdminAccount("username_key", username.trim().toLowerCase());
     if (!account || account.role !== "admin" || !account.supabase_auth_user_id) return null;
 
     const { data: authUserResult, error: authUserError } = await getAdminClient().auth.admin.getUserById(
@@ -102,6 +117,7 @@ async function startAdminLogin(username, password) {
         session: loginData.session,
         username: account.username,
         setupRequired: true,
+        setupPreapproved: hasPreapprovedSetup(account),
         factorId: null
     };
 }
@@ -131,21 +147,14 @@ async function enrollAdminTotp(accessToken, refreshToken, setupToken) {
     const { authClient, session } = await createMfaSession(accessToken, refreshToken);
     const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(session.access_token);
     if (claimsError) throw claimsError;
-    const { data: account, error: accountError } = await getAdminClient()
-        .from("coffee_users")
-        .select(
-            "id, role, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at"
-        )
-        .eq("supabase_auth_user_id", claimsData.claims.sub)
-        .maybeSingle();
-    if (accountError) throw accountError;
+    const account = await findAdminAccount("supabase_auth_user_id", claimsData.claims.sub);
     if (!account || account.role !== "admin") {
         throw Object.assign(new Error("Administrator access is not permitted."), { statusCode: 403 });
     }
     if (
         account.admin_mfa_factor_id ||
         account.admin_mfa_pending_factor_id ||
-        !hasValidSetupToken(account, setupToken)
+        !(hasValidSetupToken(account, setupToken) || hasPreapprovedSetup(account))
     ) {
         throw Object.assign(
             new Error(
@@ -174,7 +183,8 @@ async function enrollAdminTotp(accessToken, refreshToken, setupToken) {
         .eq("role", "admin")
         .is("admin_mfa_factor_id", null)
         .is("admin_mfa_pending_factor_id", null)
-        .eq("admin_mfa_setup_token_hash", hashSetupToken(setupToken))
+        // Matches the authorization that was checked above (typed key or in-app approval).
+        .eq("admin_mfa_setup_token_hash", account.admin_mfa_setup_token_hash)
         .gt("admin_mfa_setup_token_expires_at", new Date().toISOString())
         .select("id")
         .maybeSingle();
@@ -198,14 +208,7 @@ async function verifyAdminTotp(accessToken, refreshToken, factorId, code) {
     const { authClient, session } = await createMfaSession(accessToken, refreshToken);
     const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(session.access_token);
     if (claimsError) throw claimsError;
-    const { data: account, error: accountError } = await getAdminClient()
-        .from("coffee_users")
-        .select(
-            "id, username, role, created_at, supabase_auth_user_id, admin_mfa_factor_id, admin_mfa_pending_factor_id, admin_mfa_setup_token_hash, admin_mfa_setup_token_expires_at"
-        )
-        .eq("supabase_auth_user_id", claimsData.claims.sub)
-        .maybeSingle();
-    if (accountError) throw accountError;
+    const account = await findAdminAccount("supabase_auth_user_id", claimsData.claims.sub);
     if (!account || account.role !== "admin") {
         throw Object.assign(new Error("Administrator access is not permitted."), { statusCode: 403 });
     }
@@ -251,21 +254,26 @@ async function verifyAdminTotp(accessToken, refreshToken, factorId, code) {
     }
 
     if (isBootstrap) {
-        const { data: approved, error: approvalError } = await getAdminClient()
-            .from("coffee_users")
-            .update({
+        const { data: approved, error: approvalError } = await updateWithPreapproval(
+            (values) =>
+                getAdminClient()
+                    .from("coffee_users")
+                    .update(values)
+                    .eq("id", account.id)
+                    .eq("role", "admin")
+                    .is("admin_mfa_factor_id", null)
+                    .eq("admin_mfa_pending_factor_id", factorId)
+                    .gt("admin_mfa_setup_token_expires_at", new Date().toISOString())
+                    .select("id")
+                    .maybeSingle(),
+            {
                 admin_mfa_factor_id: factorId,
                 admin_mfa_pending_factor_id: null,
                 admin_mfa_setup_token_hash: null,
                 admin_mfa_setup_token_expires_at: null
-            })
-            .eq("id", account.id)
-            .eq("role", "admin")
-            .is("admin_mfa_factor_id", null)
-            .eq("admin_mfa_pending_factor_id", factorId)
-            .gt("admin_mfa_setup_token_expires_at", new Date().toISOString())
-            .select("id")
-            .maybeSingle();
+            },
+            false
+        );
         if (approvalError) throw approvalError;
         if (!approved) {
             throw Object.assign(
@@ -281,6 +289,7 @@ module.exports = {
     hashSetupToken,
     hasValidSetupToken,
     hasActiveSetupAuthorization,
+    hasPreapprovedSetup,
     isOnlyTrustedFactor,
     startAdminLogin,
     createMfaSession,
