@@ -111,8 +111,7 @@
                     cash(stats.cash.recentCents),
                     `${number.format(stats.cash.recent)} orders · all time ${cash(stats.cash.allTimeCents)} from ${number.format(stats.cash.allTime)}`
                 ),
-                pair("Orders cancelled", stats.cancelled),
-                ...(stats.supportReplies ? [pair("Support replies", stats.supportReplies)] : [])
+                pair("Orders cancelled", stats.cancelled)
             ],
             note: stats.trackingSince
                 ? `"Accepted" and "cancelled" are counted from ${formatDate(shortDate, stats.trackingSince)}, when this tracking began.`

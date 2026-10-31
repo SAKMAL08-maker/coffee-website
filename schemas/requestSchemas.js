@@ -286,39 +286,6 @@ const schemas = {
         query: emptyQuery,
         params: emptyParams
     },
-    // Lengths are re-checked after cleaning in services/supportService.js.
-    supportTicketCreate: {
-        body: z
-            .object({ subject: z.string().max(400), message: z.string().max(6000), orderId: uuid.optional() })
-            .strict(),
-        query: emptyQuery,
-        params: emptyParams
-    },
-    supportStaffList: {
-        query: z.object({ status: z.enum(["open", "closed", "all"]).default("open") }).strict(),
-        params: emptyParams
-    },
-    supportMessages: {
-        params: z.object({ ticketId: uuid }).strict(),
-        query: z
-            .object({
-                after: z
-                    .string()
-                    .regex(/^\d{1,15}$/)
-                    .optional()
-            })
-            .strict()
-    },
-    supportReply: {
-        params: z.object({ ticketId: uuid }).strict(),
-        query: emptyQuery,
-        body: z.object({ body: z.string().max(6000) }).strict()
-    },
-    supportTicketStatus: {
-        params: z.object({ ticketId: uuid }).strict(),
-        query: emptyQuery,
-        body: z.object({ status: z.enum(["open", "closed"]) }).strict()
-    },
     avatar: {
         params: z.object({ userId: uuid }).strict(),
         query: z
