@@ -72,7 +72,8 @@ const adminMfaVerifyBody = z
 
 const adminMfaEnrollBody = z
     .object({
-        bootstrapToken: z.string().min(32).max(256)
+        // Optional: an admin approved in the admin page enrolls without a typed key.
+        bootstrapToken: z.string().min(32).max(256).optional()
     })
     .strict();
 
@@ -226,6 +227,14 @@ const schemas = {
         body: emptyBody,
         params: z.object({ orderId: uuid }).strict(),
         query: emptyQuery
+    },
+    adminAccounts: {
+        params: emptyParams,
+        query: emptyQuery
+    },
+    adminApproveSetup: {
+        params: z.object({ username: z.string().regex(/^[A-Za-z0-9_]{3,24}$/) }).strict(),
+        body: z.object({ resetExisting: z.boolean().default(false) }).strict()
     },
     adminMetrics: {
         params: emptyParams,

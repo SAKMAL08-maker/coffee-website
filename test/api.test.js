@@ -44,6 +44,13 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="creation-view-toggle"/);
         assert.match(html, /id="summary-view"[^>]*hidden/);
         assert.match(html, /id="summary-view-toggle"/);
+        // Terms of Use sits beside every Privacy Policy link, and both pages name the contact email.
+        assert.equal(html.match(/href="\/terms\.html"/g)?.length, html.match(/href="\/privacy\.html"/g)?.length);
+        for (const page of ["/terms.html", "/privacy.html"]) {
+            const legal = await fetch(`${baseUrl}${page}`);
+            assert.equal(legal.status, 200);
+            assert.match(await legal.text(), /mailto:coffeelab08@gmail\.com/);
+        }
         assert.match(html, /id="auth-page"/);
         assert.match(html, /id="signup-form"/);
         assert.match(html, /id="login-form"/);
@@ -132,12 +139,32 @@ test("serves the customizer and validates quote and checkout API requests", asyn
             body: JSON.stringify({ bootstrapToken: "a".repeat(32) })
         });
         assert.equal(unauthenticatedAdminMfaEnroll.status, 401);
+        // No key is allowed (an admin approved in the admin page), but a session is still required.
         const missingAdminMfaBootstrapToken = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: "{}"
         });
-        assert.equal(missingAdminMfaBootstrapToken.status, 400);
+        assert.equal(missingAdminMfaBootstrapToken.status, 401);
+        const shortAdminMfaBootstrapToken = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ bootstrapToken: "short" })
+        });
+        assert.equal(shortAdminMfaBootstrapToken.status, 400);
+        assert.equal((await fetch(`${baseUrl}/api/admin/accounts`)).status, 401);
+        const unauthenticatedApproval = await fetch(`${baseUrl}/api/admin/accounts/arthur_admin/approve-setup`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{}"
+        });
+        assert.equal(unauthenticatedApproval.status, 401);
+        const invalidApproval = await fetch(`${baseUrl}/api/admin/accounts/bad name!/approve-setup`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{}"
+        });
+        assert.equal(invalidApproval.status, 400);
         const unauthenticatedAdminMfaVerify = await fetch(`${baseUrl}/api/users/admin/mfa/verify`, {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -186,6 +213,8 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.equal(invalidAdminOrdersPage.status, 400);
         assert.equal((await fetch(`${baseUrl}/api/admin/metrics?days=30`)).status, 401);
         assert.equal((await fetch(`${baseUrl}/api/admin/metrics?days=365`)).status, 400);
+        assert.equal((await fetch(`${baseUrl}/api/admin/orders.csv?days=30`)).status, 401);
+        assert.equal((await fetch(`${baseUrl}/api/admin/orders.csv?days=2`)).status, 400);
         assert.match(html, /id="admin-dashboard"/);
         assert.match(html, /src="\/js\/adminDashboard\.js"/);
         const unauthenticatedAdminReceiptRetry = await fetch(

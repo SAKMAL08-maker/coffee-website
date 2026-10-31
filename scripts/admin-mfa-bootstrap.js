@@ -1,7 +1,7 @@
 require("dotenv").config();
 
-const { createHash, randomBytes } = require("node:crypto");
 const { getAdminClient } = require("../config/supabase");
+const { provisionAdminSetup, SCRIPT_SETUP_TTL_MS } = require("../services/adminApprovalService");
 
 async function bootstrapAdminMfa(username) {
     const normalizedUsername = username.trim().toLowerCase();
@@ -20,51 +20,7 @@ async function bootstrapAdminMfa(username) {
         throw new Error("That username is not a linked Coffee Lab administrator.");
     }
 
-    const { error: lockError } = await supabase
-        .from("coffee_users")
-        .update({
-            admin_mfa_factor_id: null,
-            admin_mfa_pending_factor_id: null,
-            admin_mfa_setup_token_hash: null,
-            admin_mfa_setup_token_expires_at: null,
-            updated_at: new Date().toISOString()
-        })
-        .eq("id", account.id)
-        .eq("role", "admin");
-    if (lockError) throw lockError;
-
-    const { data: factorData, error: factorError } = await supabase.auth.admin.mfa.listFactors({
-        userId: account.supabase_auth_user_id
-    });
-    if (factorError) throw factorError;
-    for (const factor of factorData.factors) {
-        const { error } = await supabase.auth.admin.mfa.deleteFactor({
-            id: factor.id,
-            userId: account.supabase_auth_user_id
-        });
-        if (error) throw error;
-    }
-
-    const setupToken = randomBytes(32).toString("base64url");
-    const setupTokenHash = createHash("sha256").update(setupToken).digest("hex");
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    const { data: updated, error: provisionError } = await supabase
-        .from("coffee_users")
-        .update({
-            admin_mfa_setup_token_hash: setupTokenHash,
-            admin_mfa_setup_token_expires_at: expiresAt,
-            updated_at: new Date().toISOString()
-        })
-        .eq("id", account.id)
-        .eq("role", "admin")
-        .is("admin_mfa_factor_id", null)
-        .is("admin_mfa_pending_factor_id", null)
-        .select("id")
-        .maybeSingle();
-    if (provisionError) throw provisionError;
-    if (!updated) throw new Error("Could not provision the one-time setup authorization.");
-
-    return { username: account.username, setupToken, expiresAt, removedFactors: factorData.factors.length };
+    return provisionAdminSetup(supabase, account, { preapproved: false, ttlMs: SCRIPT_SETUP_TTL_MS });
 }
 
 async function main() {
