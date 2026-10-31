@@ -311,6 +311,9 @@
                 <button class="button customer-nav-button" id="order-history-nav-button" type="button">
                     Order history
                 </button>
+                <button class="button customer-nav-button" id="support-nav-button" type="button">
+                    Support <span class="admin-tab-badge" id="support-nav-badge" hidden></span>
+                </button>
                 <button class="button customer-nav-button" id="profile-nav-button" type="button">Profile</button>
             </nav>
 
@@ -924,6 +927,12 @@
                 <div class="profile-root" id="customer-profile-root"></div>
             </main>
 
+            <main class="support-page" id="support-page" data-customer-page hidden aria-labelledby="support-page-title">
+                <h1 id="support-page-title" tabindex="-1">Support</h1>
+                <p class="field-help">Questions about an order or your account? Chat with the Coffee Lab team here.</p>
+                <div class="support-root" id="customer-support-root"></div>
+            </main>
+
             <main class="tracking-page" id="tracking-page" data-customer-page hidden aria-labelledby="tracking-title">
                 <div class="tracking-heading">
                     <p class="eyebrow" id="tracking-eyebrow">Order placed</p>
@@ -1018,6 +1027,17 @@
                         <span id="admin-tab-accounts-label">Admin access</span>
                         <!-- Number of admins waiting for authenticator approval (set by adminAccess.js). -->
                         <span class="admin-tab-badge" id="admin-tab-accounts-badge" hidden></span>
+                    </button>
+                    <button
+                        class="admin-tab"
+                        id="admin-tab-support"
+                        type="button"
+                        role="tab"
+                        aria-controls="admin-panel-support"
+                        data-admin-tab="support"
+                    >
+                        Support
+                        <span class="admin-tab-badge" id="admin-tab-support-badge" hidden></span>
                     </button>
                     <button
                         class="admin-tab"
@@ -1145,6 +1165,15 @@
                         <ul class="admin-access-list" id="admin-access-list"></ul>
                         <p class="notice" id="admin-access-message" role="status" aria-live="polite"></p>
                     </details>
+                </div>
+                <div
+                    class="admin-panel"
+                    id="admin-panel-support"
+                    role="tabpanel"
+                    aria-labelledby="admin-tab-support"
+                    hidden
+                >
+                    <div class="support-root" id="admin-support-root"></div>
                 </div>
                 <div
                     class="admin-panel"
@@ -1329,6 +1358,102 @@
                 <p class="field-help" data-profile="stats-note"></p>
             </section>
         </template>
+        <template id="support-template">
+            <div class="support-layout">
+                <section class="support-list-panel" aria-label="Tickets">
+                    <div class="support-list-header">
+                        <div class="support-filter" role="group" aria-label="Show tickets" data-support="filter">
+                            <button
+                                class="admin-chart-tab"
+                                type="button"
+                                data-support-filter="open"
+                                aria-pressed="true"
+                            >
+                                Open
+                            </button>
+                            <button
+                                class="admin-chart-tab"
+                                type="button"
+                                data-support-filter="closed"
+                                aria-pressed="false"
+                            >
+                                Closed
+                            </button>
+                            <button
+                                class="admin-chart-tab"
+                                type="button"
+                                data-support-filter="all"
+                                aria-pressed="false"
+                            >
+                                All
+                            </button>
+                        </div>
+                        <button class="button button-primary button-small" type="button" data-support-action="new">
+                            New ticket
+                        </button>
+                    </div>
+                    <ul class="support-ticket-list" data-support="list"></ul>
+                    <p class="field-help" data-support="list-empty"></p>
+                </section>
+                <section class="support-thread" aria-label="Conversation">
+                    <p class="support-thread-empty" data-support="thread-empty">
+                        Choose a ticket to see the conversation.
+                    </p>
+                    <form class="support-new-form" data-support="new-form" hidden>
+                        <h2>New support ticket</h2>
+                        <label>
+                            Subject
+                            <input type="text" minlength="3" maxlength="120" required data-support="subject" />
+                        </label>
+                        <label>
+                            Related order (optional)
+                            <select data-support="order"></select>
+                        </label>
+                        <label>
+                            How can we help?
+                            <textarea rows="5" maxlength="2000" required data-support="first-message"></textarea>
+                        </label>
+                        <div class="support-form-actions">
+                            <button class="button button-primary" type="submit">Send</button>
+                            <button class="button" type="button" data-support-action="cancel-new">Cancel</button>
+                        </div>
+                    </form>
+                    <div class="support-conversation" data-support="conversation" hidden>
+                        <header class="support-thread-header">
+                            <div>
+                                <h2 data-support="subject-title"></h2>
+                                <p class="field-help" data-support="thread-meta"></p>
+                            </div>
+                            <button class="button button-small" type="button" data-support-action="toggle-status">
+                                Close ticket
+                            </button>
+                        </header>
+                        <ol
+                            class="support-messages"
+                            role="log"
+                            aria-live="polite"
+                            aria-label="Messages"
+                            data-support="messages"
+                        ></ol>
+                        <form class="support-composer" data-support="composer">
+                            <label class="support-reply-label">
+                                <span class="sr-only">Your message</span>
+                                <textarea
+                                    rows="2"
+                                    maxlength="2000"
+                                    placeholder="Write a message…"
+                                    data-support="reply"
+                                ></textarea>
+                            </label>
+                            <button class="button button-primary" type="submit">Send</button>
+                            <span class="field-help support-hint">Ctrl + Enter to send</span>
+                        </form>
+                        <p class="field-help" data-support="closed-note" hidden></p>
+                    </div>
+                    <p class="notice" role="status" aria-live="polite" data-support="message"></p>
+                </section>
+            </div>
+        </template>
         <script src="/js/admin.js" defer></script>
         <script src="/js/adminDashboard.js" defer></script>
         <script src="/js/adminAccess.js" defer></script>
@@ -1341,6 +1466,7 @@
         <script src="/js/communityRecipes.js" defer></script>
         <script src="/js/caffeineGuardian.js" defer></script>
         <script src="/js/profile.js" defer></script>
+        <script src="/js/support.js" defer></script>
         <script src="/js/app.js" defer></script>
     </body>
 </html>

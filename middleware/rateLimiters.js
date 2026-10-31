@@ -66,5 +66,9 @@ module.exports = {
     // Bio saves and picture uploads; a person editing their profile needs a handful.
     profileWriteLimiter: createLimiter(10 * 60 * 1000, 20, "profileWriteLimiter"),
     // Pictures are cached by the browser, so this only matters for a first visit or abuse.
-    avatarReadLimiter: createLimiter(60 * 1000, 300, "avatarReadLimiter")
+    avatarReadLimiter: createLimiter(60 * 1000, 300, "avatarReadLimiter"),
+    // An open chat polls every 5 s and the ticket list every 30 s.
+    supportReadLimiter: createLimiter(60 * 1000, 120, "supportReadLimiter"),
+    supportWriteLimiter: createLimiter(60 * 1000, 30, "supportWriteLimiter"),
+    supportTicketLimiter: createLimiter(60 * 60 * 1000, 10, "supportTicketLimiter")
 };
