@@ -78,13 +78,17 @@ function buildReceipt(order, environment = process.env) {
         ["Delivery fee", isPickup ? 0 : pricing.delivery_fee_cents],
         ["Service charge (8%)", pricing.service_fee_cents]
     ].filter(([, cents], index) => index === 0 || Number(cents) > 0);
+    const rewardCents = Number(pricing.reward_discount_cents) || 0;
+    // A loyalty reward comes off the drinks before the service charge and VAT.
+    if (rewardCents) fees.splice(1, 0, [`Free drink reward (${pricing.reward_points || 100} pts)`, -rewardCents]);
     // Older orders added tax on top of the prices; newer ones include it (pricing.vat_inclusive).
     if (!pricing.vat_inclusive) fees.push(["VAT (12%)", pricing.tax_cents]);
     if (Number(pricing.tip_cents) > 0) fees.push(["Tip (not subject to VAT)", pricing.tip_cents]);
 
     const vatCents = Number(pricing.tax_cents) || 0;
     const vatableGrossCents = pricing.vat_inclusive
-        ? (Number(pricing.subtotal_cents) || 0) +
+        ? (Number(pricing.subtotal_cents) || 0) -
+          rewardCents +
           (Number(pricing.delivery_fee_cents) || 0) +
           (Number(pricing.service_fee_cents) || 0)
         : (Number(pricing.subtotal_cents) || 0) + vatCents;

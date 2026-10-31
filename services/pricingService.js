@@ -1,4 +1,5 @@
 const { normalizeConfiguration, classifyDrink, calculateNutrition } = require("./coffeeService");
+const { FREE_DRINK_POINTS } = require("./loyaltyService");
 
 /**
  * The single source of truth for Coffee Lab prices (see docs/adr/0001-server-side-pricing.md).
@@ -122,20 +123,36 @@ function buildLineItem(item, index) {
     };
 }
 
+/** Index of the drink a reward makes free: the most expensive one (the first, on a tie). */
+function rewardItemIndex(lineItems) {
+    return lineItems.reduce((best, item, index) => (item.price_cents > lineItems[best].price_cents ? index : best), 0);
+}
+
 /**
  * Prices a whole order. Returns database-shaped (snake_case) line items and
  * totals, exactly as checkout persists them.
+ *
+ * options.redeemFreeDrink: spend loyalty points to make the most expensive drink free. The drink keeps
+ * its price on the order (and receipt); the discount is a separate line that comes off before the
+ * service fee and VAT, like any discount. Whether the customer has the points is checked at checkout.
  */
-function calculateOrderPricing(items, fulfillmentMethod, tipPercent = PRICING_RULES.defaultTipPercent) {
+function calculateOrderPricing(items, fulfillmentMethod, tipPercent = PRICING_RULES.defaultTipPercent, options = {}) {
     assertValidOrderInput(items, fulfillmentMethod, tipPercent);
     const lineItems = items.map(buildLineItem);
+    let rewardDiscountCents = 0;
+    if (options.redeemFreeDrink) {
+        const index = rewardItemIndex(lineItems);
+        lineItems[index].redeemed_points = FREE_DRINK_POINTS;
+        rewardDiscountCents = lineItems[index].price_cents;
+    }
 
     const subtotalCents = lineItems.reduce((total, item) => total + item.price_cents, 0);
+    const payableDrinksCents = subtotalCents - rewardDiscountCents;
     const deliveryFeeCents = fulfillmentMethod === "delivery" ? PRICING_RULES.deliveryFeeCents : 0;
-    const serviceFeeCents = applyBasisPoints(subtotalCents, PRICING_RULES.serviceFeeBasisPoints);
-    const vatableCents = subtotalCents + deliveryFeeCents + serviceFeeCents;
+    const serviceFeeCents = applyBasisPoints(payableDrinksCents, PRICING_RULES.serviceFeeBasisPoints);
+    const vatableCents = payableDrinksCents + deliveryFeeCents + serviceFeeCents;
     const taxCents = includedVatCents(vatableCents, PRICING_RULES.taxBasisPoints);
-    const tipCents = Math.round((subtotalCents * tipPercent) / 100);
+    const tipCents = Math.round((payableDrinksCents * tipPercent) / 100);
 
     return {
         lineItems,
@@ -148,6 +165,9 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = PRICING_RU
             vat_inclusive: true,
             tip_percent: tipPercent,
             tip_cents: tipCents,
+            ...(rewardDiscountCents
+                ? { reward_discount_cents: rewardDiscountCents, reward_points: FREE_DRINK_POINTS }
+                : {}),
             total_cents: vatableCents + tipCents
         }
     };
@@ -157,8 +177,8 @@ function calculateOrderPricing(items, fulfillmentMethod, tipPercent = PRICING_RU
  * Same calculation as checkout, shaped for the browser (camelCase, plus the
  * base/modifier split per drink). Used by POST /api/orders/quote.
  */
-function createOrderQuote(items, fulfillmentMethod, tipPercent = PRICING_RULES.defaultTipPercent) {
-    const { lineItems, pricing } = calculateOrderPricing(items, fulfillmentMethod, tipPercent);
+function createOrderQuote(items, fulfillmentMethod, tipPercent = PRICING_RULES.defaultTipPercent, options = {}) {
+    const { lineItems, pricing } = calculateOrderPricing(items, fulfillmentMethod, tipPercent, options);
     return {
         items: lineItems.map((lineItem) => {
             const breakdown = calculateDrinkPriceBreakdown(lineItem.configuration);
@@ -167,7 +187,8 @@ function createOrderQuote(items, fulfillmentMethod, tipPercent = PRICING_RULES.d
                 classification: lineItem.classification,
                 basePriceCents: breakdown.baseCents,
                 modifiersCents: breakdown.modifiersCents,
-                priceCents: lineItem.price_cents
+                priceCents: lineItem.price_cents,
+                isFreeReward: Boolean(lineItem.redeemed_points)
             };
         }),
         pricing: {
@@ -178,6 +199,7 @@ function createOrderQuote(items, fulfillmentMethod, tipPercent = PRICING_RULES.d
             vatInclusive: pricing.vat_inclusive,
             tipPercent: pricing.tip_percent,
             tipCents: pricing.tip_cents,
+            rewardDiscountCents: pricing.reward_discount_cents || 0,
             totalCents: pricing.total_cents
         }
     };

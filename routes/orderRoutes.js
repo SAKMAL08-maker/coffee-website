@@ -18,7 +18,8 @@ const {
     adminOrderListLimiter,
     orderQuoteLimiter,
     orderStatusLimiter,
-    cashCollectionLimiter
+    cashCollectionLimiter,
+    rewardsLimiter
 } = require("../middleware/rateLimiters");
 
 const router = express.Router();
@@ -37,6 +38,7 @@ router.post(
 router.post("/", checkoutLimiter, validateRequest(schemas.checkout), optionalAuthenticate, orderController.checkout);
 router.get("/track/:trackingCode", trackingLimiter, validateRequest(schemas.tracking), orderController.trackOrder);
 router.get("/mine", validateRequest(schemas.empty), authenticate, orderController.listMyOrders);
+router.get("/rewards", rewardsLimiter, validateRequest(schemas.empty), authenticate, orderController.myRewards);
 router.post(
     "/:orderId/receipt/retry",
     receiptLimiter,

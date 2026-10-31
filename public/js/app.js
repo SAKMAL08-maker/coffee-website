@@ -3,6 +3,8 @@
     let editingCartItemId = null;
     let drawerReturnFocus = null;
     let trackingPollTimer = null;
+    let lastHistoryOrders = [];
+    const MAX_BASKET_DRINKS = 20;
     let activePreview = "creation";
     let historyReturnView = "customizer";
     const $ = (selector) => document.querySelector(selector);
@@ -168,7 +170,8 @@
         return {
             items: configurations.map((configuration) => ({ configuration })),
             fulfillmentMethod: state.fulfillmentMethod,
-            tipPercent: getSelectedTipPercent()
+            tipPercent: getSelectedTipPercent(),
+            ...(state.redeemFreeDrink ? { redeemFreeDrink: true } : {})
         };
     }
 
@@ -400,6 +403,53 @@
         setNotice(existingIndex >= 0 ? `${name} updated in your basket.` : `${name} added to your basket.`);
     }
 
+    // "Order again": puts saved drinks back in the basket exactly as they were made. The editor's
+    // current drink is set aside and restored, so nothing the customer was building is lost.
+    function orderAgain(drinks) {
+        const saved = drinks.filter((drink) => drink?.configuration);
+        const room = MAX_BASKET_DRINKS - state.cartItems.length;
+        if (!saved.length) return setNotice("That order can't be repeated automatically. Build it again below.");
+        if (room <= 0) return setNotice(`Your basket is full (${MAX_BASKET_DRINKS} drinks). Check out first.`);
+        const editorDrink = getDrinkConfiguration();
+        for (const drink of saved.slice(0, room)) {
+            Object.assign(state, structuredClone(drink.configuration));
+            state.cartItems.push({
+                id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+                name: drink.name,
+                state: getDrinkConfiguration(),
+                metrics: getMetrics(getComposition())
+            });
+        }
+        Object.assign(state, editorDrink);
+        setCustomerView("customizer");
+        render();
+        const added = Math.min(saved.length, room);
+        setNotice(
+            `${added} drink${added === 1 ? "" : "s"} added to your basket${
+                added < saved.length ? ` (the basket holds ${MAX_BASKET_DRINKS})` : ""
+            }. Prices are today's.`
+        );
+        openCart();
+    }
+
+    // From the profile's "Order it again": the most recent time this drink was ordered.
+    document.addEventListener("coffeelab:order-again", async (event) => {
+        try {
+            const response = await fetch("/api/orders/mine", { credentials: "same-origin" });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+            const match = (result.orders || [])
+                .filter((order) => order.status !== "Cancelled")
+                .flatMap((order) => order.items || [])
+                .find((item) => item.name === event.detail?.name && item.configuration);
+            if (!match) throw new Error("not found");
+            orderAgain([match]);
+        } catch {
+            setCustomerView("customizer");
+            setNotice("We couldn't find that drink's recipe. Build it below and add it to your basket.");
+        }
+    });
+
     function resetEditor() {
         Object.assign(state, {
             base: "espresso",
@@ -458,6 +508,9 @@
         const pricing = latestCartQuote?.pricing;
         if (pricing) {
             rows.push(["Drinks", moneyFromCents(pricing.subtotalCents)]);
+            if (pricing.rewardDiscountCents) {
+                rows.push(["Free drink (100 points)", `−${moneyFromCents(pricing.rewardDiscountCents)}`]);
+            }
             if (pricing.deliveryFeeCents) rows.push(["Delivery fee", moneyFromCents(pricing.deliveryFeeCents)]);
             rows.push(["Service fee (8%)", moneyFromCents(pricing.serviceFeeCents)]);
             if (pricing.tipCents) rows.push(["Tip", moneyFromCents(pricing.tipCents)]);
@@ -497,7 +550,37 @@
         updateCheckoutSummary();
         closeCart();
         $("#checkout-dialog").showModal();
+        loadRewardOption();
     }
+
+    // "Use my points": shown only to signed-in customers with enough points for a free drink.
+    async function loadRewardOption() {
+        const field = $("#checkout-reward-field");
+        if (window.CoffeeLabSession?.role !== "customer") {
+            field.hidden = true;
+            return;
+        }
+        try {
+            const response = await fetch("/api/orders/rewards", { credentials: "same-origin" });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+            const { available, freeDrinkPoints } = result.points;
+            field.hidden = available < freeDrinkPoints;
+            $("#checkout-reward-label").textContent =
+                `Use ${freeDrinkPoints} of my ${available} points: my most expensive drink is free`;
+            if (field.hidden && state.redeemFreeDrink) setRedeemFreeDrink(false);
+        } catch {
+            field.hidden = true;
+        }
+    }
+
+    function setRedeemFreeDrink(value) {
+        state.redeemFreeDrink = value;
+        $("#checkout-reward").checked = value;
+        render();
+    }
+
+    $("#checkout-reward").addEventListener("change", (event) => setRedeemFreeDrink(event.target.checked));
 
     // True for finished orders, including cancelled ones (tracking stops polling).
     function isFulfillmentComplete(order) {
@@ -612,7 +695,18 @@
             detailsButton.dataset.receiptStatus = order.receiptStatus;
             detailsButton.textContent =
                 order.receiptStatus === "available" ? "View status and receipt" : "View order status";
-            card.append(heading, summary, items, detailsButton);
+            const actions = document.createElement("div");
+            actions.className = "order-history-actions";
+            actions.append(detailsButton);
+            if ((order.items || []).some((item) => item.configuration)) {
+                const againButton = document.createElement("button");
+                againButton.type = "button";
+                againButton.className = "button button-primary button-small";
+                againButton.dataset.orderAgainId = order.id;
+                againButton.textContent = "Order again";
+                actions.prepend(againButton);
+            }
+            card.append(heading, summary, items, actions);
             list.append(card);
         });
     }
@@ -636,6 +730,7 @@
                 throw new Error(result.error || `Could not load orders (${response.status}).`);
             }
             if (!Array.isArray(result.orders)) throw new Error("The server returned an invalid order history.");
+            lastHistoryOrders = result.orders;
             renderOrderHistory(result.orders);
             message.textContent = result.orders.length
                 ? `${result.orders.length} recent order${result.orders.length === 1 ? "" : "s"} shown.`
@@ -767,6 +862,12 @@
     $("#support-nav-button").addEventListener("click", () => setCustomerView("support"));
     $("#refresh-order-history-button").addEventListener("click", loadOrderHistory);
     $("#order-history-list").addEventListener("click", (event) => {
+        const againButton = event.target.closest("[data-order-again-id]");
+        if (againButton) {
+            const order = lastHistoryOrders.find((candidate) => candidate.id === againButton.dataset.orderAgainId);
+            orderAgain(order?.items || []);
+            return;
+        }
         const button = event.target.closest("[data-history-order-id]");
         if (!button) return;
         historyReturnView = "history";
@@ -1241,6 +1342,7 @@
                     fulfillmentMethod: state.fulfillmentMethod,
                     ...(state.fulfillmentMethod === "delivery" ? { deliveryAddress: state.deliveryAddress } : {}),
                     tipPercent: state.tipPercent === "custom" ? state.customTipPercent : state.tipPercent,
+                    ...(state.redeemFreeDrink ? { redeemFreeDrink: true } : {}),
                     customer: {
                         name: $("#customer-name").value.trim(),
                         phone: $("#customer-phone").value.trim()
@@ -1265,6 +1367,8 @@
             };
             historyReturnView = "customizer";
             state.cartItems = [];
+            state.redeemFreeDrink = false;
+            $("#checkout-reward").checked = false;
             editingCartItemId = null;
             $("#checkout-dialog").close();
             render();

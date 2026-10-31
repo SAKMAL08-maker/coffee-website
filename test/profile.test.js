@@ -100,7 +100,7 @@ test("a customer's profile carries their stats and loyalty points", async () => 
                 data: { orders: 3, drinks: 4, favorite: { name: "Vanilla Latte", times: 2 } },
                 error: null
             },
-            recipe_royalty_summary: { data: { earned_points: 30, pending_points: 10 }, error: null }
+            loyalty_balance: { data: { earned_points: 130, pending_points: 10, redeemed_points: 100 }, error: null }
         }
     });
     const { profile, stats } = await getProfile(supabase, account.id);
@@ -108,7 +108,7 @@ test("a customer's profile carries their stats and loyalty points", async () => 
     assert.equal(profile.bio, "Oat milk forever.");
     assert.equal(stats.kind, "customer");
     assert.equal(stats.favorite.name, "Vanilla Latte");
-    assert.deepEqual(stats.points, { earned: 30, pending: 10 });
+    assert.deepEqual(stats.points, { earned: 130, pending: 10, redeemed: 100, available: 30, freeDrinkPoints: 100 });
     assert.ok(!supabase.calls.some((call) => call.rpc === "staff_profile_stats"));
 });
 

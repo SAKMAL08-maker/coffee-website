@@ -24,6 +24,12 @@ const {
     deleteStoredReceipt
 } = require("../services/receiptService");
 const { enqueueReceipt } = require("../services/receiptQueue");
+const {
+    FREE_DRINK_POINTS,
+    getLoyaltyBalance,
+    withPurchasePoints,
+    isInsufficientPointsError
+} = require("../services/loyaltyService");
 const { ORDER_EVENT, EVENT_FOR_STATUS, recordOrderEvent } = require("../services/orderEvents");
 
 function badRequest(message) {
@@ -34,10 +40,10 @@ function badRequest(message) {
 // what checkout will charge. All math lives in services/pricingService.js.
 async function createOrderQuote(request, response, next) {
     try {
-        const { items, fulfillmentMethod, tipPercent } = request.body;
+        const { items, fulfillmentMethod, tipPercent, redeemFreeDrink } = request.body;
         response.set("Cache-Control", "no-store");
         response.json({
-            ...createOrderQuoteService(items, fulfillmentMethod, tipPercent),
+            ...createOrderQuoteService(items, fulfillmentMethod, tipPercent, { redeemFreeDrink }),
             // How the customer will pay, so checkout shows the same wording as the receipt.
             paymentInstruction: describePaymentInstruction(fulfillmentMethod)
         });
@@ -76,7 +82,8 @@ async function checkout(request, response, next) {
             "deliveryCoordinates",
             "tipPercent",
             "customer",
-            "notes"
+            "notes",
+            "redeemFreeDrink"
         ];
         if (
             !request.body ||
@@ -93,8 +100,12 @@ async function checkout(request, response, next) {
             deliveryCoordinates,
             tipPercent = 15,
             customer,
-            notes
+            notes,
+            redeemFreeDrink = false
         } = request.body;
+        if (redeemFreeDrink && !request.user) {
+            throw badRequest("Sign in to use loyalty points.");
+        }
 
         if (
             !customer ||
@@ -135,13 +146,18 @@ async function checkout(request, response, next) {
         if (fulfillmentMethod !== "delivery" && coordinates) {
             throw badRequest("Delivery coordinates can only be provided for delivery orders.");
         }
-        const { lineItems, pricing } = calculateOrderPricing(items, fulfillmentMethod, tipPercent);
+        const { lineItems, pricing } = calculateOrderPricing(items, fulfillmentMethod, tipPercent, {
+            redeemFreeDrink
+        });
         const trackingCode = crypto.randomBytes(24).toString("hex");
         const supabase = getAdminClient();
         // Server-side royalty decision (exact recipe match, no self-royalty). Saved on the
         // order items in the same transaction as the order, so it can never be counted twice.
         const royalties = await resolveRecipeRoyalties(supabase, items, request.user?.id || null);
-        const itemsWithRoyalties = lineItems.map((lineItem, index) => ({ ...lineItem, ...royalties[index] }));
+        const itemsWithRoyalties = withPurchasePoints(
+            lineItems.map((lineItem, index) => ({ ...lineItem, ...royalties[index] })),
+            request.user?.id || null
+        );
         const { data: orderId, error } = await supabase.rpc("create_coffee_order", {
             order_data: {
                 tracking_code: trackingCode,
@@ -159,6 +175,12 @@ async function checkout(request, response, next) {
             },
             item_data: itemsWithRoyalties
         });
+        if (error && isInsufficientPointsError(error)) {
+            const { available } = await getLoyaltyBalance(supabase, request.user.id);
+            return response.status(409).json({
+                error: `A free drink needs ${FREE_DRINK_POINTS} points; you have ${available}. Untick the reward to order.`
+            });
+        }
         if (error) throw error;
 
         // Signed-in customers get a receipt, built after the response (services/receiptQueue.js);
@@ -706,7 +728,7 @@ async function listMyOrders(request, response, next) {
         const { data, error } = await getAdminClient()
             .from("orders")
             .select(
-                "id, tracking_code, status, fulfillment_method, pricing, receipt_status, created_at, updated_at, order_items(name, classification, price_cents)"
+                "id, tracking_code, status, fulfillment_method, pricing, receipt_status, created_at, updated_at, order_items(name, classification, price_cents, configuration)"
             )
             .eq("account_id", request.user.id)
             .order("created_at", { ascending: false })
@@ -726,7 +748,18 @@ async function listMyOrders(request, response, next) {
     }
 }
 
+// The signed-in customer's points, for the checkout reward checkbox.
+async function myRewards(request, response, next) {
+    try {
+        response.set("Cache-Control", "no-store");
+        response.json({ points: await getLoyaltyBalance(getAdminClient(), request.user.id) });
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
+    myRewards,
     createOrderQuote,
     checkout,
     trackOrder,
