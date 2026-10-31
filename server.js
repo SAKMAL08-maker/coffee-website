@@ -12,6 +12,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const recipeRoutes = require("./routes/recipeRoutes");
 const caffeineRoutes = require("./routes/caffeineRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const superadminRoutes = require("./routes/superadminRoutes");
 const healthRoutes = require("./routes/healthRoutes");
 const { verifySameOrigin } = require("./middleware/originProtection");
 
@@ -83,6 +84,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/recipes", recipeRoutes);
 app.use("/api/caffeine", caffeineRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/superadmin", superadminRoutes);
 
 app.use((request, response) => {
     response.status(404).json({ error: "Not found." });

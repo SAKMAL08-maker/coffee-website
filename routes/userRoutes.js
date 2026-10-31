@@ -7,13 +7,20 @@ const {
     authLimiter,
     adminMfaLimiter,
     adminMfaEnrollLimiter,
-    savedWriteLimiter
+    savedWriteLimiter,
+    superadminLoginLimiter
 } = require("../middleware/rateLimiters");
 
 const router = express.Router();
 
 router.post("/signup", authLimiter, validateRequest(schemas.signup), userController.signUp);
 router.post("/login", authLimiter, validateRequest(schemas.login), userController.logIn);
+router.post(
+    "/superadmin/login",
+    superadminLoginLimiter,
+    validateRequest(schemas.superadminLogin),
+    userController.logInSuperadmin
+);
 router.get("/me", validateRequest(schemas.empty), authenticate, userController.getCurrentUser);
 router.post("/logout", validateRequest(schemas.logout), userController.logOut);
 router.post(

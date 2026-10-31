@@ -63,6 +63,15 @@ const loginBody = z
     })
     .strict();
 
+const superadminLoginBody = z
+    .object({
+        password: z.string().min(1).max(128),
+        birthday: z.string().min(1).max(32),
+        favoriteDog: z.string().min(1).max(64),
+        favoriteColor: z.string().min(1).max(64)
+    })
+    .strict();
+
 const adminMfaVerifyBody = z
     .object({
         factorId: uuid,
@@ -161,6 +170,13 @@ const schemas = {
     emptyParams,
     signup: { body: signupBody, query: emptyQuery, params: emptyParams },
     login: { body: loginBody, query: emptyQuery, params: emptyParams },
+    superadminLogin: { body: superadminLoginBody, query: emptyQuery, params: emptyParams },
+    superadminAccounts: { params: emptyParams, query: emptyQuery },
+    superadminAccountAction: {
+        params: z.object({ username: z.string().regex(/^[A-Za-z0-9_]{3,24}$/) }).strict(),
+        query: emptyQuery,
+        body: z.object({}).strict().optional()
+    },
     adminMfaVerify: {
         body: adminMfaVerifyBody,
         params: emptyParams,

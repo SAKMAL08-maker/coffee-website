@@ -118,6 +118,14 @@ Nutrition, recipe labels, service fees, taxes, and other displayed calculations 
 - At the top of the admin page: totals (orders, drinks, sales, average order) for the last 7, 30 or 90 days, and a bar chart per tab: orders per day, sales per day, drink type, coffee base, milk, hot/iced/blended, add-ons (syrups, toppings, sweeteners), caffeine mode, pickup vs delivery, and order status.
 - Computed on the server (`services/adminMetricsService.js`, `GET /api/admin/metrics?days=30`, admin with MFA only). Days use **Asia/Manila** time. Charts are plain HTML/CSS (no chart library); category charts are tables, so screen readers get the numbers.
 
+### Superadmin and account dashboard
+
+- **One owner account, `Super_Admin`** (role `superadmin`, at most one, enforced by a unique index). It can do everything an admin can, plus an **Accounts** section on the admin page with **Admins** and **Customers** tabs.
+- **Accounts:** each account shows its role and whether it is signed in now (an unexpired session; for admins, a Supabase sign-in in the last 12 hours) or when it last signed in. **Remove admin rights** turns an admin or staff account into a customer and deletes its Supabase sign-in, so its admin session stops at once. **Delete** removes the account; its orders stay without a name. Deleting an admin who approved or collected payment for orders is refused (demote instead), so order history stays intact. The superadmin can't change itself.
+- **Sign-in:** type `Super_Admin` as the username and press Enter. A separate screen asks for the password and three security questions. No authenticator. The answers ignore case and spacing, and the birthday is compared by its digits only. All four are checked together, so the screen never reveals which one was wrong. The session always ends after 12 hours ("stay signed in" doesn't apply). The normal login and the recovery-code reset refuse this account.
+- **Lockout:** three wrong attempts set `locked = true` in Supabase → **Table editor → superadmin_security**. Set it back to `false` to unlock (the attempt count resets automatically), or set it to `true` to lock the account by hand. The login is also rate-limited to 5 tries per 15 minutes per IP.
+- Set up or reset with `scripts/create-superadmin.js` (see the runbook). Only scrypt hashes are stored.
+
 ### Admin and staff capabilities
 
 - **Staff authorization:** Staff and administrators can use the order-status endpoint for the allowed preparation states.

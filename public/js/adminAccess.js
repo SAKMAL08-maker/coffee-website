@@ -105,7 +105,7 @@
     }
 
     function start(role) {
-        if (role !== "admin" || started) return;
+        if ((role !== "admin" && role !== "superadmin") || started) return;
         started = true;
         loadAccounts();
     }

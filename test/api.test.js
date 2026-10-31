@@ -51,7 +51,18 @@ test("serves the customizer and validates quote and checkout API requests", asyn
             assert.equal(legal.status, 200);
             assert.match(await legal.text(), /mailto:coffeelab08@gmail\.com/);
         }
-        assert.match(html, /id="auth-page"/);
+        // The login page starts hidden behind a loading line, so saved sessions never flash it.
+        assert.match(html, /id="auth-page"[^>]*hidden/);
+        assert.match(html, /id="session-loading"/);
+        assert.match(html, /id="superadmin-form"/);
+        assert.match(html, /id="account-dashboard"[^>]*hidden/);
+        assert.equal((await fetch(`${baseUrl}/api/superadmin/accounts`)).status, 401);
+        const incompleteSuperadminLogin = await fetch(`${baseUrl}/api/users/superadmin/login`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ password: "x" })
+        });
+        assert.equal(incompleteSuperadminLogin.status, 400);
         assert.match(html, /id="signup-form"/);
         assert.match(html, /id="login-form"/);
         assert.match(html, /id="admin-mfa-form"/);
