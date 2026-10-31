@@ -56,6 +56,12 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="session-loading"/);
         assert.match(html, /id="superadmin-form"/);
         assert.match(html, /id="account-dashboard"[^>]*hidden/);
+        // Orders, Dashboard and Accounts are separate tabs; only Orders shows at first.
+        assert.match(html, /id="admin-panel-orders"[^>]*role="tabpanel"/);
+        assert.match(html, /id="admin-panel-dashboard"[^>]*hidden/);
+        assert.match(html, /id="admin-panel-accounts"[^>]*hidden/);
+        assert.match(html, /src="\/js\/adminTabs\.js"/);
+        assert.match(html, /id="admin-access-badge"[^>]*hidden/);
         assert.equal((await fetch(`${baseUrl}/api/superadmin/accounts`)).status, 401);
         const incompleteSuperadminLogin = await fetch(`${baseUrl}/api/users/superadmin/login`, {
             method: "POST",
