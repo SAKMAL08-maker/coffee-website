@@ -450,3 +450,11 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 ### Admin requests moved into Admin access
 
 - **Fix:** admin requests now appear in the superadmin's **Admin access** panel (Accounts tab), as asked, instead of in the Accounts list. They sit at the top with the email and **Approve** / **Decline**, count toward the panel's "waiting" badge and the tab badge, and open the panel automatically. The Accounts list shows only real accounts; after an approval it refreshes to show the new admin.
+
+### Customers-only sign-up; the superadmin makes admins; no setup key
+
+- **Removed:** the sign-up form's Admin tab and admin requests (#53, #54). Sign-up creates customers only, and the server refuses an account type or email. Migration `20261114000000_remove_pending_admin.sql` takes the unused `pending_admin` role back out (none existed).
+- **Make admin:** the superadmin clicks **Make admin** on a customer in **Accounts → Customers** and enters an email for their admin sign-in. The server creates that Supabase sign-in with a random password, ends their customer sessions and approves authenticator setup for 24 hours.
+- **Same password:** the new admin keeps logging in with their username and Coffee Lab password. On the first admin sign-in only (the Supabase sign-in has never been used), the typed password is checked against their Coffee Lab password and becomes their Supabase password.
+- **Where they're listed:** until their first approved sign-in (authenticator set up), new admins appear only in **Admin access**, where the superadmin can renew the approval or remove the admin rights. After that they're listed under **Accounts → Admins**.
+- **No one-time setup key:** the typed key on the admin verification screen is gone. Setting up an authenticator always needs the superadmin's (or an admin's) approval instead; the terminal bootstrap script now approves setup the same way.

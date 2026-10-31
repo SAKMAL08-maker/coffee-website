@@ -1,6 +1,5 @@
 const { createHash, randomBytes } = require("node:crypto");
 
-const SCRIPT_SETUP_TTL_MS = 30 * 60 * 1000;
 const APPROVED_SETUP_TTL_MS = 24 * 60 * 60 * 1000;
 
 function httpError(statusCode, message) {
@@ -43,11 +42,10 @@ function describeSetupState(account, now = Date.now()) {
 }
 
 /**
- * Clears the admin's authenticators and issues a new setup authorization.
- * preapproved=false returns a key the admin must type (the terminal script);
- * preapproved=true lets the admin scan the QR code directly until it expires.
+ * Clears the admin's authenticators and approves a new setup: at their next sign-in
+ * the admin scans a QR code, with no key to type, until the approval expires.
  */
-async function provisionAdminSetup(supabase, account, { preapproved, ttlMs, now = Date.now() }) {
+async function provisionAdminSetup(supabase, account, { ttlMs = APPROVED_SETUP_TTL_MS, now = Date.now() } = {}) {
     const { error: lockError } = await updateWithPreapproval(
         (values) => supabase.from("coffee_users").update(values).eq("id", account.id).eq("role", "admin"),
         {
@@ -93,13 +91,12 @@ async function provisionAdminSetup(supabase, account, { preapproved, ttlMs, now 
             admin_mfa_setup_token_expires_at: expiresAt,
             updated_at: new Date(now).toISOString()
         },
-        preapproved
+        true
     );
     if (provisionError) throw provisionError;
     if (!updated) throw new Error("Could not provision the setup authorization.");
     return {
         username: account.username,
-        setupToken: preapproved ? null : setupToken,
         expiresAt,
         removedFactors: factorData.factors.length
     };
@@ -145,11 +142,10 @@ async function approveAdminSetup(supabase, { approver, username, resetExisting =
     if (account.admin_mfa_factor_id && !resetExisting) {
         throw httpError(409, "That admin already has an authenticator. Use Reset if they lost it.");
     }
-    return provisionAdminSetup(supabase, account, { preapproved: true, ttlMs: APPROVED_SETUP_TTL_MS, now });
+    return provisionAdminSetup(supabase, account, { now });
 }
 
 module.exports = {
-    SCRIPT_SETUP_TTL_MS,
     APPROVED_SETUP_TTL_MS,
     canApprove,
     isMissingPreapprovalColumn,

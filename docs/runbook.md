@@ -79,11 +79,11 @@ Every customer will need to sign in again. Passwords are unaffected.
 
 **Easiest:** sign in as another admin, open **Admin access** on the admin page, and click **Reset** next to them (or **Approve setup** for a brand-new admin). Their old authenticator stops working, and at their next sign-in, within 24 hours, they scan a new QR code with no key to type. Set `ADMIN_APPROVER_USERNAMES` on Render (comma-separated) to limit who can do this. Without it, any MFA-verified admin can.
 
-**New admin (usual way):** they choose the **Admin** tab on the sign-up form. The request waits at the top of the superadmin's **Admin access** panel (Accounts tab); **Approve** makes them an admin and approves their authenticator setup for 24 hours, **Decline** deletes the request.
+**New admin (usual way):** the person signs up as a customer. The superadmin opens **Accounts → Customers**, clicks **Make admin** next to them and enters an email for their admin sign-in. They keep their username and password; at their next login (within 24 hours) they scan a QR code with an authenticator app. Until then they're listed in **Admin access**, where the superadmin can **Renew approval** or **Remove admin rights**; after that they appear under **Accounts → Admins**.
 
 **New admin (terminal):** `NEW_ADMIN_PASSWORD=... node scripts/create-admin-account.js <username> --email <email>` creates the confirmed Supabase Auth user and the linked admin account in one step. Then approve them as above.
 
-**Terminal fallback:** follow [guide.md §6](../instructions/guide.md#6-owner-authorized-first-totp-enrollment): run `node scripts/admin-mfa-bootstrap.js <admin-username> --confirm-reset` locally. It deletes the admin's existing factors and prints a 30-minute setup authorization for re-enrollment. Also change that admin's Supabase Auth password (Supabase → **Authentication → Users**).
+**Terminal fallback:** follow [guide.md §6](../instructions/guide.md#6-owner-authorized-first-totp-enrollment): run `node scripts/admin-mfa-bootstrap.js <admin-username> --confirm-reset` locally. It deletes the admin's existing factors and approves a new setup for 24 hours (no key to pass on). Also change that admin's Supabase Auth password (Supabase → **Authentication → Users**).
 
 ### Superadmin (create, reset, unlock)
 

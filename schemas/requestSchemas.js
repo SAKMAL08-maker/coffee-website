@@ -48,19 +48,12 @@ const username = z
     .max(24)
     .regex(/^[a-zA-Z0-9_]+$/);
 
-// The Admin tab sends accountType "admin" and an email (admins sign in through Supabase Auth).
 const signupBody = z
     .object({
         username,
-        password,
-        accountType: z.enum(["customer", "admin"]).default("customer"),
-        email: z.string().trim().toLowerCase().email().max(254).optional()
+        password
     })
-    .strict()
-    .refine((body) => body.accountType !== "admin" || body.email, {
-        message: "An admin request needs an email address.",
-        path: ["email"]
-    });
+    .strict();
 
 const loginBody = z
     .object({
@@ -86,12 +79,8 @@ const adminMfaVerifyBody = z
     })
     .strict();
 
-const adminMfaEnrollBody = z
-    .object({
-        // Optional: an admin approved in the admin page enrolls without a typed key.
-        bootstrapToken: z.string().min(32).max(256).optional()
-    })
-    .strict();
+// Setup is approved by the superadmin, so enrolling takes no typed key.
+const adminMfaEnrollBody = z.object({}).strict().optional();
 
 const recoveryBody = z
     .object({
@@ -182,6 +171,11 @@ const schemas = {
     login: { body: loginBody, query: emptyQuery, params: emptyParams },
     superadminLogin: { body: superadminLoginBody, query: emptyQuery, params: emptyParams },
     superadminAccounts: { params: emptyParams, query: emptyQuery },
+    superadminMakeAdmin: {
+        params: z.object({ username: z.string().regex(/^[A-Za-z0-9_]{3,24}$/) }).strict(),
+        query: emptyQuery,
+        body: z.object({ email: z.string().trim().toLowerCase().email().max(254) }).strict()
+    },
     superadminAccountAction: {
         params: z.object({ username: z.string().regex(/^[A-Za-z0-9_]{3,24}$/) }).strict(),
         query: emptyQuery,

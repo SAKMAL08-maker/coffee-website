@@ -55,10 +55,7 @@ async function createAdminAccount({ username, email, password, approveSetupDays 
         if (linkError) throw linkError;
 
         const setup = approveSetupDays
-            ? await provisionAdminSetup(supabase, account, {
-                  preapproved: true,
-                  ttlMs: approveSetupDays * 24 * 60 * 60 * 1000
-              })
+            ? await provisionAdminSetup(supabase, account, { ttlMs: approveSetupDays * 24 * 60 * 60 * 1000 })
             : null;
         return { username: account.username, role: account.role, setupApprovedUntil: setup?.expiresAt || null };
     } catch (error) {

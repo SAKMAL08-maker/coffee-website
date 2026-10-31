@@ -92,33 +92,6 @@
                     </form>
 
                     <form class="auth-form" id="signup-form" data-auth-screen="signup" hidden>
-                        <div class="signup-type" role="tablist" aria-label="Account type">
-                            <button
-                                class="signup-type-tab"
-                                id="signup-type-customer"
-                                type="button"
-                                role="tab"
-                                data-account-type="customer"
-                                aria-selected="true"
-                            >
-                                Customer
-                            </button>
-                            <button
-                                class="signup-type-tab"
-                                id="signup-type-admin"
-                                type="button"
-                                role="tab"
-                                data-account-type="admin"
-                                aria-selected="false"
-                                tabindex="-1"
-                            >
-                                Admin
-                            </button>
-                        </div>
-                        <p class="field-help signup-admin-note" id="signup-admin-note" hidden>
-                            An admin account works only after the superadmin approves it. Once approved, you log in and
-                            set up an authenticator app.
-                        </p>
                         <label for="signup-username">Choose a username</label>
                         <input
                             id="signup-username"
@@ -140,11 +113,6 @@
                             details and how to contact us about your information, and you agree to our
                             <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Use</a>.
                         </p>
-                        <div id="signup-email-field" hidden>
-                            <label for="signup-email">Work email</label>
-                            <input id="signup-email" name="email" type="email" autocomplete="email" maxlength="254" />
-                            <span class="field-help">Admins sign in with this email behind the scenes.</span>
-                        </div>
                         <label for="signup-password">Create a password</label>
                         <input
                             id="signup-password"
@@ -165,13 +133,11 @@
                             maxlength="128"
                             required
                         />
-                        <p class="field-help" id="signup-password-help">
+                        <p class="field-help">
                             Use at least 12 characters. Password recovery requires a saved recovery code; there is no
                             email or phone recovery.
                         </p>
-                        <button class="button button-primary auth-submit" id="signup-submit" type="submit">
-                            Create account
-                        </button>
+                        <button class="button button-primary auth-submit" type="submit">Create account</button>
                         <p class="auth-switch">
                             Already have an account?
                             <button class="auth-link" type="button" data-show-auth="login">Log in</button>
@@ -255,22 +221,8 @@
                         <h2 id="admin-mfa-title">Administrator verification</h2>
                         <p id="admin-mfa-description" class="field-help"></p>
                         <div id="admin-mfa-setup" hidden>
-                            <!-- Hidden when the owner approved this admin in the admin page. -->
-                            <div id="admin-mfa-key-fields">
-                                <p class="field-help">
-                                    Enter the one-time setup authorization issued by your trusted project owner. A
-                                    password alone cannot register an authenticator.
-                                </p>
-                                <label for="admin-mfa-bootstrap-token">One-time setup authorization</label>
-                                <input
-                                    id="admin-mfa-bootstrap-token"
-                                    type="password"
-                                    autocomplete="off"
-                                    spellcheck="false"
-                                />
-                            </div>
                             <button class="button auth-submit" id="admin-mfa-enroll" type="button">
-                                Authorize authenticator setup
+                                Set up authenticator
                             </button>
                             <p class="field-help">
                                 Scan this QR code with an authenticator app, then enter its current six-digit code
@@ -1268,10 +1220,10 @@
                             <span class="admin-access-badge" id="admin-access-badge" hidden></span>
                         </summary>
                         <p class="field-help">
-                            Approve a new admin here instead of running the setup script. They then sign in and scan a
-                            QR code with their authenticator app, with no setup key to type. An approval lasts 24 hours.
-                            Requests from the sign-up form's Admin tab appear here first for the superadmin to approve
-                            or decline.
+                            New admins are listed here until their first approved sign-in: they log in with their
+                            username and password, then scan a QR code with their authenticator app. An approval lasts
+                            24 hours; renew it if it runs out. The superadmin makes a customer an admin from the
+                            Customers list.
                         </p>
                         <ul class="admin-access-list" id="admin-access-list"></ul>
                         <p class="notice" id="admin-access-message" role="status" aria-live="polite"></p>

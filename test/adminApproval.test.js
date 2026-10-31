@@ -8,7 +8,7 @@ const {
     provisionAdminSetup,
     APPROVED_SETUP_TTL_MS
 } = require("../services/adminApprovalService");
-const { hasPreapprovedSetup, hashSetupToken } = require("../services/adminMfa");
+const { hasPreapprovedSetup } = require("../services/adminMfa");
 
 const NOW = Date.parse("2026-10-31T00:00:00Z");
 const LATER = new Date(NOW + 60_000).toISOString();
@@ -98,7 +98,7 @@ test("setup states shown in the admin page", () => {
     assert.equal(describeSetupState(linkedAdmin(expired), NOW), "needs-approval");
 });
 
-test("approval skips the typed key only while it is active and flagged", () => {
+test("an approval counts only while it is active and flagged", () => {
     const base = { admin_mfa_setup_token_hash: HASH, admin_mfa_setup_token_expires_at: LATER };
     assert.equal(hasPreapprovedSetup({ ...base, admin_mfa_setup_preapproved: true }, NOW), true);
     assert.equal(hasPreapprovedSetup({ ...base, admin_mfa_setup_preapproved: false }, NOW), false);
@@ -124,7 +124,7 @@ test("approving a new admin clears factors and stores a 24-hour, key-free author
         username: "Arthur_Admin",
         now: NOW
     });
-    assert.equal(result.setupToken, null, "no key is ever shown for an in-app approval");
+    assert.ok(!("setupToken" in result), "no key is ever returned");
     assert.equal(result.expiresAt, new Date(NOW + APPROVED_SETUP_TTL_MS).toISOString());
     assert.deepEqual(supabase.calls.deletedFactors, ["stale"]);
     const finalUpdate = supabase.calls.updates.at(-1);
@@ -176,20 +176,17 @@ test("allow-list blocks admins who are not approvers", async () => {
     }
 });
 
-test("the terminal script still issues a typed key, and still works before the migration", async () => {
-    const supabase = fakeSupabase({ account: linkedAdmin(), missingPreapprovalColumn: true });
-    const result = await provisionAdminSetup(supabase, linkedAdmin(), {
-        preapproved: false,
-        ttlMs: 30 * 60 * 1000,
-        now: NOW
-    });
-    assert.equal(supabase.calls.updates.at(-1).admin_mfa_setup_token_hash, hashSetupToken(result.setupToken));
-    assert.ok(!("admin_mfa_setup_preapproved" in supabase.calls.updates.at(-1)));
+test("every setup authorization is an approval (24 hours by default), never a typed key", async () => {
+    const supabase = fakeSupabase({ account: linkedAdmin() });
+    const result = await provisionAdminSetup(supabase, linkedAdmin(), { now: NOW });
+    assert.equal(result.expiresAt, new Date(NOW + APPROVED_SETUP_TTL_MS).toISOString());
+    assert.ok(!("setupToken" in result));
+    assert.equal(supabase.calls.updates.at(-1).admin_mfa_setup_preapproved, true);
 });
 
 test("an in-app approval before the migration fails clearly instead of half-working", async () => {
     const supabase = fakeSupabase({ account: linkedAdmin(), missingPreapprovalColumn: true });
-    await assert.rejects(provisionAdminSetup(supabase, linkedAdmin(), { preapproved: true, ttlMs: 1000, now: NOW }), {
+    await assert.rejects(provisionAdminSetup(supabase, linkedAdmin(), { ttlMs: 1000, now: NOW }), {
         statusCode: 503
     });
 });

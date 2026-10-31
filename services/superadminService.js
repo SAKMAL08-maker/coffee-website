@@ -1,4 +1,6 @@
+const { randomBytes } = require("node:crypto");
 const { hashPassword, verifyPassword } = require("./accountSecurity");
+const { provisionAdminSetup } = require("./adminApprovalService");
 
 const SUPERADMIN_USERNAME_KEY = "super_admin";
 const MAX_FAILED_ATTEMPTS = 3;
@@ -96,16 +98,12 @@ async function listAccounts(supabase, now = Date.now()) {
     // Admins sign in through Supabase Auth; use its last sign-in time. Looked up in parallel
     // (one request per linked admin), so the page doesn't wait for them one after another.
     const adminSignIns = new Map();
-    const requestEmails = new Map();
     const linked = accounts.filter((candidate) => candidate.supabase_auth_user_id);
     const lookups = await Promise.all(
         linked.map((account) => supabase.auth.admin.getUserById(account.supabase_auth_user_id))
     );
     lookups.forEach(({ data, error: authError }, index) => {
         if (!authError && data?.user?.last_sign_in_at) adminSignIns.set(linked[index].id, data.user.last_sign_in_at);
-        if (!authError && linked[index].role === "pending_admin") {
-            requestEmails.set(linked[index].id, data?.user?.email);
-        }
     });
 
     return accounts.map((account) => {
@@ -119,8 +117,9 @@ async function listAccounts(supabase, now = Date.now()) {
             role: account.role,
             createdAt: account.created_at,
             active: Boolean(sessionStart) || adminActive,
-            lastSignInAt: lastSignIn,
-            ...(account.role === "pending_admin" && { email: requestEmails.get(account.id) || null })
+            // An admin counts as set up once they've finished their first approved sign-in.
+            ...(account.role === "admin" && { setupComplete: Boolean(account.admin_mfa_factor_id) }),
+            lastSignInAt: lastSignIn
         };
     });
 }
@@ -177,6 +176,51 @@ async function demoteAdmin(supabase, { actor, username }) {
     return { username: account.username, role: "customer" };
 }
 
+/**
+ * Customer → admin. Creates the admin's Supabase sign-in (with the given email and a random
+ * password nobody sees) and approves their authenticator setup. They keep logging in with
+ * their username and Coffee Lab password: the first admin sign-in adopts it (adminMfa.js).
+ */
+async function makeAdmin(supabase, { actor, username, email, now = Date.now() }) {
+    const account = await findTarget(supabase, actor, username);
+    if (account.role !== "customer") throw httpError(409, "Only customer accounts can be made admins.");
+
+    const { data: created, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password: randomBytes(32).toString("base64url"),
+        email_confirm: true
+    });
+    if (authError) {
+        if (authError.code === "email_exists" || authError.status === 422) {
+            throw httpError(409, "That email is already used by another sign-in. Use a different one.");
+        }
+        throw authError;
+    }
+
+    const { data: promoted, error } = await supabase
+        .from("coffee_users")
+        .update({ role: "admin", supabase_auth_user_id: created.user.id, updated_at: new Date(now).toISOString() })
+        .eq("id", account.id)
+        .eq("role", "customer")
+        .select("id")
+        .maybeSingle();
+    if (error || !promoted) {
+        await supabase.auth.admin.deleteUser(created.user.id);
+        if (error) throw error;
+        throw httpError(409, "That account changed while you were making it an admin. Refresh and try again.");
+    }
+    // Their customer sessions stop working anyway (admins must use the authenticator); remove them.
+    const { error: sessionError } = await supabase.from("coffee_sessions").delete().eq("user_id", account.id);
+    if (sessionError) throw sessionError;
+
+    const setup = await provisionAdminSetup(
+        supabase,
+        { ...account, role: "admin", supabase_auth_user_id: created.user.id },
+        { now }
+    );
+    return { username: account.username, role: "admin", setupExpiresAt: setup.expiresAt };
+}
+
 /** Deletes the account. Its orders stay (unlinked); saved drinks and sessions go. */
 async function deleteAccount(supabase, { actor, username }) {
     const account = await findTarget(supabase, actor, username);
@@ -203,5 +247,6 @@ module.exports = {
     signInSuperadmin,
     listAccounts,
     demoteAdmin,
+    makeAdmin,
     deleteAccount
 };

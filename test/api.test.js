@@ -96,9 +96,6 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         // Branches is its own tab, shown only to the superadmin (adminTabs.js un-hides it).
         assert.match(html, /id="admin-tab-branches"[^>]*hidden/);
         assert.match(html, /id="admin-branches-root"/);
-        // Sign-up offers Customer (selected by default) and Admin tabs.
-        assert.match(html, /id="signup-type-customer"[^>]*aria-selected="true"/);
-        assert.match(html, /id="signup-type-admin"[^>]*aria-selected="false"/);
         // Phones show short nav labels so the four pages fit on one line.
         assert.match(html, /<span class="nav-short">Orders<\/span>/);
         assert.match(html, /id="checkout-reward-field"[^>]*hidden/);
@@ -116,7 +113,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="login-form"/);
         assert.match(html, /id="admin-mfa-form"/);
         assert.match(html, /id="admin-mfa-qr"/);
-        assert.match(html, /id="admin-mfa-bootstrap-token"/);
+        // No one-time setup key: the superadmin approves authenticator setup instead.
+        assert.doesNotMatch(html, /admin-mfa-bootstrap-token/);
+        assert.doesNotMatch(html, /signup-type/);
         assert.match(html, /id="admin-mfa-enroll"/);
         assert.match(html, /id="recovery-form"/);
         assert.match(html, /id="logout-button"/);
@@ -213,25 +212,37 @@ test("serves the customizer and validates quote and checkout API requests", asyn
 
         const unauthenticatedOrderHistory = await fetch(`${baseUrl}/api/orders/mine`);
         assert.equal(unauthenticatedOrderHistory.status, 401);
-        const unauthenticatedAdminMfaEnroll = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
+        // A setup key is no longer accepted at all.
+        const adminMfaEnrollWithKey = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ bootstrapToken: "a".repeat(32) })
         });
-        assert.equal(unauthenticatedAdminMfaEnroll.status, 401);
-        // No key is allowed (an admin approved in the admin page), but a session is still required.
+        assert.equal(adminMfaEnrollWithKey.status, 400);
+        // Enrolling needs no key, but a session is still required.
         const missingAdminMfaBootstrapToken = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: "{}"
         });
         assert.equal(missingAdminMfaBootstrapToken.status, 401);
-        const shortAdminMfaBootstrapToken = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
+        // Sign-up makes customers only: an account type or email is refused.
+        const adminSignup = await fetch(`${baseUrl}/api/users/signup`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ bootstrapToken: "short" })
+            body: JSON.stringify({ username: "new_admin", password: "x".repeat(12), accountType: "admin" })
         });
-        assert.equal(shortAdminMfaBootstrapToken.status, 400);
+        assert.equal(adminSignup.status, 400);
+        assert.equal(
+            (
+                await fetch(`${baseUrl}/api/superadmin/accounts/someone/make-admin`, {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ email: "someone@coffeelab.test" })
+                })
+            ).status,
+            401
+        );
         assert.equal((await fetch(`${baseUrl}/api/admin/accounts`)).status, 401);
         const unauthenticatedApproval = await fetch(`${baseUrl}/api/admin/accounts/arthur_admin/approve-setup`, {
             method: "POST",
