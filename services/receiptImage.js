@@ -1,5 +1,11 @@
-const { displayOrderCode } = require("./orderCode");
-const { describePaymentInstruction } = require("./paymentService");
+const { RECEIPT_COLUMNS, buildReceipt, buildReceiptLines } = require("./receiptModel");
+
+// Same layout as the PDF (services/receiptModel.js), drawn as an SVG "paper slip".
+const FONT_SIZE = 20;
+const CHAR_WIDTH = FONT_SIZE * 0.6;
+const LINE_HEIGHT = 29;
+const PADDING = 36;
+const WIDTH = Math.round(RECEIPT_COLUMNS * CHAR_WIDTH + 2 * PADDING);
 
 function escapeXml(value) {
     return String(value)
@@ -10,111 +16,64 @@ function escapeXml(value) {
         .replace(/'/g, "&apos;");
 }
 
-function formatMoney(cents) {
-    return `PHP ${((Number(cents) || 0) / 100).toFixed(2)}`;
-}
-
-function formatDate(value) {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-        ? "Date unavailable"
-        : date.toLocaleString("en-PH", {
-              dateStyle: "medium",
-              timeStyle: "short",
-              timeZone: "Asia/Manila"
-          });
-}
-
-function truncate(value, maxLength) {
-    const text = String(value || "");
-    return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+// The paper, with a torn zigzag along the bottom edge.
+function paperPath(bottom) {
+    const step = 16;
+    let path = `M0 0 H${WIDTH} V${bottom}`;
+    for (let x = WIDTH; x > 0; x -= step)
+        path += ` L${x - step / 2} ${bottom + 10} L${Math.max(0, x - step)} ${bottom}`;
+    return `${path} Z`;
 }
 
 function createReceiptImage(order) {
-    const items = order.order_items || [];
-    const pricing = order.pricing || {};
-    const customer = order.customer || {};
-    const orderCode = displayOrderCode(order);
-    const lines = [];
-    let y = 440;
-
-    items.forEach((item, index) => {
-        lines.push(`<text x="72" y="${y}" class="item">${escapeXml(truncate(item.name || "Coffee", 44))}</text>`);
-        if (item.classification) {
-            lines.push(
-                `<text x="72" y="${y + 25}" class="subitem">${escapeXml(truncate(item.classification, 52))}</text>`
-            );
+    const receipt = buildReceipt(order);
+    const lines = buildReceiptLines(order);
+    const right = WIDTH - PADDING;
+    const parts = [];
+    let y = PADDING + LINE_HEIGHT * 0.75;
+    for (const line of lines) {
+        if (line.rule) {
+            const middle = Math.round(y - LINE_HEIGHT * 0.3);
+            const rule = line.rule === "=" ? "rule-strong" : "rule";
+            parts.push(`<path d="M${PADDING} ${middle}H${right}" class="${rule}"/>`);
+        } else if (!line.blank) {
+            const classes = [line.bold ? "bold" : "", line.large ? "large" : ""].filter(Boolean).join(" ");
+            const attribute = classes ? ` class="${classes}"` : "";
+            if (line.align === "center") {
+                parts.push(
+                    `<text x="${WIDTH / 2}" y="${y}" text-anchor="middle"${attribute}>${escapeXml(line.left)}</text>`
+                );
+            } else {
+                if (line.left) {
+                    parts.push(
+                        `<text x="${PADDING}" y="${y}" xml:space="preserve"${attribute}>${escapeXml(line.left)}</text>`
+                    );
+                }
+                if (line.right) {
+                    parts.push(
+                        `<text x="${right}" y="${y}" text-anchor="end"${attribute}>${escapeXml(line.right)}</text>`
+                    );
+                }
+            }
         }
-        lines.push(
-            `<text x="828" y="${y}" class="item price" text-anchor="end">${escapeXml(formatMoney(item.price_cents))}</text>`
-        );
-        if (index < items.length - 1) {
-            lines.push(`<path d="M72 ${y + 44}H828" class="rule"/>`);
-        }
-        y += 62;
-    });
-
-    y += 18;
-    const totals = [
-        ["Drinks subtotal", pricing.subtotal_cents],
-        ["Delivery", pricing.delivery_fee_cents],
-        ["Service fee", pricing.service_fee_cents],
-        // Newer orders include VAT in the prices; it is shown for information, not added.
-        [pricing.vat_inclusive ? "VAT included (12%)" : "Tax", pricing.tax_cents],
-        ["Tip", pricing.tip_cents]
-    ];
-    totals.forEach(([label, amount]) => {
-        if (label === "Delivery" && !Number(amount)) return;
-        lines.push(`<text x="72" y="${y}" class="total-label">${escapeXml(label)}</text>`);
-        lines.push(
-            `<text x="828" y="${y}" class="total-value" text-anchor="end">${escapeXml(formatMoney(amount))}</text>`
-        );
-        y += 42;
-    });
-
-    const totalY = y + 15;
-    const footerY = totalY + 131;
-    const height = footerY + 72;
-    const fulfillment = order.fulfillment_method === "pickup" ? "Pickup" : "Delivery";
-    const paymentInstruction = describePaymentInstruction(order.fulfillment_method, order.payment_method);
-    const customerName = truncate(customer.name || "Coffee Lab customer", 64);
-    const address =
-        order.fulfillment_method === "delivery" && order.delivery_address
-            ? `<text x="72" y="340" class="meta">Address: ${escapeXml(truncate(order.delivery_address, 78))}</text>`
-            : "";
+        y += LINE_HEIGHT;
+    }
+    const paperBottom = Math.round(y + PADDING / 2);
+    const height = paperBottom + 12;
+    const total = lines.find((line) => /^TOTAL (DUE|PAID)$/.test(line.left));
 
     return Buffer.from(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="${height}" viewBox="0 0 900 ${height}" role="img" aria-labelledby="title description">
-            <title id="title">Coffee Lab order receipt ${escapeXml(orderCode)}</title>
-            <desc id="description">Receipt for ${escapeXml(customerName)}, total ${escapeXml(formatMoney(pricing.total_cents))}.</desc>
-            <style>
-                .brand{font:700 35px Arial,sans-serif;fill:#3b2314}.eyebrow{font:700 13px Arial,sans-serif;letter-spacing:3px;fill:#a47747}
-                .order{font:700 18px Arial,sans-serif;fill:#3b2314}.meta{font:16px Arial,sans-serif;fill:#66594b}
-                .section{font:700 13px Arial,sans-serif;letter-spacing:2px;fill:#8a725b}.item{font:600 17px Arial,sans-serif;fill:#30251d}
-                .subitem{font:13px Arial,sans-serif;fill:#8a8176}.price,.total-value{font:600 16px Arial,sans-serif;fill:#30251d}
-                .total-label{font:15px Arial,sans-serif;fill:#66594b}.grand-label{font:700 18px Arial,sans-serif;fill:#3b2314}
-                .grand-value{font:700 28px Arial,sans-serif;fill:#3b2314}.footer{font:15px Arial,sans-serif;fill:#77695b}
-                .rule{stroke:#e9dfd2;stroke-width:1}
-            </style>
-            <rect width="900" height="${height}" rx="28" fill="#f2ede5"/>
-            <rect x="28" y="28" width="844" height="${height - 56}" rx="20" fill="#fffdf9" stroke="#e5d9ca" stroke-width="2"/>
-            <text x="72" y="96" class="eyebrow">COFFEE LAB</text>
-            <text x="72" y="145" class="brand">Order receipt</text>
-            <text x="72" y="190" class="order">${escapeXml(orderCode)}</text>
-            <text x="72" y="228" class="meta">${escapeXml(formatDate(order.created_at))}</text>
-            <text x="72" y="266" class="meta">${escapeXml(fulfillment)} · ${escapeXml(customerName)}</text>
-            ${address}
-            <path d="M72 380H828" class="rule"/>
-            <text x="72" y="414" class="section">ITEM</text>
-            <text x="828" y="414" class="section" text-anchor="end">AMOUNT</text>
-            ${lines.join("\n")}
-            <path d="M72 ${totalY}H828" class="rule"/>
-            <text x="72" y="${totalY + 52}" class="grand-label">TOTAL DUE</text>
-            <text x="72" y="${totalY + 76}" class="meta">${escapeXml(paymentInstruction)}</text>
-            <text x="828" y="${totalY + 58}" class="grand-value" text-anchor="end">${escapeXml(formatMoney(pricing.total_cents))}</text>
-            <path d="M72 ${totalY + 96}H828" class="rule"/>
-            <text x="450" y="${footerY}" class="footer" text-anchor="middle">Thank you for choosing Coffee Lab.</text>
-        </svg>`,
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${height}" viewBox="0 0 ${WIDTH} ${height}" role="img" aria-labelledby="title description">
+<title id="title">${escapeXml(receipt.business.name)} receipt ${escapeXml(receipt.number)}</title>
+<desc id="description">Receipt for ${escapeXml(receipt.customerName)}, ${escapeXml(total ? `${total.left} ${total.right}` : "")}.</desc>
+<style>
+text{white-space:pre;font-family:"Courier New",Courier,monospace;font-size:${FONT_SIZE}px;fill:#1c1a17}
+.bold{font-weight:700}.large{font-size:${Math.round(FONT_SIZE * 1.25)}px}
+.rule{stroke:#1c1a17;stroke-width:1;stroke-dasharray:4 4}.rule-strong{stroke:#1c1a17;stroke-width:2}
+</style>
+<path d="${paperPath(paperBottom)}" fill="#fffdf8" stroke="#ddd5c8" stroke-width="1"/>
+${parts.join("\n")}
+</svg>`,
         "utf8"
     );
 }

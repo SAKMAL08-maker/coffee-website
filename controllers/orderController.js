@@ -556,6 +556,14 @@ async function markCashCollected(request, response, next) {
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
         response.json({ order: { id: data.id, cashCollectedAt: data.cash_collected_at } });
+        // Reissue the receipt so the customer's copy says PAID. Runs after the response; on failure the
+        // order shows "Receipt failed" and the existing retry button makes it again.
+        createOrderReceipt(data.id).catch((receiptError) =>
+            console.error("Receipt reissue after cash collection failed:", {
+                orderId: data.id,
+                error: receiptError.message
+            })
+        );
     } catch (error) {
         next(error);
     }

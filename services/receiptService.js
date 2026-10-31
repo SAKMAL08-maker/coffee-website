@@ -20,7 +20,7 @@ async function createOrderReceipt(orderId) {
     const { data: order, error } = await supabase
         .from("orders")
         .select(
-            "id, tracking_code, customer, fulfillment_method, delivery_address, payment_method, pricing, created_at, order_items(name, classification, price_cents)"
+            "id, tracking_code, customer, fulfillment_method, delivery_address, payment_method, cash_collected_at, pricing, created_at, order_items(name, classification, price_cents)"
         )
         .eq("id", orderId)
         .maybeSingle();
@@ -127,7 +127,7 @@ async function getReceiptImageUrl(orderId) {
     const { data: order, error } = await supabase
         .from("orders")
         .select(
-            "id, tracking_code, receipt_status, receipt_object_key, receipt_image_object_key, customer, fulfillment_method, delivery_address, pricing, created_at, order_items(name, classification, price_cents)"
+            "id, tracking_code, receipt_status, receipt_object_key, receipt_image_object_key, customer, fulfillment_method, delivery_address, payment_method, cash_collected_at, pricing, created_at, order_items(name, classification, price_cents)"
         )
         .eq("id", orderId)
         .maybeSingle();

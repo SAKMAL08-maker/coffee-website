@@ -231,8 +231,10 @@ a:focus-visible {
     border: 1px solid var(--line);
     border-radius: 10px;
     background: var(--paper);
+    color: var(--ink);
     font-size: 0.88rem;
     font-weight: 700;
+    text-decoration: none;
     cursor: pointer;
     transition:
         transform 0.16s ease,
@@ -2213,11 +2215,6 @@ dialog::backdrop {
     font-weight: 750;
     text-underline-offset: 3px;
 }
-.privacy-footer-link {
-    color: var(--muted);
-    font-size: 0.78rem;
-    text-underline-offset: 3px;
-}
 .privacy-shell {
     max-width: 900px;
     margin: 0 auto;
@@ -2284,30 +2281,6 @@ dialog::backdrop {
 }
 
 /* Keep the privacy policy discoverable from both signed-out and signed-in screens. */
-.privacy-global-link {
-    margin: 18px 0 28px;
-    text-align: center;
-    font-size: 0.85rem;
-}
-.privacy-global-link a,
-.privacy-nav-link {
-    color: var(--coffee);
-    font-size: 0.82rem;
-    font-weight: 750;
-    text-underline-offset: 3px;
-}
-.privacy-nav-link {
-    white-space: nowrap;
-}
-:root[data-theme="dark"] .privacy-global-link a,
-:root[data-theme="dark"] .privacy-nav-link {
-    color: #e0b28f;
-}
-@media (max-width: 760px) {
-    .privacy-nav-link {
-        order: 10;
-    }
-}
 
 /* Community recipes: banner for a shared link, and the publish dialog's QR result. */
 .shared-recipe-banner {
@@ -3126,11 +3099,6 @@ dialog::backdrop {
 :root[data-theme="dark"] .cup-capacity {
     color: var(--muted);
 }
-/* Download CSV is a link styled as a button. */
-a.button {
-    color: var(--ink);
-    text-decoration: none;
-}
 /* Cart Edit/Remove were 23 px tall. */
 .recipe-link,
 .delete-recipe {
@@ -3143,4 +3111,55 @@ a.button {
     border: 1px solid var(--line);
     color: var(--muted);
     text-decoration: line-through;
+}
+/* Site footer: legal links, contact and social, on every page. */
+.site-footer {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 14px 32px;
+    margin-top: 40px;
+    padding: 22px 0 8px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+.site-footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.site-footer-brand strong {
+    color: var(--ink);
+}
+.site-footer-brand p {
+    margin: 0;
+}
+.site-footer-links,
+.site-footer-social {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+}
+.site-footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+}
+.site-footer a:hover {
+    text-decoration: underline;
+}
+.site-footer-copy {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 0.8rem;
+}
+@media (max-width: 760px) {
+    .site-footer {
+        grid-template-columns: 1fr;
+    }
 }

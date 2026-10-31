@@ -98,3 +98,48 @@ test("receipts use the same order number as the screens: CL- plus the tracking c
     }).toString("utf8");
     assert.match(image, /CL-AB12CD/);
 });
+
+test("receipts follow the point-of-sale format: VAT breakdown, paid status, 42 columns, one 80 mm page", async () => {
+    const { buildReceiptLines, RECEIPT_COLUMNS } = require("../services/receiptModel");
+    const order = {
+        id: "c5c0c718-6e68-4a0f-b490-eaa4897bb4b1",
+        tracking_code: "f".repeat(42) + "ab12cd",
+        customer: { name: "Juan Dela Cruz" },
+        fulfillment_method: "delivery",
+        delivery_address: "Unit 12B, 88 Katipunan Avenue, Loyola Heights, Quezon City, Metro Manila",
+        payment_method: "cash",
+        cash_collected_at: "2026-10-31T05:40:00Z",
+        created_at: "2026-10-31T05:12:00Z",
+        pricing: {
+            subtotal_cents: 25000,
+            delivery_fee_cents: 4900,
+            service_fee_cents: 2000,
+            tax_cents: 3418,
+            vat_inclusive: true,
+            tip_cents: 3750,
+            total_cents: 35650
+        },
+        order_items: Array.from({ length: 12 }, (_, index) => ({
+            name: `Iced Caramel Macchiato with an extra shot number ${index}`,
+            classification: "Macchiato",
+            price_cents: 25000
+        }))
+    };
+    const lines = buildReceiptLines(order);
+    for (const line of lines.filter((candidate) => !candidate.rule && !candidate.blank)) {
+        const text = `${line.left || ""}${line.right ? ` ${line.right}` : ""}`;
+        assert.ok(text.length <= RECEIPT_COLUMNS, `too wide: ${text}`);
+    }
+    const text = lines.map((line) => `${line.left || ""} ${line.right || ""}`).join("\n");
+    assert.match(text, /TOTAL PAID +PHP 356\.50/);
+    // VAT-inclusive: VATable sales + VAT = drinks + delivery + service charge (₱319.00); the tip is outside VAT.
+    assert.match(text, /VATable sales +284\.82/);
+    assert.match(text, /VAT amount \(12%\) +34\.18/);
+    assert.match(text, /PAID - Cash, Oct 31, 2026/);
+    assert.match(text, /CL-AB12CD/);
+    assert.match(text, /Not\s+valid for claiming input tax/);
+
+    const pdf = (await createReceiptPdf(order)).toString("latin1");
+    assert.equal((pdf.match(/\/Type \/Page\b/g) || []).length, 1, "the whole receipt fits on one page");
+    assert.match(pdf, /\/MediaBox \[0 0 226\.77/);
+});
