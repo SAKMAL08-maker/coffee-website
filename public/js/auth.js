@@ -296,6 +296,46 @@
         if (signOutError) showMessage(`Could not complete sign out: ${signOutError.message}`);
     });
 
+    // Sign-up tabs: Customer (the default) or Admin, which sends a request the superadmin approves.
+    let signupType = "customer";
+    function setSignupType(type, { focus = false } = {}) {
+        signupType = type;
+        const isAdmin = type === "admin";
+        document.querySelectorAll("[data-account-type]").forEach((tab) => {
+            const isSelected = tab.dataset.accountType === type;
+            tab.setAttribute("aria-selected", String(isSelected));
+            tab.tabIndex = isSelected ? 0 : -1;
+            if (isSelected && focus) tab.focus();
+        });
+        $("#signup-admin-note").hidden = !isAdmin;
+        $("#signup-email-field").hidden = !isAdmin;
+        $("#signup-email").required = isAdmin;
+        $("#signup-password-help").textContent = isAdmin
+            ? "Use at least 12 characters. Admin passwords can't be recovered with codes; if you forget it, the project owner resets it in Supabase."
+            : "Use at least 12 characters. Password recovery requires a saved recovery code; there is no email or phone recovery.";
+        $("#signup-submit").textContent = isAdmin ? "Request admin account" : "Create account";
+    }
+    document.querySelectorAll("[data-account-type]").forEach((tab) => {
+        tab.addEventListener("click", () => setSignupType(tab.dataset.accountType));
+        tab.addEventListener("keydown", (event) => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const next =
+                event.key === "Home"
+                    ? "customer"
+                    : event.key === "End"
+                      ? "admin"
+                      : signupType === "admin"
+                        ? "customer"
+                        : "admin";
+            setSignupType(next, { focus: true });
+        });
+    });
+    // Every visit to the sign-up screen starts on the Customer tab.
+    document.querySelectorAll('[data-show-auth="signup"]').forEach((link) => {
+        link.addEventListener("click", () => setSignupType("customer"));
+    });
+
     $("#signup-form").addEventListener("submit", async (event) => {
         event.preventDefault();
         const form = event.currentTarget;
@@ -312,12 +352,25 @@
                 credentials: "same-origin",
                 body: JSON.stringify({
                     username: $("#signup-username").value.trim(),
-                    password
+                    password,
+                    ...(signupType === "admin" && { accountType: "admin", email: $("#signup-email").value.trim() })
                 })
             });
             return readResponse(response);
         });
         if (!result) return;
+
+        if (result.pendingApproval) {
+            $("#signup-form").reset();
+            setSignupType("customer");
+            showScreen("login");
+            showMessage(
+                "Admin request sent. You can log in once the superadmin approves it; there are no recovery codes for admin accounts.",
+                false
+            );
+            $("#login-username").value = result.user.username;
+            return;
+        }
 
         createdUsername = result.user.username;
         recoveryCodes = result.recoveryCodes;

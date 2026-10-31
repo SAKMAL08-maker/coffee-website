@@ -92,6 +92,33 @@
                     </form>
 
                     <form class="auth-form" id="signup-form" data-auth-screen="signup" hidden>
+                        <div class="signup-type" role="tablist" aria-label="Account type">
+                            <button
+                                class="signup-type-tab"
+                                id="signup-type-customer"
+                                type="button"
+                                role="tab"
+                                data-account-type="customer"
+                                aria-selected="true"
+                            >
+                                Customer
+                            </button>
+                            <button
+                                class="signup-type-tab"
+                                id="signup-type-admin"
+                                type="button"
+                                role="tab"
+                                data-account-type="admin"
+                                aria-selected="false"
+                                tabindex="-1"
+                            >
+                                Admin
+                            </button>
+                        </div>
+                        <p class="field-help signup-admin-note" id="signup-admin-note" hidden>
+                            An admin account works only after the superadmin approves it. Once approved, you log in and
+                            set up an authenticator app.
+                        </p>
                         <label for="signup-username">Choose a username</label>
                         <input
                             id="signup-username"
@@ -113,6 +140,11 @@
                             details and how to contact us about your information, and you agree to our
                             <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Use</a>.
                         </p>
+                        <div id="signup-email-field" hidden>
+                            <label for="signup-email">Work email</label>
+                            <input id="signup-email" name="email" type="email" autocomplete="email" maxlength="254" />
+                            <span class="field-help">Admins sign in with this email behind the scenes.</span>
+                        </div>
                         <label for="signup-password">Create a password</label>
                         <input
                             id="signup-password"
@@ -133,11 +165,13 @@
                             maxlength="128"
                             required
                         />
-                        <p class="field-help">
+                        <p class="field-help" id="signup-password-help">
                             Use at least 12 characters. Password recovery requires a saved recovery code; there is no
                             email or phone recovery.
                         </p>
-                        <button class="button button-primary auth-submit" type="submit">Create account</button>
+                        <button class="button button-primary auth-submit" id="signup-submit" type="submit">
+                            Create account
+                        </button>
                         <p class="auth-switch">
                             Already have an account?
                             <button class="auth-link" type="button" data-show-auth="login">Log in</button>

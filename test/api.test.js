@@ -96,6 +96,9 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         // Branches is its own tab, shown only to the superadmin (adminTabs.js un-hides it).
         assert.match(html, /id="admin-tab-branches"[^>]*hidden/);
         assert.match(html, /id="admin-branches-root"/);
+        // Sign-up offers Customer (selected by default) and Admin tabs.
+        assert.match(html, /id="signup-type-customer"[^>]*aria-selected="true"/);
+        assert.match(html, /id="signup-type-admin"[^>]*aria-selected="false"/);
         // Phones show short nav labels so the four pages fit on one line.
         assert.match(html, /<span class="nav-short">Orders<\/span>/);
         assert.match(html, /id="checkout-reward-field"[^>]*hidden/);

@@ -439,3 +439,10 @@ Follow-up: a count badge on the Admin access / Accounts tab shows how many admin
 - **Follow-up (risks from the review):**
     - On screens 761–1000 px wide, the admin order's drinks summary moves to its own line under the customer's name instead of being squeezed by the fixed status and action columns.
     - On phones up to 520 px, the customer nav uses short labels ("Customize", "Orders", "Support", "Profile") and fits on one line down to 360 px. On narrower phones it scrolls, and the edge with more buttons fades out as a visible hint.
+
+### Admin sign-up requests
+
+- **Sign-up tabs:** the sign-up form has **Customer** (selected by default, every visit) and **Admin** tabs. The Admin tab adds a work email field and sends a request instead of creating a working account. Admin requests get no recovery codes, because admin passwords live in Supabase Auth, which recovery codes can't reset.
+- **Waiting state:** a request is a `pending_admin` account linked to a Supabase Auth user whose email stays unconfirmed, so it can't sign in either way. Logging in with the right password says the request is waiting; a wrong password gets the usual answer, so usernames don't leak. At most 20 requests can wait at once.
+- **Superadmin approval:** requests appear at the top of **Accounts → Admins** with their email, and **Approve** / **Decline** buttons. Approve confirms the sign-in, makes the account an admin and approves its authenticator setup for 24 hours; Decline deletes the request and its sign-in.
+- **Migration:** `20261113000000_admin_signup_requests.sql` adds `pending_admin` to the allowed roles. It must be applied before admin requests work; customer sign-up doesn't depend on it.
