@@ -215,6 +215,7 @@ test("the browser quote reports the same totals checkout will save, with a consi
                 vatInclusive: true,
                 tipPercent: saved.pricing.tip_percent,
                 tipCents: saved.pricing.tip_cents,
+                rewardDiscountCents: 0,
                 totalCents: saved.pricing.total_cents
             });
             quote.items.forEach((item, index) => {

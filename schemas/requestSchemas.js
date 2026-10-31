@@ -134,6 +134,7 @@ const checkoutBody = z
         deliveryAddress: z.string().trim().min(1).max(300).optional(),
         deliveryCoordinates: coordinates.optional(),
         tipPercent: z.number().finite().min(0).max(100).default(15),
+        redeemFreeDrink: z.boolean().optional(),
         customer: z
             .object({
                 name: z.string().trim().min(1).max(80),
@@ -162,7 +163,8 @@ const orderQuoteBody = z
     .object({
         items: z.array(orderItem).min(1).max(20),
         fulfillmentMethod: z.enum(["delivery", "pickup"]),
-        tipPercent: z.number().finite().min(0).max(100).default(15)
+        tipPercent: z.number().finite().min(0).max(100).default(15),
+        redeemFreeDrink: z.boolean().optional()
     })
     .strict();
 const schemas = {

@@ -3596,3 +3596,35 @@ dialog::backdrop {
         max-width: 92%;
     }
 }
+/* Loyalty reward at checkout, points meter on the profile, "Order again". */
+.checkout-reward {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--coffee);
+    border-radius: 12px;
+    background: var(--cream);
+    font-weight: 700;
+}
+.checkout-reward input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--coffee);
+}
+.profile-points-meter {
+    width: 100%;
+    height: 8px;
+    margin-top: 6px;
+    accent-color: var(--coffee);
+}
+.profile-order-again {
+    justify-self: start;
+    margin-top: 8px;
+}
+.order-history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}

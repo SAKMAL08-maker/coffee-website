@@ -46,27 +46,52 @@
         return card;
     }
 
+    function pointsCard(points) {
+        const goal = Number(points.freeDrinkPoints) || 100;
+        const available = Number(points.available) || 0;
+        const ready = available >= goal;
+        const hint = [
+            ready
+                ? "A free drink is ready. Tick “Use my points” at checkout."
+                : `${number.format(goal - available)} more to a free drink`,
+            points.pending ? `+${number.format(points.pending)} pending until those orders are paid` : ""
+        ]
+            .filter(Boolean)
+            .join(" · ");
+        const card = stat("Loyalty points", number.format(available), hint);
+        const meter = document.createElement("progress");
+        meter.className = "profile-points-meter";
+        meter.max = goal;
+        meter.value = Math.min(goal, available);
+        meter.setAttribute("aria-label", `${Math.min(goal, available)} of ${goal} points toward a free drink`);
+        card.append(meter);
+        return card;
+    }
+
     function customerStats(stats) {
         const cards = [];
         if (stats.favorite) {
             const times = Number(stats.favorite.times) || 0;
-            cards.push(
-                stat(
-                    "Your most-ordered drink",
-                    stats.favorite.name,
-                    `Ordered ${times} time${times === 1 ? "" : "s"}${stats.favorite.classification ? ` · ${stats.favorite.classification}` : ""}`,
-                    true
+            const favorite = stat(
+                "Your most-ordered drink",
+                stats.favorite.name,
+                `Ordered ${times} time${times === 1 ? "" : "s"}${stats.favorite.classification ? ` · ${stats.favorite.classification}` : ""}`,
+                true
+            );
+            const again = document.createElement("button");
+            again.type = "button";
+            again.className = "button button-primary button-small profile-order-again";
+            again.textContent = "Order it again";
+            again.addEventListener("click", () =>
+                document.dispatchEvent(
+                    new CustomEvent("coffeelab:order-again", { detail: { name: stats.favorite.name } })
                 )
             );
+            favorite.append(again);
+            cards.push(favorite);
         }
         cards.push(
-            stat(
-                "Loyalty points",
-                number.format(stats.points.earned),
-                stats.points.pending
-                    ? `+${number.format(stats.points.pending)} pending until those orders are paid`
-                    : "Earned when others order your published recipes"
-            ),
+            pointsCard(stats.points),
             stat("Recipes published", number.format(stats.publishedRecipes || 0)),
             stat(
                 "Orders placed",

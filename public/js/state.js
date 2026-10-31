@@ -134,6 +134,8 @@ window.CoffeeLabState = (() => {
         fulfillmentMethod: "delivery",
         tipPercent: 0,
         customTipPercent: 15,
+        // Spend loyalty points on a free drink (checkout checkbox; the server checks the balance).
+        redeemFreeDrink: false,
         orderStatus: null
     };
 

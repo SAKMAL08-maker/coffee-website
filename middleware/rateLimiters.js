@@ -69,6 +69,7 @@ module.exports = {
     avatarReadLimiter: createLimiter(60 * 1000, 300, "avatarReadLimiter"),
     // An open chat polls every 5 s and the ticket list every 30 s.
     supportReadLimiter: createLimiter(60 * 1000, 120, "supportReadLimiter"),
+    rewardsLimiter: createLimiter(60 * 1000, 60, "rewardsLimiter"),
     supportWriteLimiter: createLimiter(60 * 1000, 30, "supportWriteLimiter"),
     supportTicketLimiter: createLimiter(60 * 60 * 1000, 10, "supportTicketLimiter")
 };

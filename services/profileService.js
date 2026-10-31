@@ -3,6 +3,7 @@
  * (customer: orders, favourite drink, points; admin/staff: orders accepted, closed, cash).
  * Statistics are computed in Postgres (customer_profile_stats / staff_profile_stats).
  */
+const { getLoyaltyBalance } = require("./loyaltyService");
 const { MAX_AVATAR_BYTES, detectImageType, uploadAvatar, deleteAvatar } = require("./avatarStorage");
 
 const BIO_MAX_LENGTH = 280;
@@ -52,19 +53,11 @@ function isMissingFunction(error) {
 async function loadCustomerStats(supabase, accountId) {
     const [stats, points] = await Promise.all([
         supabase.rpc("customer_profile_stats", { p_account_id: accountId }),
-        supabase.rpc("recipe_royalty_summary", { p_account_id: accountId }).maybeSingle()
+        getLoyaltyBalance(supabase, accountId)
     ]);
     if (stats.error && !isMissingFunction(stats.error)) throw stats.error;
-    if (points.error && !isMissingFunction(points.error)) throw points.error;
     if (stats.error) return null;
-    return {
-        kind: "customer",
-        ...stats.data,
-        points: {
-            earned: Number(points.data?.earned_points) || 0,
-            pending: Number(points.data?.pending_points) || 0
-        }
-    };
+    return { kind: "customer", ...stats.data, points };
 }
 
 async function loadStaffStats(supabase, accountId, now = new Date()) {
