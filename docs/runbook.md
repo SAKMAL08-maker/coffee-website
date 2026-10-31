@@ -77,7 +77,11 @@ Every customer will need to sign in again. Passwords are unaffected.
 
 ### Admin authenticator (lost phone or suspected compromise)
 
-Follow [guide.md §6](../instructions/guide.md#6-owner-authorized-first-totp-enrollment): run `node scripts/admin-mfa-bootstrap.js <admin-username> --confirm-reset` locally. It deletes the admin's existing factors and prints a 30-minute setup authorization for re-enrollment. Also change that admin's Supabase Auth password (Supabase → **Authentication → Users**).
+**Easiest:** sign in as another admin, open **Admin access** on the admin page, and click **Reset** next to them (or **Approve setup** for a brand-new admin). Their old authenticator stops working, and at their next sign-in, within 24 hours, they scan a new QR code with no key to type. Set `ADMIN_APPROVER_USERNAMES` on Render (comma-separated) to limit who can do this. Without it, any MFA-verified admin can.
+
+**New admin:** `NEW_ADMIN_PASSWORD=... node scripts/create-admin-account.js <username> --email <email>` creates the confirmed Supabase Auth user and the linked admin account in one step. Then approve them as above.
+
+**Terminal fallback:** follow [guide.md §6](../instructions/guide.md#6-owner-authorized-first-totp-enrollment): run `node scripts/admin-mfa-bootstrap.js <admin-username> --confirm-reset` locally. It deletes the admin's existing factors and prints a 30-minute setup authorization for re-enrollment. Also change that admin's Supabase Auth password (Supabase → **Authentication → Users**).
 
 ## 4. Keep-alive (free tiers)
 

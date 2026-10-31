@@ -95,9 +95,15 @@
     });
 
     let adminMfaFactorId = "";
+    let adminMfaPreapproved = false;
 
     async function startAdminMfa(result) {
         adminMfaFactorId = result.factorId || "";
+        adminMfaPreapproved = Boolean(result.setupRequired && result.setupPreapproved);
+        $("#admin-mfa-key-fields").hidden = adminMfaPreapproved;
+        $("#admin-mfa-enroll").textContent = adminMfaPreapproved
+            ? "Set up authenticator"
+            : "Authorize authenticator setup";
         $("#admin-mfa-bootstrap-token").value = "";
         $("#admin-mfa-bootstrap-token").hidden = false;
         $("#admin-mfa-enroll").disabled = false;
@@ -109,13 +115,15 @@
         $("#admin-mfa-verify").disabled = true;
         $("#admin-mfa-enroll").hidden = false;
         showScreen("admin-mfa");
-        $("#admin-mfa-description").textContent = result.setupRequired
-            ? `Welcome, ${result.username}. Your project owner must provide a one-time setup authorization before you can register an authenticator.`
-            : result.setupInProgress
-              ? `Finish the authenticator setup for ${result.username} using the app where you saved the setup key.`
-              : `Enter the current authenticator code for ${result.username}.`;
+        $("#admin-mfa-description").textContent = adminMfaPreapproved
+            ? `Welcome, ${result.username}. Your setup was approved. Tap below, then scan the QR code with your authenticator app.`
+            : result.setupRequired
+              ? `Welcome, ${result.username}. Your project owner must provide a one-time setup authorization before you can register an authenticator.`
+              : result.setupInProgress
+                ? `Finish the authenticator setup for ${result.username} using the app where you saved the setup key.`
+                : `Enter the current authenticator code for ${result.username}.`;
         $("#admin-mfa-setup").hidden = !result.setupRequired;
-        $("#admin-mfa-bootstrap-token").required = result.setupRequired;
+        $("#admin-mfa-bootstrap-token").required = result.setupRequired && !adminMfaPreapproved;
         if (result.factorId) {
             $("#admin-mfa-code").disabled = false;
             $("#admin-mfa-verify").disabled = false;
@@ -129,7 +137,7 @@
     $("#admin-mfa-enroll").addEventListener("click", async () => {
         const button = $("#admin-mfa-enroll");
         const bootstrapToken = $("#admin-mfa-bootstrap-token").value.trim();
-        if (bootstrapToken.length < 32) {
+        if (!adminMfaPreapproved && bootstrapToken.length < 32) {
             showMessage("Enter the one-time setup authorization from the project owner.");
             $("#admin-mfa-bootstrap-token").focus();
             return;
@@ -141,7 +149,7 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "same-origin",
-                body: JSON.stringify({ bootstrapToken })
+                body: JSON.stringify(adminMfaPreapproved ? {} : { bootstrapToken })
             });
             const enrollment = await readResponse(response);
             adminMfaFactorId = enrollment.factorId;
