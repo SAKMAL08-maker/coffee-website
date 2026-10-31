@@ -24,6 +24,7 @@ const {
     retryAdminReceipt: retryAdminReceiptService,
     deleteStoredReceipt
 } = require("../services/receiptService");
+const { ORDER_EVENT, EVENT_FOR_STATUS, recordOrderEvent } = require("../services/orderEvents");
 
 function badRequest(message) {
     return Object.assign(new Error(message), { statusCode: 400 });
@@ -482,6 +483,7 @@ async function approveDelivery(request, response, next) {
             .maybeSingle();
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        await recordOrderEvent(supabase, { orderId: data.id, actorId: request.user.id, action: ORDER_EVENT.CLOSED });
         response.json({ order: { id: data.id, status: data.status, deliveryApprovedAt: data.delivery_approved_at } });
     } catch (error) {
         next(error);
@@ -520,6 +522,7 @@ async function approvePickup(request, response, next) {
             .maybeSingle();
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        await recordOrderEvent(supabase, { orderId: data.id, actorId: request.user.id, action: ORDER_EVENT.CLOSED });
         response.json({ order: { id: data.id, status: data.status, pickupApprovedAt: data.pickup_approved_at } });
     } catch (error) {
         next(error);
@@ -555,6 +558,11 @@ async function markCashCollected(request, response, next) {
             .maybeSingle();
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        await recordOrderEvent(supabase, {
+            orderId: data.id,
+            actorId: request.user.id,
+            action: ORDER_EVENT.CASH_COLLECTED
+        });
         response.json({ order: { id: data.id, cashCollectedAt: data.cash_collected_at } });
         // Reissue the receipt so the customer's copy says PAID. Runs after the response; on failure the
         // order shows "Receipt failed" and the existing retry button makes it again.
@@ -631,6 +639,7 @@ async function cancelAdminOrder(request, response, next) {
             .maybeSingle();
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order changed; refresh and try again." });
+        await recordOrderEvent(supabase, { orderId: data.id, actorId: request.user.id, action: ORDER_EVENT.CANCELLED });
         response.json({ order: data });
     } catch (error) {
         next(error);
@@ -695,6 +704,11 @@ async function advanceOrderStatus(request, response, next) {
             .maybeSingle();
         if (error) throw error;
         if (!data) return response.status(409).json({ error: "Order status changed; reload and try again." });
+        await recordOrderEvent(supabase, {
+            orderId: data.id,
+            actorId: request.user.id,
+            action: EVENT_FOR_STATUS[status]
+        });
         response.json({ order: { id: data.id, trackingCode: data.tracking_code, status: data.status } });
     } catch (error) {
         next(error);

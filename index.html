@@ -311,9 +311,10 @@
                 <button class="button customer-nav-button" id="order-history-nav-button" type="button">
                     Order history
                 </button>
+                <button class="button customer-nav-button" id="profile-nav-button" type="button">Profile</button>
             </nav>
 
-            <main id="customizer-page" hidden>
+            <main id="customizer-page" data-customer-page hidden>
                 <section
                     class="shared-recipe-banner"
                     id="shared-recipe-banner"
@@ -897,7 +898,13 @@
                 <p class="notice" id="app-notice" role="status" aria-live="polite"></p>
             </main>
 
-            <main class="order-history-page" id="order-history-page" hidden aria-labelledby="order-history-title">
+            <main
+                class="order-history-page"
+                id="order-history-page"
+                data-customer-page
+                hidden
+                aria-labelledby="order-history-title"
+            >
                 <div class="order-history-heading">
                     <div>
                         <p class="eyebrow">Your Coffee Lab account</p>
@@ -912,7 +919,12 @@
                 <section class="order-history-list" id="order-history-list" aria-label="Your past orders"></section>
             </main>
 
-            <main class="tracking-page" id="tracking-page" hidden aria-labelledby="tracking-title">
+            <main class="profile-page" id="profile-page" data-customer-page hidden aria-labelledby="profile-page-title">
+                <h1 id="profile-page-title" tabindex="-1">Your profile</h1>
+                <div class="profile-root" id="customer-profile-root"></div>
+            </main>
+
+            <main class="tracking-page" id="tracking-page" data-customer-page hidden aria-labelledby="tracking-title">
                 <div class="tracking-heading">
                     <p class="eyebrow" id="tracking-eyebrow">Order placed</p>
                     <h1 id="tracking-title" tabindex="-1">Order <span id="tracking-order-number"></span></h1>
@@ -1006,6 +1018,16 @@
                         <span id="admin-tab-accounts-label">Admin access</span>
                         <!-- Number of admins waiting for authenticator approval (set by adminAccess.js). -->
                         <span class="admin-tab-badge" id="admin-tab-accounts-badge" hidden></span>
+                    </button>
+                    <button
+                        class="admin-tab"
+                        id="admin-tab-profile"
+                        type="button"
+                        role="tab"
+                        aria-controls="admin-panel-profile"
+                        data-admin-tab="profile"
+                    >
+                        Profile
                     </button>
                 </div>
                 <div class="admin-panel" id="admin-panel-orders" role="tabpanel" aria-labelledby="admin-tab-orders">
@@ -1123,6 +1145,15 @@
                         <ul class="admin-access-list" id="admin-access-list"></ul>
                         <p class="notice" id="admin-access-message" role="status" aria-live="polite"></p>
                     </details>
+                </div>
+                <div
+                    class="admin-panel"
+                    id="admin-panel-profile"
+                    role="tabpanel"
+                    aria-labelledby="admin-tab-profile"
+                    hidden
+                >
+                    <div class="profile-root" id="admin-profile-root"></div>
                 </div>
             </main>
             <footer class="site-footer">
@@ -1244,6 +1275,60 @@
             </form>
         </dialog>
 
+        <template id="profile-template">
+            <section class="profile-card">
+                <div class="profile-identity">
+                    <div class="profile-avatar">
+                        <img alt="" width="96" height="96" hidden data-profile="avatar-image" />
+                        <span aria-hidden="true" data-profile="initials"></span>
+                    </div>
+                    <div class="profile-heading">
+                        <h2 data-profile="username"></h2>
+                        <p class="profile-meta">
+                            <span class="profile-role" data-profile="role"></span>
+                            <span data-profile="member-since"></span>
+                        </p>
+                        <p class="profile-bio" data-profile="bio"></p>
+                    </div>
+                    <button class="button button-small" type="button" data-profile-action="edit">Edit profile</button>
+                </div>
+                <form class="profile-form" data-profile="form" hidden>
+                    <fieldset class="profile-picture-field">
+                        <legend>Profile picture</legend>
+                        <label class="button button-small profile-file-label">
+                            Choose a picture
+                            <input
+                                class="sr-only"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                data-profile="file"
+                            />
+                        </label>
+                        <button class="button button-small" type="button" data-profile-action="remove-avatar">
+                            Remove picture
+                        </button>
+                        <p class="field-help">
+                            JPEG, PNG or WebP. It is cropped to a square and made smaller before upload.
+                        </p>
+                    </fieldset>
+                    <label class="profile-bio-field">
+                        Bio
+                        <textarea rows="3" maxlength="280" data-profile="bio-input"></textarea>
+                    </label>
+                    <p class="field-help" data-profile="bio-count"></p>
+                    <div class="profile-form-actions">
+                        <button class="button button-primary" type="submit">Save bio</button>
+                        <button class="button" type="button" data-profile-action="cancel">Done</button>
+                    </div>
+                </form>
+                <p class="notice" role="status" aria-live="polite" data-profile="message"></p>
+            </section>
+            <section class="profile-stats">
+                <h2 data-profile="stats-title">Your statistics</h2>
+                <div class="profile-stat-grid" data-profile="stats"></div>
+                <p class="field-help" data-profile="stats-note"></p>
+            </section>
+        </template>
         <script src="/js/admin.js" defer></script>
         <script src="/js/adminDashboard.js" defer></script>
         <script src="/js/adminAccess.js" defer></script>
@@ -1255,6 +1340,7 @@
         <script src="/js/pricingApi.js" defer></script>
         <script src="/js/communityRecipes.js" defer></script>
         <script src="/js/caffeineGuardian.js" defer></script>
+        <script src="/js/profile.js" defer></script>
         <script src="/js/app.js" defer></script>
     </body>
 </html>

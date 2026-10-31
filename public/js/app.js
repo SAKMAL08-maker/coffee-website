@@ -507,23 +507,43 @@
             : order.status === "Delivered";
     }
 
-    function setCustomerView(view) {
-        window.clearInterval(trackingPollTimer);
-        $("#customizer-page").hidden = view !== "customizer";
-        $("#order-history-page").hidden = view !== "history";
-        $("#tracking-page").hidden = true;
-        $("#customizer-nav-button").classList.toggle("is-active", view === "customizer");
-        $("#order-history-nav-button").classList.toggle("is-active", view === "history");
-        if (view === "history") {
-            $("#order-history-nav-button").setAttribute("aria-current", "page");
-            $("#customizer-nav-button").removeAttribute("aria-current");
-            loadOrderHistory();
-            $("#order-history-title").focus();
-        } else {
-            $("#customizer-nav-button").setAttribute("aria-current", "page");
-            $("#order-history-nav-button").removeAttribute("aria-current");
-            $("#page-title").focus();
+    // Customer pages reachable from the nav. Each one is a <main data-customer-page>.
+    const CUSTOMER_VIEWS = {
+        customizer: { page: "#customizer-page", button: "#customizer-nav-button", heading: "#page-title" },
+        history: {
+            page: "#order-history-page",
+            button: "#order-history-nav-button",
+            heading: "#order-history-title",
+            onShow: () => loadOrderHistory()
+        },
+        profile: {
+            page: "#profile-page",
+            button: "#profile-nav-button",
+            heading: "#profile-page-title",
+            onShow: () => window.CoffeeLabProfile?.load($("#customer-profile-root"))
         }
+    };
+
+    function hideCustomerPages() {
+        document.querySelectorAll("[data-customer-page]").forEach((page) => {
+            page.hidden = true;
+        });
+    }
+
+    function setCustomerView(view) {
+        const selected = CUSTOMER_VIEWS[view] || CUSTOMER_VIEWS.customizer;
+        window.clearInterval(trackingPollTimer);
+        hideCustomerPages();
+        $(selected.page).hidden = false;
+        for (const option of Object.values(CUSTOMER_VIEWS)) {
+            const button = $(option.button);
+            if (!button) continue;
+            button.classList.toggle("is-active", option === selected);
+            if (option === selected) button.setAttribute("aria-current", "page");
+            else button.removeAttribute("aria-current");
+        }
+        selected.onShow?.();
+        $(selected.heading).focus();
     }
 
     function getHistoryFulfillmentStatus(order) {
@@ -715,8 +735,7 @@
     }
 
     function showTracking() {
-        $("#customizer-page").hidden = true;
-        $("#order-history-page").hidden = true;
+        hideCustomerPages();
         $("#tracking-page").hidden = false;
         $("#back-to-customizer-button").textContent =
             historyReturnView === "history" ? "Back to order history" : "Back to coffee lab";
@@ -731,6 +750,7 @@
 
     $("#customizer-nav-button").addEventListener("click", () => setCustomerView("customizer"));
     $("#order-history-nav-button").addEventListener("click", () => setCustomerView("history"));
+    $("#profile-nav-button").addEventListener("click", () => setCustomerView("profile"));
     $("#refresh-order-history-button").addEventListener("click", loadOrderHistory);
     $("#order-history-list").addEventListener("click", (event) => {
         const button = event.target.closest("[data-history-order-id]");

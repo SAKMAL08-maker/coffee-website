@@ -61,5 +61,10 @@ module.exports = {
     // Public recipe pages and QR codes: generous for real visitors, blocks slug scraping.
     recipeReadLimiter: createLimiter(60 * 1000, 60, "recipeReadLimiter"),
     // Re-checked (debounced) as the customer edits a drink, like price quotes.
-    caffeineCheckLimiter: createLimiter(60 * 1000, 120, "caffeineCheckLimiter")
+    caffeineCheckLimiter: createLimiter(60 * 1000, 120, "caffeineCheckLimiter"),
+    profileReadLimiter: createLimiter(60 * 1000, 60, "profileReadLimiter"),
+    // Bio saves and picture uploads; a person editing their profile needs a handful.
+    profileWriteLimiter: createLimiter(10 * 60 * 1000, 20, "profileWriteLimiter"),
+    // Pictures are cached by the browser, so this only matters for a first visit or abuse.
+    avatarReadLimiter: createLimiter(60 * 1000, 300, "avatarReadLimiter")
 };

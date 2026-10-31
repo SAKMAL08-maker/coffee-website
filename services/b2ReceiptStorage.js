@@ -133,6 +133,7 @@ async function deleteReceiptObject(objectKey, environment = process.env) {
 
 module.exports = {
     readStorageConfig,
+    createStorageClient,
     uploadReceipt,
     uploadReceiptImage,
     createReceiptDownloadUrl,

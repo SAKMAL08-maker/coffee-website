@@ -279,7 +279,24 @@ const schemas = {
         params: z.object({ orderId: uuid }).strict(),
         query: emptyQuery
     },
-    empty: { query: emptyQuery, params: emptyParams }
+    empty: { query: emptyQuery, params: emptyParams },
+    // The 280-character limit is applied after cleaning (services/profileService.js cleanBio).
+    profileUpdate: {
+        body: z.object({ bio: z.string().max(2000) }).strict(),
+        query: emptyQuery,
+        params: emptyParams
+    },
+    avatar: {
+        params: z.object({ userId: uuid }).strict(),
+        query: z
+            .object({
+                v: z
+                    .string()
+                    .regex(/^\d{1,15}$/)
+                    .optional()
+            })
+            .strict()
+    }
 };
 
 module.exports = schemas;

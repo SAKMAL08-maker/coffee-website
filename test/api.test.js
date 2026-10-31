@@ -92,10 +92,11 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         assert.match(html, /id="fulfillment-progress-card"/);
         assert.match(html, /class="intro" aria-labelledby="page-title"/);
         assert.doesNotMatch(html, /Your delivery partner/);
-        assert.match(html, /id="customizer-page" hidden/);
+        assert.match(html, /<main id="customizer-page"[^>]*\shidden[\s>]/);
         assert.match(html, /id="customer-nav"/);
         assert.match(html, /id="order-history-nav-button"/);
-        assert.match(html, /id="order-history-page" hidden/);
+        assert.match(html, /id="order-history-page"\s+data-customer-page\s+hidden/);
+        assert.match(html, /id="profile-page"\s+data-customer-page\s+hidden/);
         assert.match(html, /id="order-history-list"/);
         assert.match(html, /src="\/js\/auth\.js"/);
         assert.ok(html.indexOf('src="/js/admin.js"') < html.indexOf('src="/js/auth.js"'));

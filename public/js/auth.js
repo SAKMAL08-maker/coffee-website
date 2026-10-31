@@ -38,8 +38,10 @@
         const isAdmin = user.role === "admin" || user.role === "superadmin";
         $("#customizer-page").hidden = isAdmin;
         $("#customer-nav").hidden = isAdmin;
-        $("#order-history-page").hidden = true;
-        $("#tracking-page").hidden = true;
+        // Every customer page except the builder starts hidden (history, profile, tracking, ...).
+        document.querySelectorAll("[data-customer-page]").forEach((page) => {
+            page.hidden = page.id !== "customizer-page" || isAdmin;
+        });
         $("#admin-page").hidden = !isAdmin;
         $("#unit-toggle").closest(".unit-control").hidden = isAdmin;
         $("#surprise-button").hidden = isAdmin;
