@@ -94,7 +94,7 @@ async function provisionAdminSetup(supabase, account, { ttlMs = APPROVED_SETUP_T
         true
     );
     if (provisionError) throw provisionError;
-    if (!updated) throw new Error("Could not provision the setup authorization.");
+    if (!updated) throw new Error("Could not save the setup approval.");
     return {
         username: account.username,
         expiresAt,

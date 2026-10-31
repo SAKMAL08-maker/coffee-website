@@ -220,12 +220,12 @@ test("serves the customizer and validates quote and checkout API requests", asyn
         });
         assert.equal(adminMfaEnrollWithKey.status, 400);
         // Enrolling needs no key, but a session is still required.
-        const missingAdminMfaBootstrapToken = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
+        const adminMfaEnrollWithoutSession = await fetch(`${baseUrl}/api/users/admin/mfa/enroll`, {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: "{}"
         });
-        assert.equal(missingAdminMfaBootstrapToken.status, 401);
+        assert.equal(adminMfaEnrollWithoutSession.status, 401);
         // Sign-up makes customers only: an account type or email is refused.
         const adminSignup = await fetch(`${baseUrl}/api/users/signup`, {
             method: "POST",
