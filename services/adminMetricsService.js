@@ -17,94 +17,138 @@ function shopDateKey(isoTimestamp) {
     return new Intl.DateTimeFormat("en-CA", { timeZone: SHOP_TIME_ZONE }).format(new Date(isoTimestamp));
 }
 
-function increment(counter, label, amount = 1) {
-    if (!label) return;
-    counter.set(label, (counter.get(label) || 0) + amount);
+function increment(counts, key, amount = 1) {
+    if (key === undefined || key === null || key === "") return;
+    counts[key] = (counts[key] || 0) + amount;
 }
 
-function toBars(counter) {
-    return [...counter.entries()]
+/**
+ * Counts orders and drinks by raw key. Returns the same shape as the
+ * admin_order_metrics Postgres function, so both paths share buildMetrics.
+ */
+function countRows(orders, items) {
+    const orderIds = new Set(orders.map((order) => order.id));
+    const rangedItems = items.filter((item) => orderIds.has(item.order_id));
+    const raw = {
+        orders: orders.length,
+        drinks: rangedItems.length,
+        revenueCents: 0,
+        ordersByDay: {},
+        revenueByDay: {},
+        fulfillment: {},
+        status: {},
+        drinkType: {},
+        base: {},
+        milk: {},
+        temperature: {},
+        caffeineMode: {},
+        addOns: {}
+    };
+    for (const order of orders) {
+        const totalCents = Number(order.pricing?.total_cents) || 0;
+        const day = shopDateKey(order.created_at);
+        raw.revenueCents += totalCents;
+        increment(raw.ordersByDay, day);
+        increment(raw.revenueByDay, day, totalCents);
+        increment(raw.fulfillment, order.fulfillment_method);
+        increment(raw.status, order.status);
+    }
+    for (const item of rangedItems) {
+        const configuration = item.configuration || {};
+        increment(raw.drinkType, item.classification || "Unclassified");
+        increment(raw.base, configuration.base);
+        increment(raw.milk, configuration.milk);
+        increment(raw.temperature, configuration.temperature);
+        increment(raw.caffeineMode, configuration.caffeineMode);
+        for (const [syrup, pumps] of Object.entries(configuration.syrups || {})) {
+            if (typeof pumps === "number" && pumps > 0) increment(raw.addOns, syrup);
+        }
+        for (const [topping, isOn] of Object.entries(configuration.toppings || {})) {
+            if (isOn === true) increment(raw.addOns, topping);
+        }
+        for (const sweetener of Array.isArray(configuration.sweeteners) ? configuration.sweeteners : []) {
+            increment(raw.addOns, sweetener);
+        }
+    }
+    return raw;
+}
+
+function addOnLabel(key) {
+    return SYRUPS[key]?.label || LABELS.toppings[key] || LABELS.sweeteners[key] || key;
+}
+
+// Turns raw-key counts into labelled bars, largest first (labels can merge keys).
+function toBars(counts, labelFor = (key) => key) {
+    const labelled = new Map();
+    for (const [key, value] of Object.entries(counts || {})) {
+        const label = labelFor(key);
+        labelled.set(label, (labelled.get(label) || 0) + Number(value));
+    }
+    return [...labelled.entries()]
         .map(([label, value]) => ({ label, value }))
         .sort((left, right) => right.value - left.value || left.label.localeCompare(right.label));
 }
 
-function dailyBars(counter, days, now) {
+function dailyBars(counts, days, now) {
     const bars = [];
     for (let offset = days - 1; offset >= 0; offset -= 1) {
         const key = shopDateKey(new Date(now.getTime() - offset * 24 * 60 * 60 * 1000).toISOString());
-        bars.push({ label: key, value: counter.get(key) || 0 });
+        bars.push({ label: key, value: Number(counts?.[key]) || 0 });
     }
     return bars;
 }
 
-function summarizeOrders(orders, items, { days, now = new Date() }) {
-    // Orders have no cancelled status, so every order in the range counts.
-    const countedOrders = orders;
-    const countedIds = new Set(orders.map((order) => order.id));
-    const countedItems = items.filter((item) => countedIds.has(item.order_id));
-
-    const ordersByDay = new Map();
-    const revenueByDay = new Map();
-    const fulfillment = new Map();
-    const status = new Map();
-    let revenueCents = 0;
-    for (const order of countedOrders) {
-        const totalCents = Number(order.pricing?.total_cents) || 0;
-        const day = shopDateKey(order.created_at);
-        revenueCents += totalCents;
-        increment(ordersByDay, day);
-        increment(revenueByDay, day, totalCents);
-        increment(fulfillment, LABELS.fulfillment[order.fulfillment_method] || order.fulfillment_method);
-        increment(status, order.status);
-    }
-
-    const drinkType = new Map();
-    const base = new Map();
-    const milk = new Map();
-    const temperature = new Map();
-    const caffeine = new Map();
-    const addOns = new Map();
-    for (const item of countedItems) {
-        const configuration = item.configuration || {};
-        increment(drinkType, item.classification || "Unclassified");
-        increment(base, BASES[configuration.base]?.label || configuration.base);
-        increment(milk, MILKS[configuration.milk]?.label || configuration.milk);
-        increment(temperature, LABELS.temperature[configuration.temperature] || configuration.temperature);
-        increment(caffeine, LABELS.caffeineMode[configuration.caffeineMode] || configuration.caffeineMode);
-        for (const [syrup, pumps] of Object.entries(configuration.syrups || {})) {
-            if (Number(pumps) > 0) increment(addOns, SYRUPS[syrup]?.label || syrup);
-        }
-        for (const [topping, isOn] of Object.entries(configuration.toppings || {})) {
-            if (isOn) increment(addOns, LABELS.toppings[topping] || topping);
-        }
-        for (const sweetener of configuration.sweeteners || []) {
-            increment(addOns, LABELS.sweeteners[sweetener] || sweetener);
-        }
-    }
-
+function buildMetrics(raw, { days, now = new Date() }) {
+    const orders = Number(raw.orders) || 0;
+    const revenueCents = Number(raw.revenueCents) || 0;
     return {
         days,
         generatedAt: now.toISOString(),
         totals: {
-            orders: countedOrders.length,
-            drinks: countedItems.length,
+            orders,
+            drinks: Number(raw.drinks) || 0,
             revenueCents,
-            averageOrderCents: countedOrders.length ? Math.round(revenueCents / countedOrders.length) : 0
+            averageOrderCents: orders ? Math.round(revenueCents / orders) : 0
         },
         // Each tab is one single-series bar chart; "unit" tells the UI how to format values.
         tabs: [
-            { id: "orders", title: "Orders per day", unit: "orders", bars: dailyBars(ordersByDay, days, now) },
-            { id: "revenue", title: "Sales per day", unit: "cents", bars: dailyBars(revenueByDay, days, now) },
-            { id: "drinkType", title: "Drink type", unit: "drinks", bars: toBars(drinkType) },
-            { id: "base", title: "Coffee base", unit: "drinks", bars: toBars(base) },
-            { id: "milk", title: "Milk", unit: "drinks", bars: toBars(milk) },
-            { id: "temperature", title: "Hot, iced or blended", unit: "drinks", bars: toBars(temperature) },
-            { id: "addOns", title: "Add-ons", unit: "drinks", bars: toBars(addOns) },
-            { id: "caffeine", title: "Caffeine", unit: "drinks", bars: toBars(caffeine) },
-            { id: "fulfillment", title: "Pickup vs delivery", unit: "orders", bars: toBars(fulfillment) },
-            { id: "status", title: "Order status", unit: "orders", bars: toBars(status) }
+            { id: "orders", title: "Orders per day", unit: "orders", bars: dailyBars(raw.ordersByDay, days, now) },
+            { id: "revenue", title: "Sales per day", unit: "cents", bars: dailyBars(raw.revenueByDay, days, now) },
+            { id: "drinkType", title: "Drink type", unit: "drinks", bars: toBars(raw.drinkType) },
+            {
+                id: "base",
+                title: "Coffee base",
+                unit: "drinks",
+                bars: toBars(raw.base, (key) => BASES[key]?.label || key)
+            },
+            { id: "milk", title: "Milk", unit: "drinks", bars: toBars(raw.milk, (key) => MILKS[key]?.label || key) },
+            {
+                id: "temperature",
+                title: "Hot, iced or blended",
+                unit: "drinks",
+                bars: toBars(raw.temperature, (key) => LABELS.temperature[key] || key)
+            },
+            { id: "addOns", title: "Add-ons", unit: "drinks", bars: toBars(raw.addOns, addOnLabel) },
+            {
+                id: "caffeine",
+                title: "Caffeine",
+                unit: "drinks",
+                bars: toBars(raw.caffeineMode, (key) => LABELS.caffeineMode[key] || key)
+            },
+            {
+                id: "fulfillment",
+                title: "Pickup vs delivery",
+                unit: "orders",
+                bars: toBars(raw.fulfillment, (key) => LABELS.fulfillment[key] || key)
+            },
+            { id: "status", title: "Order status", unit: "orders", bars: toBars(raw.status) }
         ]
     };
+}
+
+// Orders have no cancelled status, so every order in the range counts.
+function summarizeOrders(orders, items, options) {
+    return buildMetrics(countRows(orders, items), options);
 }
 
 async function fetchAllPages(buildQuery) {
@@ -117,8 +161,7 @@ async function fetchAllPages(buildQuery) {
     }
 }
 
-async function getAdminMetrics(supabase, { days = 30, now = new Date() } = {}) {
-    const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+async function countRowsInNode(supabase, since) {
     const orders = await fetchAllPages(() =>
         supabase
             .from("orders")
@@ -141,7 +184,24 @@ async function getAdminMetrics(supabase, { days = 30, now = new Date() } = {}) {
             ))
         );
     }
-    return summarizeOrders(orders, items, { days, now });
+    return countRows(orders, items);
 }
 
-module.exports = { RANGE_DAYS, shopDateKey, summarizeOrders, getAdminMetrics };
+// PGRST202: PostgREST can't find the function (migration not applied yet).
+function isMissingMetricsFunction(error) {
+    return error?.code === "PGRST202" || /admin_order_metrics/.test(error?.message || "");
+}
+
+async function getAdminMetrics(supabase, { days = 30, now = new Date() } = {}) {
+    const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase.rpc("admin_order_metrics", {
+        p_since: since,
+        p_time_zone: SHOP_TIME_ZONE
+    });
+    if (!error) return { ...buildMetrics(data, { days, now }), source: "postgres" };
+    if (!isMissingMetricsFunction(error)) throw error;
+    console.warn("admin_order_metrics is missing; counting in Node. Apply the latest Supabase migrations.");
+    return { ...buildMetrics(await countRowsInNode(supabase, since), { days, now }), source: "node" };
+}
+
+module.exports = { RANGE_DAYS, shopDateKey, countRows, buildMetrics, summarizeOrders, getAdminMetrics };
